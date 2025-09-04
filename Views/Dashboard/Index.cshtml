@@ -1,0 +1,9 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_Layout";
+    var financialYear = ViewBag.FinancialYear ?? DateTime.Now.Year;
+}
+
+@Html.AntiForgeryToken()
+
+<h1>Dashboard</h1>
