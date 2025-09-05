@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using BiddingSystem.Data;
 using BiddingSystem.Models;
 
-namespace RentManagement.Controllers
+namespace BiddingSystem.Controllers
 {
     [Authorize]
     public class DashboardController : Controller

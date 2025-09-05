@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Rent Management System</title>
+    <title>@ViewData["Title"] - BiddingSystem</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -116,10 +116,10 @@
         <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 bg-white border-r border-gray-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out sidebar-expanded sidebar-transition">
             <div class="p-4 border-b border-gray-200 flex items-center justify-between">
                 <div id="sidebarLogo" class="flex items-center transition-opacity duration-300">
-                    <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">
-                        RM
+                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-sm mr-3">
+                        BS
                     </div>
-                    <span class="sidebar-text font-semibold text-gray-800">Rent Management</span>
+                    <span class="sidebar-text font-semibold text-gray-800">BiddingSystem</span>
                 </div>
                 <button id="closeSidebar" class="lg:hidden text-gray-600 hover:text-gray-900">
                     <i class="ri-close-line text-xl"></i>
@@ -180,114 +180,94 @@
                         </a> *@
                     }
 
-                    <!-- Management Modules -->
+                    <!-- Tender Management Section -->
                     <div class="mt-4 mb-2">
-                        <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Management</span>
+                        <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Tender Management</span>
+                    </div>
+
+                    <a asp-controller="Tender" asp-action="Dashboard"
+                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                       data-nav="tender-dashboard">
+                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="ri-dashboard-line"></i>
+                        </div>
+                        <span class="sidebar-text">Tender Dashboard</span>
+                    </a>
+
+                    <a asp-controller="Tender" asp-action="Index"
+                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                       data-nav="tender-list">
+                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="ri-file-list-line"></i>
+                        </div>
+                        <span class="sidebar-text">Manage Tenders</span>
+                    </a>
+
+                    <a asp-controller="Tender" asp-action="Create"
+                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                       data-nav="create-tender">
+                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="ri-add-line"></i>
+                        </div>
+                        <span class="sidebar-text">Create Tender</span>
+                    </a>
+
+                    <!-- User Management Section -->
+                    <div class="mt-4 mb-2">
+                        <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">User Management</span>
                     </div>
 
                     @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
                     {
-                     
-                       @*  <a asp-controller="Employee" asp-action="Create"
+                        <a asp-controller="Employee" asp-action="Index"
                            class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                           data-nav="add-employee">
+                           data-nav="employee-management">
                             <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                                <i class="ri-user-add-2-line"></i>
+                                <i class="ri-user-line"></i>
                             </div>
-                            <span class="sidebar-text">Add Employee</span>
+                            <span class="sidebar-text">Employee Management</span>
                         </a>
- *@                    }
-                    <a asp-controller="Employee" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="employee-management">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-user-line"></i>
-                        </div>
-                        <span class="sidebar-text">Employee Management</span>
-                    </a>
 
-                    <a asp-controller="Vendor" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="vendor-management">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-store-line"></i>
-                        </div>
-                        <span class="sidebar-text">Owner Management</span>
-                    </a>
-                    <a asp-controller="Property" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="Property-management">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-store-line"></i>
-                        </div>
-                        <span class="sidebar-text">Property Management</span>
-                    </a>
-                  @*   <a asp-controller="Vendor" asp-action="Create"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="add-vendor">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-store-add-line"></i>
-                        </div>
-                        <span class="sidebar-text">Add Vendor</span>
-                    </a> *@
-
-                    <a asp-controller="Lease" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="lease-management">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-file-list-line"></i>
-                        </div>
-                        <span class="sidebar-text">Lease Management</span>
-                    </a>
-
-                  @*   <a asp-controller="Lease" asp-action="Create"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="create-lease">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-file-add-line"></i>
-                        </div>
-                        <span class="sidebar-text">Create Lease</span>
-                    </a> *@
-
-                   @*  <a asp-controller="Property" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="property-management">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-building-line"></i>
-                        </div>
-                        <span class="sidebar-text">Property Management</span>
-                    </a> *@
+                        <a asp-controller="Vendor" asp-action="Index"
+                           class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                           data-nav="vendor-management">
+                            <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="ri-store-line"></i>
+                            </div>
+                            <span class="sidebar-text">Vendor Management</span>
+                        </a>
+                    }
 
                     <!-- Financial Section -->
                     <div class="mt-4 mb-2">
                         <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Financial</span>
                     </div>
 
-                    <a asp-controller="MonthlyRentPayment" asp-action="Index"
+                    <a asp-controller="Tender" asp-action="Index"
                        class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="monthly-rent">
+                       data-nav="emd-management">
                         <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
                             <i class="ri-money-dollar-circle-line"></i>
                         </div>
-                        <span class="sidebar-text">Monthly Rent Payment</span>
+                        <span class="sidebar-text">EMD Management</span>
                     </a>
 
-                    <a asp-controller="BrokeragePayment" asp-action="Index"
+                    <a asp-controller="Tender" asp-action="Index"
                        class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="brokerage-payment">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-exchange-dollar-line"></i>
-                        </div>
-                        <span class="sidebar-text">Brokerage Payment</span>
-                    </a>
-
-                    <a asp-controller="SecurityDeposit" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="security-deposit">
+                       data-nav="sd-management">
                         <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
                             <i class="ri-safe-2-line"></i>
                         </div>
-                        <span class="sidebar-text">Security Deposit</span>
+                        <span class="sidebar-text">SD Management</span>
+                    </a>
+
+                    <a asp-controller="Tender" asp-action="Index"
+                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                       data-nav="processing-fees">
+                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="ri-bank-card-line"></i>
+                        </div>
+                        <span class="sidebar-text">Processing Fees</span>
                     </a>
 
                 
@@ -296,31 +276,40 @@
                         <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Reports & Analytics</span>
                     </div>
 
-                    <a asp-controller="MISReport" asp-action="Index"
+                    <a asp-controller="Tender" asp-action="Index"
                        class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="mis-reports">
+                       data-nav="tender-reports">
                         <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
                             <i class="ri-file-chart-line"></i>
                         </div>
-                        <span class="sidebar-text">MIS Reports</span>
+                        <span class="sidebar-text">Tender Reports</span>
                     </a>
 
-                    <a asp-controller="Reports" asp-action="Index"
+                    <a asp-controller="Tender" asp-action="Index"
                        class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
                        data-nav="financial-reports">
                         <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
                             <i class="ri-funds-line"></i>
                         </div>
-                        <span class="sidebar-text">Reports</span>
+                        <span class="sidebar-text">Financial Reports</span>
                     </a>
 
-                    <a asp-controller="TDSReport" asp-action="Index"
+                    <a asp-controller="Tender" asp-action="Index"
                        class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="tds-reports">
+                       data-nav="bidder-reports">
                         <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-file-invoice-line"></i>
+                            <i class="ri-user-line"></i>
                         </div>
-                        <span class="sidebar-text">TDS Reports</span>
+                        <span class="sidebar-text">Bidder Reports</span>
+                    </a>
+
+                    <a asp-controller="Tender" asp-action="Index"
+                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                       data-nav="analytics">
+                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                            <i class="ri-bar-chart-line"></i>
+                        </div>
+                        <span class="sidebar-text">Analytics</span>
                     </a>
 
                     <!-- Settings Section -->

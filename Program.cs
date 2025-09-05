@@ -3,8 +3,6 @@ using BiddingSystem.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.FileProviders;
-using BiddingSystem.Data;
-using BiddingSystem.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +10,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITenderRepository, TenderRepository>();
+
+// Register repositories
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+
+// Register services
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+
+
 
 // Configure options
 builder.Services.Configure<PasswordOptions>(
@@ -100,7 +108,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

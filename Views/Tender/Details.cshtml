@@ -1,0 +1,395 @@
+@model BiddingSystem.ViewModels.TenderViewModel
+@using BiddingSystem.Models
+@{
+    ViewData["Title"] = $"Tender Details - {Model.TenderId}";
+}
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">@Model.TenderId</h1>
+        <p class="text-gray-600 mt-1">@Model.TenderTitle</p>
+    </div>
+    <div class="flex space-x-3">
+        <a asp-action="Index" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center">
+            <i class="ri-arrow-left-line mr-2"></i>
+            Back to List
+        </a>
+        
+        @if (Model.IsEditable)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center">
+                <i class="ri-edit-line mr-2"></i>
+                Edit
+            </a>
+        }
+        
+        @if (Model.Status == TenderStatus.Draft)
+        {
+            <form asp-action="Publish" asp-route-id="@Model.Id" method="post" class="inline" 
+                  onsubmit="return confirm('Are you sure you want to publish this tender? This action cannot be undone.')">
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center">
+                    <i class="ri-send-plane-line mr-2"></i>
+                    Publish
+                </button>
+            </form>
+        }
+        
+        @if (Model.Status == TenderStatus.Published)
+        {
+            <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="inline" 
+                  onsubmit="return confirm('Are you sure you want to close this tender? This action cannot be undone.')">
+                <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center">
+                    <i class="ri-close-circle-line mr-2"></i>
+                    Close
+                </button>
+            </form>
+        }
+        
+        @if (Model.Status != TenderStatus.Closed)
+        {
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="inline" 
+                  onsubmit="return confirm('Are you sure you want to cancel this tender? This action cannot be undone.')">
+                <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center">
+                    <i class="ri-close-line mr-2"></i>
+                    Cancel
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+<!-- Status Banner -->
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @Model.StatusBadgeClass">
+                @Model.StatusDisplayName
+            </span>
+            <div class="ml-4 text-sm text-gray-600">
+                <span class="font-medium">Created:</span> @Model.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                @if (Model.PublishedAt.HasValue)
+                {
+                    <span class="ml-4"><span class="font-medium">Published:</span> @Model.PublishedAt.Value.ToString("dd MMM yyyy HH:mm")</span>
+                }
+            </div>
+        </div>
+        <div class="text-sm text-gray-600">
+            <span class="font-medium">Created by:</span> @Model.CreatedByUserName
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Tender Information -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ri-file-info-line mr-2 text-primary"></i>
+                Tender Information
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tender ID</label>
+                    <p class="text-sm text-gray-900 font-mono">@Model.TenderId</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <p class="text-sm text-gray-900">@Model.Department</p>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <p class="text-sm text-gray-900">@Model.Description</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Publish Date</label>
+                    <p class="text-sm text-gray-900">@Model.PublishDate.ToString("dd MMM yyyy")</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Date to Pay EMD</label>
+                    <p class="text-sm text-gray-900">@Model.LastDateEmd.ToString("dd MMM yyyy")</p>
+                </div>
+                
+                @if (Model.TenderClosingDate.HasValue)
+                {
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tender Closing Date</label>
+                        <p class="text-sm text-gray-900">@Model.TenderClosingDate.Value.ToString("dd MMM yyyy")</p>
+                    </div>
+                }
+                
+                @if (Model.TenderOpeningDate.HasValue)
+                {
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tender Opening Date</label>
+                        <p class="text-sm text-gray-900">@Model.TenderOpeningDate.Value.ToString("dd MMM yyyy")</p>
+                    </div>
+                }
+            </div>
+        </div>
+        
+        <!-- Financial Details -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="ri-money-dollar-circle-line mr-2 text-primary"></i>
+                Financial Details
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Value</label>
+                    <p class="text-lg font-semibold text-gray-900">₹@Model.EstimatedValue.ToString("N0")</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">EMD Amount</label>
+                    <p class="text-lg font-semibold text-gray-900">₹@Model.EmdAmount.ToString("N0")</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SD Amount</label>
+                    <p class="text-lg font-semibold text-gray-900">₹@Model.SdAmount.ToString("N0")</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Processing Fee</label>
+                    <p class="text-lg font-semibold text-gray-900">₹@Model.ProcessingFee.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Documents -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <i class="ri-file-text-line mr-2 text-primary"></i>
+                    Documents (@Model.DocumentCount)
+                </h2>
+                <a asp-action="Documents" asp-route-id="@Model.Id" class="text-primary hover:text-primary/80 text-sm">
+                    Manage Documents
+                </a>
+            </div>
+            
+            @if (Model.Documents.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var document in Model.Documents.Take(5))
+                    {
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 flex items-center justify-center rounded bg-gray-100 mr-3">
+                                    <i class="ri-file-text-line text-gray-500"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">@document.DocumentName</p>
+                                    <p class="text-xs text-gray-500">@document.FileSizeDisplay • @document.DocumentTypeDisplayName</p>
+                                </div>
+                            </div>
+                            <a href="/uploads/tenders/@Model.TenderId/@document.FileName" target="_blank" 
+                               class="text-primary hover:text-primary/80">
+                                <i class="ri-download-line"></i>
+                            </a>
+                        </div>
+                    }
+                    
+                    @if (Model.Documents.Count > 5)
+                    {
+                        <div class="text-center">
+                            <a asp-action="Documents" asp-route-id="@Model.Id" class="text-primary hover:text-primary/80 text-sm">
+                                View all @Model.Documents.Count documents
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-8 text-gray-500">
+                    <i class="ri-file-text-line text-4xl mb-2"></i>
+                    <p>No documents uploaded yet</p>
+                    <a asp-action="Documents" asp-route-id="@Model.Id" class="text-primary hover:text-primary/80 text-sm">
+                        Upload documents
+                    </a>
+                </div>
+            }
+        </div>
+        
+        <!-- Bids -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <i class="ri-auction-line mr-2 text-primary"></i>
+                    Bids (@Model.BidCount)
+                </h2>
+                @if (Model.IsPublished)
+                {
+                    <a asp-controller="TenderBid" asp-action="Index" asp-route-tenderId="@Model.Id" class="text-primary hover:text-primary/80 text-sm">
+                        View All Bids
+                    </a>
+                }
+            </div>
+            
+            @if (Model.Bids.Any())
+            {
+                <div class="space-y-3">
+                    @foreach (var bid in Model.Bids.Take(5))
+                    {
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 flex items-center justify-center rounded bg-blue-100 mr-3">
+                                    <i class="ri-user-line text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">@bid.BidderName</p>
+                                    <p class="text-xs text-gray-500">₹@bid.BidAmount.ToString("N0") • @bid.SubmittedAt.ToString("dd MMM yyyy")</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @bid.StatusBadgeClass">
+                                    @bid.StatusDisplayName
+                                </span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @bid.PaymentStatusBadgeClass">
+                                    @bid.PaymentStatusDisplayName
+                                </span>
+                            </div>
+                        </div>
+                    }
+                    
+                    @if (Model.Bids.Count > 5)
+                    {
+                        <div class="text-center">
+                            <a asp-controller="TenderBid" asp-action="Index" asp-route-tenderId="@Model.Id" class="text-primary hover:text-primary/80 text-sm">
+                                View all @Model.Bids.Count bids
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-8 text-gray-500">
+                    <i class="ri-auction-line text-4xl mb-2"></i>
+                    <p>No bids received yet</p>
+                    @if (Model.IsPublished)
+                    {
+                        <p class="text-sm">Bids will appear here once submitted</p>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Quick Stats -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Stats</h3>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Total Bids</span>
+                    <span class="text-sm font-medium text-gray-900">@Model.BidCount</span>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Documents</span>
+                    <span class="text-sm font-medium text-gray-900">@Model.DocumentCount</span>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Days to EMD Deadline</span>
+                    <span class="text-sm font-medium @(Model.LastDateEmd < DateTime.Now ? "text-red-600" : Model.LastDateEmd < DateTime.Now.AddDays(7) ? "text-yellow-600" : "text-green-600")">
+                        @((Model.LastDateEmd - DateTime.Now).Days)
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+            
+            <div class="space-y-3">
+                <a asp-action="Documents" asp-route-id="@Model.Id" 
+                   class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <i class="ri-file-upload-line mr-2"></i>
+                    Manage Documents
+                </a>
+                
+                @if (Model.IsPublished)
+                {
+                    <a asp-controller="TenderBid" asp-action="Index" asp-route-tenderId="@Model.Id" 
+                       class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        <i class="ri-auction-line mr-2"></i>
+                        View Bids
+                    </a>
+                }
+                
+                @if (Model.IsEditable)
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.Id" 
+                       class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        <i class="ri-edit-line mr-2"></i>
+                        Edit Tender
+                    </a>
+                }
+                
+                <button onclick="window.print()" 
+                        class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <i class="ri-printer-line mr-2"></i>
+                    Print Details
+                </button>
+            </div>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Timeline</h3>
+            
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3"></div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Tender Created</p>
+                        <p class="text-xs text-gray-500">@Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</p>
+                    </div>
+                </div>
+                
+                @if (Model.PublishedAt.HasValue)
+                {
+                    <div class="flex items-start">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Tender Published</p>
+                            <p class="text-xs text-gray-500">@Model.PublishedAt.Value.ToString("dd MMM yyyy HH:mm")</p>
+                        </div>
+                    </div>
+                }
+                
+                <div class="flex items-start">
+                    <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3"></div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">EMD Deadline</p>
+                        <p class="text-xs text-gray-500">@Model.LastDateEmd.ToString("dd MMM yyyy HH:mm")</p>
+                    </div>
+                </div>
+                
+                @if (Model.TenderClosingDate.HasValue)
+                {
+                    <div class="flex items-start">
+                        <div class="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3"></div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Tender Closing</p>
+                            <p class="text-xs text-gray-500">@Model.TenderClosingDate.Value.ToString("dd MMM yyyy HH:mm")</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

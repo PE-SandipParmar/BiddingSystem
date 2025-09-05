@@ -1,0 +1,275 @@
+@* @model BiddingSystem.ViewModels.TenderListViewModel *@
+@using BiddingSystem.Models
+@{
+    ViewData["Title"] = "Manage Tenders";
+}
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Manage Tenders</h1>
+        <p class="text-gray-600 mt-1">View and manage all tenders in the system</p>
+    </div>
+    <a asp-action="Create" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center">
+        <i class="ri-add-line mr-2"></i>
+        Add New Tender
+    </a>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="ri-file-list-line text-blue-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Total Tenders</p>
+                <p class="text-2xl font-bold text-gray-800">@Model.TotalCount</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="ri-eye-line text-green-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Published</p>
+                <p class="text-2xl font-bold text-gray-800">@Model.StatusCounts.GetValueOrDefault(TenderStatus.Published, 0)</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="ri-draft-line text-yellow-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Draft</p>
+                <p class="text-2xl font-bold text-gray-800">@Model.StatusCounts.GetValueOrDefault(TenderStatus.Draft, 0)</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="ri-close-line text-red-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Closed</p>
+                <p class="text-2xl font-bold text-gray-800">@Model.StatusCounts.GetValueOrDefault(TenderStatus.Closed, 0)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input type="text" name="searchTerm" value="@Model.SearchTerm" 
+                   placeholder="Search by tender ID or title..." 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <option value="">All Statuses</option>
+                <option value="1" selected="@(Model.Status == TenderStatus.Draft)">Draft</option>
+                <option value="2" selected="@(Model.Status == TenderStatus.Published)">Published</option>
+                <option value="3" selected="@(Model.Status == TenderStatus.Closed)">Closed</option>
+                <option value="4" selected="@(Model.Status == TenderStatus.Cancelled)">Cancelled</option>
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+            <select name="department" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <option value="">All Departments</option>
+                @foreach (var dept in Model.Departments)
+                {
+                    <option value="@dept" selected="@(Model.Department == dept)">@dept</option>
+                }
+            </select>
+        </div>
+        
+        <div class="flex items-end">
+            <button type="submit" class="w-full bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                <i class="ri-search-line mr-2"></i>Filter
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Tenders Table -->
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tender Details</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amounts</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @if (Model.Tenders.Any())
+                {
+                    @foreach (var tender in Model.Tenders)
+                    {
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">@tender.TenderId</div>
+                                    <div class="text-sm text-gray-500">@tender.TenderTitle</div>
+                                    <div class="text-xs text-gray-400">Created by @tender.CreatedByUserName</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">@tender.Department</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">₹@tender.EstimatedValue.ToString("N0")</div>
+                                <div class="text-xs text-gray-500">EMD: ₹@tender.EmdAmount.ToString("N0")</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">@tender.PublishDate.ToString("dd MMM yyyy")</div>
+                                <div class="text-xs text-gray-500">EMD Due: @tender.LastDateEmd.ToString("dd MMM yyyy")</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @tender.StatusBadgeClass">
+                                    @tender.StatusDisplayName
+                                </span>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    @tender.BidCount bids, @tender.DocumentCount docs
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <a asp-action="Details" asp-route-id="@tender.Id" 
+                                       class="text-primary hover:text-primary/80">
+                                        <i class="ri-eye-line"></i>
+                                    </a>
+                                    
+                                    @if (tender.IsEditable)
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@tender.Id" 
+                                           class="text-blue-600 hover:text-blue-800">
+                                            <i class="ri-edit-line"></i>
+                                        </a>
+                                        
+                                        <form asp-action="Delete" asp-route-id="@tender.Id" method="post" 
+                                              class="inline" onsubmit="return confirm('Are you sure you want to delete this tender?')">
+                                            <button type="submit" class="text-red-600 hover:text-red-800">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    
+                                    @if (tender.Status == TenderStatus.Draft)
+                                    {
+                                        <form asp-action="Publish" asp-route-id="@tender.Id" method="post" 
+                                              class="inline" onsubmit="return confirm('Are you sure you want to publish this tender?')">
+                                            <button type="submit" class="text-green-600 hover:text-green-800">
+                                                <i class="ri-send-plane-line"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    
+                                    @if (tender.Status == TenderStatus.Published)
+                                    {
+                                        <form asp-action="Close" asp-route-id="@tender.Id" method="post" 
+                                              class="inline" onsubmit="return confirm('Are you sure you want to close this tender?')">
+                                            <button type="submit" class="text-orange-600 hover:text-orange-800">
+                                                <i class="ri-close-circle-line"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="text-gray-500">
+                                <i class="ri-file-list-line text-4xl mb-4"></i>
+                                <p class="text-lg font-medium">No tenders found</p>
+                                <p class="text-sm">Create your first tender to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    @if (Model.TotalCount > Model.PageSize)
+    {
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                @if (Model.Page > 1)
+                {
+                    <a href="?page=@(Model.Page - 1)&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&department=@Model.Department" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Previous
+                    </a>
+                }
+                @if (Model.Page < Math.Ceiling((double)Model.TotalCount / Model.PageSize))
+                {
+                    <a href="?page=@(Model.Page + 1)&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&department=@Model.Department" 
+                       class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Next
+                    </a>
+                }
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">@((Model.Page - 1) * Model.PageSize + 1)</span>
+                        to <span class="font-medium">@Math.Min(Model.Page * Model.PageSize, Model.TotalCount)</span>
+                        of <span class="font-medium">@Model.TotalCount</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        @if (Model.Page > 1)
+                        {
+                            <a href="?page=@(Model.Page - 1)&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&department=@Model.Department" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="ri-arrow-left-s-line"></i>
+                            </a>
+                        }
+                        
+                        @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Math.Ceiling((double)Model.TotalCount / Model.PageSize), Model.Page + 2); i++)
+                        {
+                            <a href="?page=@i&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&department=@Model.Department" 
+                               class="relative inline-flex items-center px-4 py-2 border text-sm font-medium @(i == Model.Page ? "z-10 bg-primary border-primary text-white" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50")">
+                                @i
+                            </a>
+                        }
+                        
+                        @if (Model.Page < Math.Ceiling((double)Model.TotalCount / Model.PageSize))
+                        {
+                            <a href="?page=@(Model.Page + 1)&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&department=@Model.Department" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="ri-arrow-right-s-line"></i>
+                            </a>
+                        }
+                    </nav>
+                </div>
+            </div>
+        </div>
+    }
+</div>

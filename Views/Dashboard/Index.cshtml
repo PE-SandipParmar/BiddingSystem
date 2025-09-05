@@ -1,4 +1,5 @@
-﻿@{
+﻿@model BiddingSystem.Models.DashboardViewModel
+@{
     ViewData["Title"] = "Dashboard";
     Layout = "_Layout";
     var financialYear = ViewBag.FinancialYear ?? DateTime.Now.Year;
@@ -6,4 +7,414 @@
 
 @Html.AntiForgeryToken()
 
-<h1>Dashboard</h1>
+<div class="p-6">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+              
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <select id="financialYearSelect" class="bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        @for (int year = 2020; year <= 2030; year++)
+                        {
+                            <option value="@year" selected="@(year == financialYear)">FY @year</option>
+                        }
+                    </select>
+                </div>
+                <button id="exportReportBtn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 flex items-center transition-colors">
+                    <i class="ri-download-line mr-2"></i>Export Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Tenders -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="ri-auction-line text-blue-600 text-xl"></i>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold text-gray-800"></p>
+                    <p class="text-sm text-gray-500">Total Tenders</p>
+                </div>
+            </div>
+            <div class="flex items-center text-sm">
+                <span class="text-green-600 flex items-center">
+                    <i class="ri-arrow-up-line mr-1"></i>
+                    +12%
+                </span>
+                <span class="text-gray-500 ml-2">vs last month</span>
+            </div>
+        </div>
+
+        <!-- EMD Collected -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="ri-money-dollar-circle-line text-green-600 text-xl"></i>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold text-gray-800">₹0</p>
+                    <p class="text-sm text-gray-500">EMD Collected</p>
+                </div>
+            </div>
+            <div class="flex items-center text-sm">
+                <span class="text-green-600 flex items-center">
+                    <i class="ri-arrow-up-line mr-1"></i>
+                    +8%
+                </span>
+                <span class="text-gray-500 ml-2">vs last month</span>
+            </div>
+        </div>
+
+        <!-- Active Bidders -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="ri-user-line text-purple-600 text-xl"></i>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold text-gray-800">₹0</p>
+                    <p class="text-sm text-gray-500">Active Bidders</p>
+                </div>
+            </div>
+            <div class="flex items-center text-sm">
+                <span class="text-green-600 flex items-center">
+                    <i class="ri-arrow-up-line mr-1"></i>
+                    +15%
+                </span>
+                <span class="text-gray-500 ml-2">vs last month</span>
+            </div>
+        </div>
+
+        <!-- Processing Fees -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i class="ri-bank-card-line text-orange-600 text-xl"></i>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold text-gray-800">₹0</p>
+                    <p class="text-sm text-gray-500">Processing Fees</p>
+                </div>
+            </div>
+            <div class="flex items-center text-sm">
+                <span class="text-green-600 flex items-center">
+                    <i class="ri-arrow-up-line mr-1"></i>
+                    +5%
+                </span>
+                <span class="text-gray-500 ml-2">vs last month</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Panel -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a asp-controller="Tender" asp-action="Create" 
+               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-blue-200 transition-colors">
+                    <i class="ri-add-line text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-800">Create Tender</p>
+                    <p class="text-sm text-gray-500">Add new tender</p>
+                </div>
+            </a>
+            
+            <a asp-controller="Tender" asp-action="Index" 
+               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-green-200 transition-colors">
+                    <i class="ri-file-list-line text-green-600"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-800">Manage Tenders</p>
+                    <p class="text-sm text-gray-500">View all tenders</p>
+                </div>
+            </a>
+            
+            <a asp-controller="Tender" asp-action="Dashboard" 
+               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-200 transition-colors">
+                    <i class="ri-money-dollar-circle-line text-purple-600"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-800">EMD Management</p>
+                    <p class="text-sm text-gray-500">Manage EMD payments</p>
+                </div>
+            </a>
+            
+            <a asp-controller="Tender" asp-action="Index" 
+               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
+                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-orange-200 transition-colors">
+                    <i class="ri-safe-2-line text-orange-600"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-800">SD Management</p>
+                    <p class="text-sm text-gray-500">Manage SD deposits</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Tender Status Distribution -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">Tender Status Distribution</h3>
+                <button class="text-gray-400 hover:text-gray-600">
+                    <i class="ri-more-2-line"></i>
+                </button>
+            </div>
+            <div id="tenderStatusChart" class="h-64"></div>
+        </div>
+
+        <!-- Monthly Tender Trends -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">Monthly Tender Trends</h3>
+                <button class="text-gray-400 hover:text-gray-600">
+                    <i class="ri-more-2-line"></i>
+                </button>
+            </div>
+            <div id="monthlyTrendChart" class="h-64"></div>
+        </div>
+    </div>
+
+    <!-- Recent Activities & Alerts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Tenders -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">Recent Activities</h3>
+                <a asp-controller="Tender" asp-action="Index" class="text-primary hover:text-primary/80 text-sm">View All</a>
+            </div>
+            <div class="space-y-4">
+          @*       @if (Model.RecentUsers?.Any() == true)
+                {
+                    @foreach (var user in Model.RecentUsers.Take(5))
+                    {
+                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                    <i class="ri-user-line text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">@user.FirstName @user.LastName</p>
+                                    <p class="text-xs text-gray-500">@user.Email</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @(user.Role == BiddingSystem.Models.UserRole.Admin ? "bg-red-100 text-red-800" : user.Role == BiddingSystem.Models.UserRole.Employee ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800")">
+                                    @user.Role
+                                </span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="ri-file-list-line text-4xl mb-2"></i>
+                        <p>No recent activities</p>
+                    </div>
+                } *@
+            </div>
+        </div>
+
+        <!-- Important Alerts -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">System Status</h3>
+                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">All Systems Operational</span>
+            </div>
+            <div class="space-y-4">
+                <div class="flex items-start p-4 border border-green-200 rounded-lg bg-green-50">
+                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="ri-check-line text-green-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">System Health</p>
+                        <p class="text-xs text-gray-600 mt-1">All services are running normally</p>
+                        <p class="text-xs text-gray-500 mt-2">@DateTime.Now.ToString("MMM dd, yyyy HH:mm")</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start p-4 border border-blue-200 rounded-lg bg-blue-50">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="ri-information-line text-blue-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">Database Status</p>
+                        <p class="text-xs text-gray-600 mt-1">Database connection is stable</p>
+                        <p class="text-xs text-gray-500 mt-2">@DateTime.Now.ToString("MMM dd, yyyy HH:mm")</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start p-4 border border-purple-200 rounded-lg bg-purple-50">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="ri-shield-check-line text-purple-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">Security Status</p>
+                        <p class="text-xs text-gray-600 mt-1">All security protocols are active</p>
+                        <p class="text-xs text-gray-500 mt-2">@DateTime.Now.ToString("MMM dd, yyyy HH:mm")</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const financialYear = @financialYear;
+            
+            // Initialize charts
+            initializeTenderStatusChart();
+            initializeMonthlyTrendChart();
+            
+            // Financial Year Change Handler
+            document.getElementById('financialYearSelect').addEventListener('change', function() {
+                window.location.href = '@Url.Action("Index", "Dashboard")?year=' + this.value;
+            });
+            
+            // Export Report Handler
+            document.getElementById('exportReportBtn').addEventListener('click', function() {
+                // Placeholder for export functionality
+                alert('Export functionality will be implemented soon');
+            });
+            
+            // Initialize Tender Status Chart
+            function initializeTenderStatusChart() {
+                const chart = echarts.init(document.getElementById('tenderStatusChart'));
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{b}: {c} ({d}%)'
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        right: 10,
+                        top: 'center',
+                        data: ['Draft', 'Published', 'Closed', 'Cancelled']
+                    },
+                    series: [{
+                        name: 'Tender Status',
+                        type: 'pie',
+                        radius: ['50%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 8,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: true,
+                            position: 'outside',
+                            formatter: '{b}: {c}'
+                        },
+                        labelLine: {
+                            show: true
+                        },
+                        data: [
+                            { value: 5, name: 'Draft', itemStyle: { color: '#6b7280' } },
+                            { value: 12, name: 'Published', itemStyle: { color: '#22c55e' } },
+                            { value: 8, name: 'Closed', itemStyle: { color: '#ef4444' } },
+                            { value: 2, name: 'Cancelled', itemStyle: { color: '#eab308' } }
+                        ]
+                    }]
+                };
+                
+                chart.setOption(option);
+                window.addEventListener('resize', () => chart.resize());
+            }
+            
+            // Initialize Monthly Trend Chart
+            function initializeMonthlyTrendChart() {
+                const chart = echarts.init(document.getElementById('monthlyTrendChart'));
+                
+                const option = {
+                    animation: true,
+                    grid: {
+                        top: 10,
+                        right: 10,
+                        bottom: 20,
+                        left: 40,
+                        containLabel: true
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: function(params) {
+                            return params[0].name + '<br/>' +
+                                   'Tenders: ' + params[0].value;
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        axisLine: {
+                            lineStyle: {
+                                color: '#E5E7EB'
+                            }
+                        },
+                        axisLabel: {
+                            color: '#1F2937'
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLine: {
+                            show: false
+                        },
+                        axisLabel: {
+                            color: '#1F2937'
+                        },
+                        splitLine: {
+                            lineStyle: {
+                                color: '#E5E7EB'
+                            }
+                        }
+                    },
+                    series: [{
+                        data: [3, 5, 7, 4, 8, 6, 9, 5, 7, 8, 6, 4],
+                        type: 'line',
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 8,
+                        itemStyle: {
+                            color: '#3b82f6'
+                        },
+                        lineStyle: {
+                            width: 3,
+                            color: '#3b82f6'
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                                offset: 0,
+                                color: 'rgba(59, 130, 246, 0.3)'
+                            }, {
+                                offset: 1,
+                                color: 'rgba(59, 130, 246, 0)'
+                            }])
+                        }
+                    }]
+                };
+                
+                chart.setOption(option);
+                window.addEventListener('resize', () => chart.resize());
+            }
+        });
+    </script>
+}

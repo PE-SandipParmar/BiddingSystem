@@ -6,6 +6,9 @@ using BiddingSystem.Data;
 using BiddingSystem.Models;
 using BiddingSystem.ViewModels;
 using System.Security.Claims;
+using BiddingSystem.Data;
+using BiddingSystem.Models;
+using BiddingSystem.ViewModels;
 
 namespace BiddingSystem.Controllers
 {
@@ -214,9 +217,9 @@ namespace BiddingSystem.Controllers
                 return user.Role switch
                 {
                     UserRole.Admin => RedirectToAction("Dashboard", "Admin"),
-                    UserRole.Checker =>  RedirectToAction("Index", "Dashboard"),
+                    UserRole.Checker => RedirectToAction("Index", "Dashboard"),
                     UserRole.Maker => RedirectToAction("Index", "Dashboard"),
-                    _ => RedirectToAction("Index","Dashboard")
+                    _ => RedirectToAction("Index", "Dashboard")
                 };
             }
             catch (Exception ex)

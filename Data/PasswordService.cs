@@ -3,7 +3,6 @@ using BiddingSystem.Models;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Text;
-using BiddingSystem.Data;
 
 namespace BiddingSystem.Data
 {

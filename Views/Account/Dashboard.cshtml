@@ -1,0 +1,201 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@model BiddingSystem.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}@* 
+
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-tachometer-alt mr-3"></i>Welcome, @Model.CurrentUser.FirstName!
+        <span class="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @(Model.CurrentUser.Role == BiddingSystem.Models.UserRole.Admin ? "bg-red-100 text-red-800" : Model.CurrentUser.Role == BiddingSystem.Models.UserRole.Checker ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800")">
+            @Model.CurrentUser.Role.GetDisplayName()
+        </span>
+    </h1>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium">My Profile</p>
+                    <p class="text-2xl font-bold">@Model.CurrentUser.Username</p>
+                </div>
+                <div class="text-blue-200">
+                    <i class="fas fa-user fa-2x"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-blue-100 text-sm">Member since @Model.CurrentUser.CreatedAt.ToString("MMM yyyy")</p>
+            </div>
+        </div>
+        <div class="bg-blue-600 px-6 py-3">
+            <a asp-action="Profile" class="text-white hover:text-blue-100 text-sm font-medium flex items-center">
+                <i class="fas fa-arrow-right mr-1"></i>View Profile
+            </a>
+        </div>
+    </div>
+
+    @if (Model.CurrentUser.Role == BiddingSystem.Models.UserRole.Admin)
+    {
+        <div class="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">Total Users</p>
+                        <p class="text-2xl font-bold">@Model.TotalUsers</p>
+                    </div>
+                    <div class="text-green-200">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-green-100 text-sm">All registered users</p>
+                </div>
+            </div>
+            <div class="bg-green-600 px-6 py-3">
+                <a asp-controller="Admin" asp-action="UserManagement" class="text-white hover:text-green-100 text-sm font-medium flex items-center">
+                    <i class="fas fa-arrow-right mr-1"></i>Manage Users
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg shadow-lg overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-cyan-100 text-sm font-medium">New Users</p>
+                        <p class="text-2xl font-bold">@Model.RecentRegistrations</p>
+                    </div>
+                    <div class="text-cyan-200">
+                        <i class="fas fa-user-plus fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-cyan-100 text-sm">Last 7 days</p>
+                </div>
+            </div>
+            <div class="bg-cyan-600 px-6 py-3">
+                <a asp-controller="Admin" asp-action="CreateUser" class="text-white hover:text-cyan-100 text-sm font-medium flex items-center">
+                    <i class="fas fa-arrow-right mr-1"></i>Create User
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg shadow-lg overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-yellow-100 text-sm font-medium">Admin Panel</p>
+                        <p class="text-2xl font-bold"><i class="fas fa-cog"></i></p>
+                    </div>
+                    <div class="text-yellow-200">
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-yellow-100 text-sm">System management</p>
+                </div>
+            </div>
+            <div class="bg-yellow-600 px-6 py-3">
+                <a asp-controller="Admin" asp-action="Dashboard" class="text-white hover:text-yellow-100 text-sm font-medium flex items-center">
+                    <i class="fas fa-arrow-right mr-1"></i>Admin Dashboard
+                </a>
+            </div>
+        </div>
+    }
+</div>
+
+@if (Model.CurrentUser.Role == BiddingSystem.Models.UserRole.Admin && Model.UsersByRole.Any())
+{
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                    <i class="fas fa-chart-pie mr-2"></i>Users by Role
+                </h3>
+            </div>
+            <div class="p-6">
+                @foreach (var roleCount in Model.UsersByRole)
+                {
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @(roleCount.Key == BiddingSystem.Models.UserRole.Admin ? "bg-red-100 text-red-800" : roleCount.Key == BiddingSystem.Models.UserRole.Checker ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800")">
+                                @roleCount.Key.GetDisplayName()
+                            </span>
+                            <span class="font-bold">@roleCount.Value</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="@(roleCount.Key == BiddingSystem.Models.UserRole.Admin ? "bg-red-500" : roleCount.Key == BiddingSystem.Models.UserRole.Checker ? "bg-blue-500" : "bg-yellow-500") h-2 rounded-full" style="width: @((roleCount.Value * 100.0 / Model.TotalUsers).ToString("F1"))%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                    <i class="fas fa-clock mr-2"></i>Recent Users
+                </h3>
+            </div>
+            <div class="p-6">
+                @if (Model.RecentUsers.Any())
+                {
+                    <div class="space-y-4">
+                        @foreach (var user in Model.RecentUsers.Take(5))
+                        {
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="font-medium text-gray-900">@user.FullName</p>
+                                    <p class="text-sm text-gray-500">@user.Username</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(user.Role == BiddingSystem.Models.UserRole.Admin ? "bg-red-100 text-red-800" : user.Role == BiddingSystem.Models.UserRole.Checker ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800")">
+                                        @user.Role.GetDisplayName()
+                                    </span>
+                                    <p class="text-sm text-gray-500">@user.CreatedAt.ToString("MMM dd")</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-gray-500">No recent users</p>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div class="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+            <i class="fas fa-info-circle mr-2"></i>Quick Actions
+        </h3>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a asp-action="Profile" class="bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 font-medium py-3 px-4 rounded text-center transition duration-200">
+                <i class="fas fa-user-circle mr-2"></i>View Profile
+            </a>
+            <a asp-action="ChangePassword" class="bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-800 font-medium py-3 px-4 rounded text-center transition duration-200">
+                <i class="fas fa-key mr-2"></i>Change Password
+            </a>
+            @if (Model.CurrentUser.Role == BiddingSystem.Models.UserRole.Admin)
+            {
+                <a asp-controller="Admin" asp-action="UserManagement" class="bg-green-50 hover:bg-green-100 border border-green-200 text-green-800 font-medium py-3 px-4 rounded text-center transition duration-200">
+                    <i class="fas fa-users-cog mr-2"></i>Manage Users
+                </a>
+                <a asp-controller="Admin" asp-action="CreateUser" class="bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 text-cyan-800 font-medium py-3 px-4 rounded text-center transition duration-200">
+                    <i class="fas fa-user-plus mr-2"></i>Add User
+                </a>
+            }
+        </div>
+    </div>
+</div> *@
