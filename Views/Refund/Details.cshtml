@@ -1,0 +1,456 @@
+@model BiddingSystem.ViewModels.RefundRequestDetailsViewModel
+@{
+    ViewData["Title"] = "Refund Request Details";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Refund Request Details</h1>
+            <p class="text-muted">View and manage refund request details</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+            @if (Model.CanEdit)
+            {
+                <a href="@Url.Action("Edit", new { id = Model.RefundRequest.Id })" class="btn btn-primary">
+                    <i class="fas fa-edit me-2"></i>Edit
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Refund Request Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Refund Request Information</h6>
+                    <span class="badge @Model.RefundRequest.StatusBadgeClass">@Model.RefundRequest.StatusDisplayName</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Refund ID:</strong></td>
+                                    <td>@Model.RefundRequest.RefundId</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>@Model.RefundRequest.TypeDisplayName</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Reason:</strong></td>
+                                    <td>@Model.RefundRequest.ReasonDisplayName</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Requested Amount:</strong></td>
+                                    <td>@Model.RefundRequest.RequestedAmountDisplay</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Approved Amount:</strong></td>
+                                    <td>@Model.RefundRequest.ApprovedAmountDisplay</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Requested By:</strong></td>
+                                    <td>@Model.RefundRequest.RequestedBy</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Requested At:</strong></td>
+                                    <td>@Model.RefundRequest.RequestedAt.ToString("dd MMM yyyy HH:mm")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Processed By:</strong></td>
+                                    <td>@(Model.RefundRequest.ProcessedByUser?.FullName ?? "N/A")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Processed At:</strong></td>
+                                    <td>@(Model.RefundRequest.ProcessedAt?.ToString("dd MMM yyyy HH:mm") ?? "N/A")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Refund Reference:</strong></td>
+                                    <td>@(Model.RefundRequest.RefundReference ?? "N/A")</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.RefundRequest.Remarks))
+                    {
+                        <div class="mt-3">
+                            <strong>Remarks:</strong>
+                            <p class="mt-1">@Model.RefundRequest.Remarks</p>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.RefundRequest.BankDetails))
+                    {
+                        <div class="mt-3">
+                            <strong>Bank Details:</strong>
+                            <p class="mt-1">@Model.RefundRequest.BankDetails</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Tender Bid Information -->
+            @if (Model.RefundRequest.TenderBid != null)
+            {
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Related Tender Bid</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Bidder Name:</strong></td>
+                                        <td>@Model.RefundRequest.TenderBid.BidderName</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Company:</strong></td>
+                                        <td>@Model.RefundRequest.TenderBid.CompanyName</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Email:</strong></td>
+                                        <td>@Model.RefundRequest.TenderBid.BidderEmail</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td><strong>Bid Amount:</strong></td>
+                                        <td>@Model.RefundRequest.TenderBid.BidAmount.ToString("C")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>EMD Amount:</strong></td>
+                                        <td>@Model.RefundRequest.TenderBid.EmdAmount.ToString("C")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Processing Fee:</strong></td>
+                                        <td>@Model.RefundRequest.TenderBid.ProcessingFee.ToString("C")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total Amount:</strong></td>
+                                        <td>@Model.RefundRequest.TenderBid.TotalAmount.ToString("C")</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Refund Transactions -->
+            @if (Model.Transactions.Any())
+            {
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Refund Transactions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction Reference</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Processed At</th>
+                                        <th>Created By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var transaction in Model.Transactions)
+                                    {
+                                        <tr>
+                                            <td>@transaction.TransactionReference</td>
+                                            <td>@transaction.AmountDisplay</td>
+                                            <td><span class="badge @transaction.StatusBadgeClass">@transaction.StatusDisplayName</span></td>
+                                            <td>@transaction.ProcessedAt.ToString("dd MMM yyyy HH:mm")</td>
+                                            <td>@(transaction.CreatedBy ?? "System")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Action Panel -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Actions</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.CanApprove && Model.RefundRequest.Status == BiddingSystem.Models.RefundStatus.Pending)
+                    {
+                        <button type="button" class="btn btn-success btn-block mb-2" onclick="showApproveModal()">
+                            <i class="fas fa-check me-2"></i>Approve Refund
+                        </button>
+                    }
+
+                    @if (Model.CanReject && Model.RefundRequest.Status == BiddingSystem.Models.RefundStatus.Pending)
+                    {
+                        <button type="button" class="btn btn-danger btn-block mb-2" onclick="showRejectModal()">
+                            <i class="fas fa-times me-2"></i>Reject Refund
+                        </button>
+                    }
+
+                    @if (Model.CanProcess && Model.RefundRequest.Status == BiddingSystem.Models.RefundStatus.Approved)
+                    {
+                        <button type="button" class="btn btn-warning btn-block mb-2" onclick="showProcessModal()">
+                            <i class="fas fa-cog me-2"></i>Process Refund
+                        </button>
+                    }
+
+                    @if (Model.RefundRequest.Status == BiddingSystem.Models.RefundStatus.Processing)
+                    {
+                        <button type="button" class="btn btn-success btn-block mb-2" onclick="showCompleteModal()">
+                            <i class="fas fa-check-circle me-2"></i>Mark as Completed
+                        </button>
+                        <button type="button" class="btn btn-danger btn-block mb-2" onclick="showFailModal()">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Mark as Failed
+                        </button>
+                    }
+
+                    <hr>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-block">
+                        <i class="fas fa-list me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+
+            <!-- Status History -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Status History</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Request Submitted</h6>
+                                <p class="timeline-text">@Model.RefundRequest.RequestedAt.ToString("dd MMM yyyy HH:mm")</p>
+                            </div>
+                        </div>
+
+                        @if (Model.RefundRequest.ProcessedAt.HasValue)
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-success"></div>
+                                <div class="timeline-content">
+                                    <h6 class="timeline-title">@Model.RefundRequest.StatusDisplayName</h6>
+                                    <p class="timeline-text">@Model.RefundRequest.ProcessedAt.Value.ToString("dd MMM yyyy HH:mm")</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Approve Refund Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="@Url.Action("Approve", new { id = Model.RefundRequest.Id })">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="approvedAmount" class="form-label">Approved Amount</label>
+                        <input type="number" class="form-control" id="approvedAmount" name="approvedAmount" 
+                               value="@Model.RefundRequest.RequestedAmount" step="0.01" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="approveRemarks" class="form-label">Remarks (Optional)</label>
+                        <textarea class="form-control" id="approveRemarks" name="remarks" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Approve Refund</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reject Refund Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="@Url.Action("Reject", new { id = Model.RefundRequest.Id })">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="rejectRemarks" class="form-label">Reason for Rejection</label>
+                        <textarea class="form-control" id="rejectRemarks" name="remarks" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Refund</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Process Modal -->
+<div class="modal fade" id="processModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Process Refund Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="@Url.Action("Process", new { id = Model.RefundRequest.Id })">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="refundReference" class="form-label">Refund Reference (Optional)</label>
+                        <input type="text" class="form-control" id="refundReference" name="refundReference">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Process Refund</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Modal -->
+<div class="modal fade" id="completeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complete Refund Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="@Url.Action("Complete", new { id = Model.RefundRequest.Id })">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="completeRemarks" class="form-label">Completion Remarks (Optional)</label>
+                        <textarea class="form-control" id="completeRemarks" name="remarks" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Mark as Completed</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Fail Modal -->
+<div class="modal fade" id="failModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Refund as Failed</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="@Url.Action("Fail", new { id = Model.RefundRequest.Id })">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="failureReason" class="form-label">Failure Reason</label>
+                        <textarea class="form-control" id="failureReason" name="failureReason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Mark as Failed</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showApproveModal() {
+            new bootstrap.Modal(document.getElementById('approveModal')).show();
+        }
+
+        function showRejectModal() {
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }
+
+        function showProcessModal() {
+            new bootstrap.Modal(document.getElementById('processModal')).show();
+        }
+
+        function showCompleteModal() {
+            new bootstrap.Modal(document.getElementById('completeModal')).show();
+        }
+
+        function showFailModal() {
+            new bootstrap.Modal(document.getElementById('failModal')).show();
+        }
+    </script>
+}
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -35px;
+        top: 5px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .timeline-content {
+        background: #f8f9fa;
+        padding: 10px 15px;
+        border-radius: 5px;
+        border-left: 3px solid #007bff;
+    }
+
+    .timeline-title {
+        margin: 0 0 5px 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .timeline-text {
+        margin: 0;
+        font-size: 12px;
+        color: #6c757d;
+    }
+</style>

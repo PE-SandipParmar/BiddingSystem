@@ -1,0 +1,226 @@
+@model BiddingSystem.ViewModels.RefundRequestEditViewModel
+@{
+    ViewData["Title"] = "Edit Refund Request";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Edit Refund Request</h1>
+            <p class="text-muted">Modify refund request details</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Details
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Refund Request Details</h6>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <input asp-for="Id" type="hidden" />
+                        <input asp-for="RefundId" type="hidden" />
+                        <input asp-for="RequestedBy" type="hidden" />
+                        <input asp-for="RequestedAt" type="hidden" />
+
+                        <!-- Read-only Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">Request Information</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <strong>Refund ID:</strong> @Model.RefundId<br>
+                                                <strong>Requested By:</strong> @Model.RequestedBy<br>
+                                                <strong>Requested At:</strong> @Model.RequestedAt.ToString("dd MMM yyyy HH:mm")
+                                            </div>
+                                            <div class="col-md-6">
+                                                @if (Model.TenderBid != null)
+                                                {
+                                                    <strong>Bidder:</strong> @Model.TenderBid.BidderName<br>
+                                                    <strong>Company:</strong> @Model.TenderBid.CompanyName<br>
+                                                    <strong>Total Amount:</strong> @Model.TenderBid.TotalAmount.ToString("C")
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Type" class="form-label">Refund Type</label>
+                                    <select asp-for="Type" class="form-select" asp-items="@(new SelectList(Model.AvailableTypes, "Value", "Text"))">
+                                        <option value="">Select Refund Type</option>
+                                    </select>
+                                    <span asp-validation-for="Type" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Reason" class="form-label">Refund Reason</label>
+                                    <select asp-for="Reason" class="form-select" asp-items="@(new SelectList(Model.AvailableReasons, "Value", "Text"))">
+                                        <option value="">Select Reason</option>
+                                    </select>
+                                    <span asp-validation-for="Reason" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="RequestedAmount" class="form-label">Requested Amount</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input asp-for="RequestedAmount" class="form-control" type="number" step="0.01" min="0" />
+                                    </div>
+                                    <span asp-validation-for="RequestedAmount" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="ApprovedAmount" class="form-label">Approved Amount</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input asp-for="ApprovedAmount" class="form-control" type="number" step="0.01" min="0" />
+                                    </div>
+                                    <span asp-validation-for="ApprovedAmount" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Status" class="form-label">Status</label>
+                                    <select asp-for="Status" class="form-select" asp-items="@(new SelectList(Model.AvailableStatuses, "Value", "Text"))">
+                                        <option value="">Select Status</option>
+                                    </select>
+                                    <span asp-validation-for="Status" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="RefundReference" class="form-label">Refund Reference</label>
+                                    <input asp-for="RefundReference" class="form-control" placeholder="Bank reference or transaction ID" />
+                                    <span asp-validation-for="RefundReference" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Remarks" class="form-label">Remarks</label>
+                            <textarea asp-for="Remarks" class="form-control" rows="3" placeholder="Additional details about the refund request..."></textarea>
+                            <span asp-validation-for="Remarks" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="BankDetails" class="form-label">Bank Details</label>
+                            <textarea asp-for="BankDetails" class="form-control" rows="3" placeholder="Bank account details for refund processing..."></textarea>
+                            <span asp-validation-for="BankDetails" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Action("Details", new { id = Model.Id })" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Refund Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Edit Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary">Status Guidelines:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Pending:</strong> Awaiting review</li>
+                        <li><strong>Approved:</strong> Ready for processing</li>
+                        <li><strong>Processing:</strong> Currently being processed</li>
+                        <li><strong>Completed:</strong> Successfully processed</li>
+                        <li><strong>Rejected:</strong> Request denied</li>
+                        <li><strong>Failed:</strong> Processing failed</li>
+                    </ul>
+
+                    <h6 class="text-primary mt-3">Amount Guidelines:</h6>
+                    <ul class="list-unstyled">
+                        <li>• Approved amount cannot exceed requested amount</li>
+                        <li>• Set approved amount to 0 for rejection</li>
+                        <li>• Leave approved amount empty for pending status</li>
+                    </ul>
+
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> Changes to approved amounts and status will trigger notifications to the requester.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-calculate amount based on refund type
+        document.getElementById('Type').addEventListener('change', function() {
+            const refundType = this.value;
+            const requestedAmountInput = document.getElementById('RequestedAmount');
+            
+            @if (Model.TenderBid != null)
+            {
+                <text>
+                switch(refundType) {
+                    case '1': // Full
+                        requestedAmountInput.value = @Model.TenderBid.TotalAmount;
+                        break;
+                    case '3': // Processing Fee
+                        requestedAmountInput.value = @Model.TenderBid.ProcessingFee;
+                        break;
+                    case '4': // EMD
+                        requestedAmountInput.value = @Model.TenderBid.EmdAmount;
+                        break;
+                    case '5': // SD
+                        requestedAmountInput.value = @Model.TenderBid.EmdAmount; // Assuming SD is same as EMD for now
+                        break;
+                    default:
+                        // Keep current value
+                        break;
+                }
+                </text>
+            }
+        });
+
+        // Status change validation
+        document.getElementById('Status').addEventListener('change', function() {
+            const status = this.value;
+            const approvedAmountInput = document.getElementById('ApprovedAmount');
+            const requestedAmountInput = document.getElementById('RequestedAmount');
+            
+            if (status === '2') { // Approved
+                if (!approvedAmountInput.value) {
+                    approvedAmountInput.value = requestedAmountInput.value;
+                }
+            } else if (status === '5') { // Rejected
+                approvedAmountInput.value = '0';
+            }
+        });
+    </script>
+}

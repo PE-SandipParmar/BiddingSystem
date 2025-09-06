@@ -1,0 +1,242 @@
+@model BiddingSystem.ViewModels.RefundRequestListViewModel
+@{
+    ViewData["Title"] = "My Refund Requests";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">My Refund Requests</h1>
+            <p class="text-muted">View and track your refund requests</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Create")" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Refund Request
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Requests</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalCount</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@(Model.StatusCounts.GetValueOrDefault(BiddingSystem.Models.RefundStatus.Pending, 0))</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Completed</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@(Model.StatusCounts.GetValueOrDefault(BiddingSystem.Models.RefundStatus.Completed, 0))</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Processing</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@(Model.StatusCounts.GetValueOrDefault(BiddingSystem.Models.RefundStatus.Processing, 0))</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-cog fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refund Requests Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">My Refund Requests</h6>
+            <div>
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-primary">All Refunds</a>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (Model.RefundRequests.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="refundTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Refund ID</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Requested Date</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var refund in Model.RefundRequests)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="@Url.Action("Details", new { id = refund.Id })" class="text-decoration-none">
+                                            @refund.RefundId
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@refund.TypeDisplayName</span>
+                                    </td>
+                                    <td>
+                                        <strong>@refund.RequestedAmountDisplay</strong>
+                                        @if (refund.ApprovedAmount.HasValue && refund.ApprovedAmount != refund.RequestedAmount)
+                                        {
+                                            <br><small class="text-muted">Approved: @refund.ApprovedAmountDisplay</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @refund.StatusBadgeClass">@refund.StatusDisplayName</span>
+                                    </td>
+                                    <td>@refund.RequestedAt.ToString("dd MMM yyyy")</td>
+                                    <td>@(refund.ProcessedAt?.ToString("dd MMM yyyy") ?? "N/A")</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="@Url.Action("Details", new { id = refund.Id })" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            @if (refund.Status == BiddingSystem.Models.RefundStatus.Pending)
+                                            {
+                                                <a href="@Url.Action("Edit", new { id = refund.Id })" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="Refund requests pagination">
+                        <ul class="pagination justify-content-center">
+                            @if (Model.Page > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("MyRefunds", new { page = Model.Page - 1 })">Previous</a>
+                                </li>
+                            }
+
+                            @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+                            {
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("MyRefunds", new { page = i })">@i</a>
+                                </li>
+                            }
+
+                            @if (Model.Page < Model.TotalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("MyRefunds", new { page = Model.Page + 1 })">Next</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="text-center py-4">
+                    <i class="fas fa-file-invoice fa-3x text-gray-300 mb-3"></i>
+                    <h5 class="text-gray-600">No refund requests found</h5>
+                    <p class="text-muted">You haven't submitted any refund requests yet.</p>
+                    <a href="@Url.Action("Create")" class="btn btn-primary">Create New Refund Request</a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Status Legend -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Status Legend</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-yellow-100 text-yellow-800 me-2">Pending</span>
+                        <small class="text-muted">Awaiting review by administrators</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-green-100 text-green-800 me-2">Approved</span>
+                        <small class="text-muted">Approved and ready for processing</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-blue-100 text-blue-800 me-2">Processing</span>
+                        <small class="text-muted">Currently being processed</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-green-100 text-green-800 me-2">Completed</span>
+                        <small class="text-muted">Successfully processed and completed</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-red-100 text-red-800 me-2">Rejected</span>
+                        <small class="text-muted">Request has been rejected</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-red-100 text-red-800 me-2">Failed</span>
+                        <small class="text-muted">Processing failed due to technical issues</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh page every 30 seconds to show status updates
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    </script>
+}
