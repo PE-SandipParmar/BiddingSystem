@@ -100,25 +100,25 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// Add global exception handling middleware
-app.UseMiddleware<GlobalExceptionMiddleware>();
+//// Add global exception handling middleware
+//app.UseMiddleware<GlobalExceptionMiddleware>();
 
-// Add rate limiting middleware
-app.UseMiddleware<RateLimitingMiddleware>();
+//// Add rate limiting middleware
+//app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseRouting();
 
 // Security headers
-app.Use(async (context, next) =>
-{
-    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-    context.Response.Headers.Add("X-Frame-Options", "DENY");
-    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
-    context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
-    context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'");
-    context.Response.Headers.Add("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
-    await next();
-});
+//app.Use(async (context, next) =>
+//{
+//    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+//    context.Response.Headers.Add("X-Frame-Options", "DENY");
+//    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+//    context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+//        context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss: http: https:;");
+//    context.Response.Headers.Add("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+//    await next();
+//});
 
 app.UseAuthentication();
 app.UseAuthorization();

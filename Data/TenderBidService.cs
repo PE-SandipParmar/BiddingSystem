@@ -258,10 +258,10 @@ namespace BiddingSystem.Data
                 }
 
                 // Validate EMD amount is reasonable (typically 1-5% of bid amount)
-                if (bid.EmdAmount > bid.BidAmount * 0.1m) // More than 10% of bid amount
-                {
-                    return false;
-                }
+                //if (bid.EmdAmount > bid.BidAmount * 0.1m) // More than 10% of bid amount
+                //{
+                //    return false;
+                //}
 
                 // Validate required fields
                 if (string.IsNullOrWhiteSpace(bid.BidderName) ||

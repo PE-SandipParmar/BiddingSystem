@@ -229,6 +229,13 @@ namespace BiddingSystem.Data
         public async Task<TenderBid> CreateBidAsync(TenderBid bid)
         {
             using var connection = CreateConnection();
+            
+            // Ensure Status and PaymentStatus are properly set as strings
+            bid.Status = bid.Status ?? "Submitted";
+            bid.PaymentStatus = bid.PaymentStatus ?? "Pending";
+            bid.CreatedAt = DateTime.UtcNow;
+            bid.SubmittedAt = DateTime.UtcNow;
+            
             const string sql = @"
                 INSERT INTO TenderBids 
                 (TenderId, BidderName, BidderEmail, BidderPhone, CompanyName, CompanyAddress, 
@@ -240,9 +247,18 @@ namespace BiddingSystem.Data
                  @PaymentReference, @PaymentDate, @SubmittedAt, @IsActive, @CreatedAt, @Remarks);
                 SELECT CAST(SCOPE_IDENTITY() as int);";
 
-            var id = await connection.QuerySingleAsync<int>(sql, bid);
-            bid.Id = id;
-            return bid;
+            try
+            {
+                var id = await connection.QuerySingleAsync<int>(sql, bid);
+                bid.Id = id;
+                return bid;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating tender bid. Status: {Status}, PaymentStatus: {PaymentStatus}", 
+                    bid.Status, bid.PaymentStatus);
+                throw;
+            }
         }
 
         public async Task<TenderBid> UpdateBidAsync(TenderBid bid)

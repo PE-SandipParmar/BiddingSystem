@@ -136,7 +136,7 @@ namespace BiddingSystem.Data
             if (!string.IsNullOrEmpty(eventType))
             {
                 whereClause += " AND EventType = @EventType";
-                parameters = new { From = from, To = to, EventType = eventType };
+                //parameters = new { From = from, To = to, EventType = eventType };
             }
 
             var sql = $@"

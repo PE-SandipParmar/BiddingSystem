@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Text;
 using BiddingSystem.Models;
+using Microsoft.Extensions.Options;
 
 namespace BiddingSystem.Data
 {

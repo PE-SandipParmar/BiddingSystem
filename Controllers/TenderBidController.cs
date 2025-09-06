@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using BiddingSystem.Data;
 using BiddingSystem.Models;
 using BiddingSystem.ViewModels;
+using System.Security.Claims;
 
 namespace BiddingSystem.Controllers
 {
@@ -196,7 +197,7 @@ namespace BiddingSystem.Controllers
                 await _tenderBidService.CreateBidAsync(bid);
 
                 // Log successful bid creation
-                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 await _securityAudit.LogUserActionAsync(new UserAction
                 {
                     UserId = userId,
@@ -423,7 +424,7 @@ namespace BiddingSystem.Controllers
                 var document = await _tenderBidService.AddBidDocumentAsync(bidId, file, documentType);
                 
                 // Log file upload
-                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 await _securityAudit.LogFileUploadAsync(userId, file.FileName, document.FilePath, true);
                 
                 TempData["SuccessMessage"] = "Document uploaded successfully.";
@@ -434,7 +435,7 @@ namespace BiddingSystem.Controllers
                 TempData["ErrorMessage"] = ex.Message;
                 
                 // Log failed file upload
-                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 await _securityAudit.LogFileUploadAsync(userId, file?.FileName ?? "unknown", "", false);
                 
                 return RedirectToAction(nameof(Details), new { id = bidId });
@@ -445,7 +446,7 @@ namespace BiddingSystem.Controllers
                 TempData["ErrorMessage"] = "An error occurred while uploading the document.";
                 
                 // Log failed file upload
-                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 await _securityAudit.LogFileUploadAsync(userId, file?.FileName ?? "unknown", "", false);
                 
                 return RedirectToAction(nameof(Details), new { id = bidId });
