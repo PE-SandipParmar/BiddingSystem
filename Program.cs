@@ -16,11 +16,13 @@ builder.Services.AddScoped<ITenderRepository, TenderRepository>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IEMDSDRepository, EMDSDRepository>();
 builder.Services.AddScoped<ITenderBidRepository, TenderBidRepository>();
+builder.Services.AddScoped<IRefundRepository, RefundRepository>();
 
 // Register services
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEMDSDService, EMDSDService>();
 builder.Services.AddScoped<ITenderBidService, TenderBidService>();
+builder.Services.AddScoped<IRefundService, RefundService>();
 
 // Configure options
 builder.Services.Configure<PasswordOptions>(

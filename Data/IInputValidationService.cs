@@ -4,15 +4,15 @@ namespace BiddingSystem.Data
 {
     public interface IInputValidationService
     {
-        ValidationResult ValidateInput(string input, InputType type);
-        ValidationResult SanitizeHtml(string html);
-        ValidationResult ValidateFileUpload(IFormFile file, FileUploadType type);
-        ValidationResult ValidateEmail(string email);
-        ValidationResult ValidatePhoneNumber(string phone);
-        ValidationResult ValidateAmount(decimal amount, decimal? minAmount = null, decimal? maxAmount = null);
-        ValidationResult ValidateTenderId(string tenderId);
-        ValidationResult ValidateCompanyName(string companyName);
-        ValidationResult ValidateBidderName(string bidderName);
+        InputValidationResult ValidateInput(string input, InputType type);
+        InputValidationResult SanitizeHtml(string html);
+        InputValidationResult ValidateFileUpload(IFormFile file, FileUploadType type);
+        InputValidationResult ValidateEmail(string email);
+        InputValidationResult ValidatePhoneNumber(string phone);
+        InputValidationResult ValidateAmount(decimal amount, decimal? minAmount = null, decimal? maxAmount = null);
+        InputValidationResult ValidateTenderId(string tenderId);
+        InputValidationResult ValidateCompanyName(string companyName);
+        InputValidationResult ValidateBidderName(string bidderName);
     }
 
     public enum InputType
@@ -35,21 +35,21 @@ namespace BiddingSystem.Data
         Any
     }
 
-    public class ValidationResult
+    public class InputValidationResult
     {
         public bool IsValid { get; set; }
         public string? SanitizedValue { get; set; }
         public List<string> Errors { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
 
-        public static ValidationResult Success(string? sanitizedValue = null)
+        public static InputValidationResult Success(string? sanitizedValue = null)
         {
-            return new ValidationResult { IsValid = true, SanitizedValue = sanitizedValue };
+            return new InputValidationResult { IsValid = true, SanitizedValue = sanitizedValue };
         }
 
-        public static ValidationResult Failure(params string[] errors)
+        public static InputValidationResult Failure(params string[] errors)
         {
-            return new ValidationResult { IsValid = false, Errors = errors.ToList() };
+            return new InputValidationResult { IsValid = false, Errors = errors.ToList() };
         }
     }
 }

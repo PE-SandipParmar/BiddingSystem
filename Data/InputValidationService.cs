@@ -32,11 +32,11 @@ namespace BiddingSystem.Data
             _securityOptions = securityOptions.Value;
         }
 
-        public ValidationResult ValidateInput(string input, InputType type)
+        public InputValidationResult ValidateInput(string input, InputType type)
         {
             if (string.IsNullOrWhiteSpace(input))
             {
-                return ValidationResult.Failure("Input cannot be empty");
+                return InputValidationResult.Failure("Input cannot be empty");
             }
 
             // Check for dangerous patterns first
@@ -55,14 +55,14 @@ namespace BiddingSystem.Data
                 InputType.BidderName => ValidateBidderName(sanitized),
                 InputType.Description => ValidateDescription(sanitized),
                 InputType.Remarks => ValidateRemarks(sanitized),
-                _ => ValidationResult.Success(sanitized)
+                _ => InputValidationResult.Success(sanitized)
             };
         }
 
-        public ValidationResult SanitizeHtml(string html)
+        public InputValidationResult SanitizeHtml(string html)
         {
             if (string.IsNullOrWhiteSpace(html))
-                return ValidationResult.Success("");
+                return InputValidationResult.Success("");
 
             var sanitized = html;
             
@@ -78,13 +78,13 @@ namespace BiddingSystem.Data
             // Decode HTML entities
             sanitized = System.Net.WebUtility.HtmlDecode(sanitized);
 
-            return ValidationResult.Success(sanitized);
+            return InputValidationResult.Success(sanitized);
         }
 
-        public ValidationResult ValidateFileUpload(IFormFile file, FileUploadType type)
+        public InputValidationResult ValidateFileUpload(IFormFile file, FileUploadType type)
         {
             if (file == null || file.Length == 0)
-                return ValidationResult.Failure("No file provided");
+                return InputValidationResult.Failure("No file provided");
 
             var errors = new List<string>();
 
@@ -116,123 +116,123 @@ namespace BiddingSystem.Data
             if (errors.Any())
             {
                 _logger.LogWarning("File upload validation failed for {FileName}: {Errors}", file.FileName, string.Join(", ", errors));
-                return ValidationResult.Failure(errors.ToArray());
+                return InputValidationResult.Failure(errors.ToArray());
             }
 
-            return ValidationResult.Success();
+            return InputValidationResult.Success();
         }
 
-        public ValidationResult ValidateEmail(string email)
+        public InputValidationResult ValidateEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
-                return ValidationResult.Failure("Email is required");
+                return InputValidationResult.Failure("Email is required");
 
             email = email.Trim().ToLower();
 
             if (!EmailRegex.IsMatch(email))
-                return ValidationResult.Failure("Invalid email format");
+                return InputValidationResult.Failure("Invalid email format");
 
             if (email.Length > 254)
-                return ValidationResult.Failure("Email is too long");
+                return InputValidationResult.Failure("Email is too long");
 
-            return ValidationResult.Success(email);
+            return InputValidationResult.Success(email);
         }
 
-        public ValidationResult ValidatePhoneNumber(string phone)
+        public InputValidationResult ValidatePhoneNumber(string phone)
         {
             if (string.IsNullOrWhiteSpace(phone))
-                return ValidationResult.Failure("Phone number is required");
+                return InputValidationResult.Failure("Phone number is required");
 
             phone = phone.Trim();
 
             if (!PhoneRegex.IsMatch(phone))
-                return ValidationResult.Failure("Invalid phone number format");
+                return InputValidationResult.Failure("Invalid phone number format");
 
             if (phone.Length < 10 || phone.Length > 15)
-                return ValidationResult.Failure("Phone number must be between 10 and 15 digits");
+                return InputValidationResult.Failure("Phone number must be between 10 and 15 digits");
 
-            return ValidationResult.Success(phone);
+            return InputValidationResult.Success(phone);
         }
 
-        public ValidationResult ValidateAmount(decimal amount, decimal? minAmount = null, decimal? maxAmount = null)
+        public InputValidationResult ValidateAmount(decimal amount, decimal? minAmount = null, decimal? maxAmount = null)
         {
             if (amount < 0)
-                return ValidationResult.Failure("Amount cannot be negative");
+                return InputValidationResult.Failure("Amount cannot be negative");
 
             if (minAmount.HasValue && amount < minAmount.Value)
-                return ValidationResult.Failure($"Amount must be at least {minAmount:C}");
+                return InputValidationResult.Failure($"Amount must be at least {minAmount:C}");
 
             if (maxAmount.HasValue && amount > maxAmount.Value)
-                return ValidationResult.Failure($"Amount cannot exceed {maxAmount:C}");
+                return InputValidationResult.Failure($"Amount cannot exceed {maxAmount:C}");
 
-            return ValidationResult.Success();
+            return InputValidationResult.Success();
         }
 
-        public ValidationResult ValidateTenderId(string tenderId)
+        public InputValidationResult ValidateTenderId(string tenderId)
         {
             if (string.IsNullOrWhiteSpace(tenderId))
-                return ValidationResult.Failure("Tender ID is required");
+                return InputValidationResult.Failure("Tender ID is required");
 
             tenderId = tenderId.Trim().ToUpper();
 
             if (!TenderIdRegex.IsMatch(tenderId))
-                return ValidationResult.Failure("Invalid tender ID format. Use only letters, numbers, hyphens, and underscores");
+                return InputValidationResult.Failure("Invalid tender ID format. Use only letters, numbers, hyphens, and underscores");
 
-            return ValidationResult.Success(tenderId);
+            return InputValidationResult.Success(tenderId);
         }
 
-        public ValidationResult ValidateCompanyName(string companyName)
+        public InputValidationResult ValidateCompanyName(string companyName)
         {
             if (string.IsNullOrWhiteSpace(companyName))
-                return ValidationResult.Failure("Company name is required");
+                return InputValidationResult.Failure("Company name is required");
 
             companyName = companyName.Trim();
 
             if (!CompanyNameRegex.IsMatch(companyName))
-                return ValidationResult.Failure("Invalid company name format");
+                return InputValidationResult.Failure("Invalid company name format");
 
             if (companyName.Length < 2 || companyName.Length > 100)
-                return ValidationResult.Failure("Company name must be between 2 and 100 characters");
+                return InputValidationResult.Failure("Company name must be between 2 and 100 characters");
 
-            return ValidationResult.Success(companyName);
+            return InputValidationResult.Success(companyName);
         }
 
-        public ValidationResult ValidateBidderName(string bidderName)
+        public InputValidationResult ValidateBidderName(string bidderName)
         {
             if (string.IsNullOrWhiteSpace(bidderName))
-                return ValidationResult.Failure("Bidder name is required");
+                return InputValidationResult.Failure("Bidder name is required");
 
             bidderName = bidderName.Trim();
 
             if (!BidderNameRegex.IsMatch(bidderName))
-                return ValidationResult.Failure("Invalid bidder name format. Use only letters and spaces");
+                return InputValidationResult.Failure("Invalid bidder name format. Use only letters and spaces");
 
             if (bidderName.Length < 2 || bidderName.Length > 50)
-                return ValidationResult.Failure("Bidder name must be between 2 and 50 characters");
+                return InputValidationResult.Failure("Bidder name must be between 2 and 50 characters");
 
-            return ValidationResult.Success(bidderName);
+            return InputValidationResult.Success(bidderName);
         }
 
-        private ValidationResult ValidateDescription(string description)
+        private InputValidationResult ValidateDescription(string description)
         {
             if (string.IsNullOrWhiteSpace(description))
-                return ValidationResult.Failure("Description is required");
+                return InputValidationResult.Failure("Description is required");
 
             if (description.Length > 1000)
-                return ValidationResult.Failure("Description cannot exceed 1000 characters");
+                return InputValidationResult.Failure("Description cannot exceed 1000 characters");
 
-            return ValidationResult.Success(description.Trim());
+            return InputValidationResult.Success(description.Trim());
         }
 
-        private ValidationResult ValidateRemarks(string remarks)
+        private InputValidationResult ValidateRemarks(string remarks)
         {
             if (string.IsNullOrWhiteSpace(remarks))
-                return ValidationResult.Success("");
+                return InputValidationResult.Success("");
 
             if (remarks.Length > 500)
-                return ValidationResult.Failure("Remarks cannot exceed 500 characters");
+                return InputValidationResult.Failure("Remarks cannot exceed 500 characters");
 
-            return ValidationResult.Success(remarks.Trim());
+            return InputValidationResult.Success(remarks.Trim());
         }
 
         private string SanitizeInput(string input)

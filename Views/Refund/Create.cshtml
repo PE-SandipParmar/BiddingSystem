@@ -1,0 +1,222 @@
+@model BiddingSystem.ViewModels.RefundRequestCreateViewModel
+@{
+    ViewData["Title"] = "Create Refund Request";
+}
+
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Create Refund Request</h1>
+            <p class="text-gray-600 mt-1">Submit a new refund request</p>
+        </div>
+        <div>
+            <a href="@Url.Action("Index")" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg inline-flex items-center transition-colors">
+                <i class="ri-arrow-left-line mr-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <form asp-action="Create" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6"></div>
+
+                    <input asp-for="TenderBidId" type="hidden" />
+                    <input asp-for="PaymentLinkId" type="hidden" />
+
+                    <!-- Tender Bid Information -->
+                    @if (Model.TenderBid != null)
+                    {
+                        <div class="mb-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Tender Bid Information</h3>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Bidder Name</label>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.BidderName</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Company</label>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.CompanyName</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Email</label>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.BidderEmail</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Phone</label>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.BidderPhone</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Bid Amount</label>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.BidAmount.ToString("C")</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">EMD Amount</label>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.EmdAmount.ToString("C")</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Processing Fee</label>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.ProcessingFee.ToString("C")</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Total Amount</label>
+                                        <p class="mt-1 text-sm font-bold text-gray-900">@Model.TenderBid.TotalAmount.ToString("C")</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Refund Details -->
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-medium text-gray-900">Refund Details</h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label asp-for="Type" class="block text-sm font-medium text-gray-700 mb-1">Refund Type</label>
+                                <select asp-for="Type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Select Refund Type</option>
+                                    @foreach (var type in Model.AvailableTypes)
+                                    {
+                                        <option value="@type">@type.GetDisplayName()</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Type" class="text-red-600 text-sm"></span>
+                            </div>
+
+                            <div>
+                                <label asp-for="Reason" class="block text-sm font-medium text-gray-700 mb-1">Refund Reason</label>
+                                <select asp-for="Reason" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Select Reason</option>
+                                    @foreach (var reason in Model.AvailableReasons)
+                                    {
+                                        <option value="@reason">@reason.GetDisplayName()</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Reason" class="text-red-600 text-sm"></span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label asp-for="RequestedAmount" class="block text-sm font-medium text-gray-700 mb-1">Requested Amount</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">₹</span>
+                                </div>
+                                <input asp-for="RequestedAmount" type="number" step="0.01" min="0" 
+                                       class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                       placeholder="0.00" required />
+                            </div>
+                            <span asp-validation-for="RequestedAmount" class="text-red-600 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="Remarks" class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                            <textarea asp-for="Remarks" rows="3" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                      placeholder="Please provide details about the refund request..."></textarea>
+                            <span asp-validation-for="Remarks" class="text-red-600 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="BankDetails" class="block text-sm font-medium text-gray-700 mb-1">Bank Details</label>
+                            <textarea asp-for="BankDetails" rows="3" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                      placeholder="Bank account details for refund processing..."></textarea>
+                            <span asp-validation-for="BankDetails" class="text-red-600 text-sm"></span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 mt-8">
+                        <a href="@Url.Action("Index")" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg transition-colors">
+                            Cancel
+                        </a>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                            <i class="ri-save-line mr-2"></i>Submit Refund Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Refund Guidelines</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium text-gray-900">Refund Types:</h4>
+                        <ul class="mt-2 text-sm text-gray-600 space-y-1">
+                            <li>• <strong>Full:</strong> Complete refund of all amounts</li>
+                            <li>• <strong>Partial:</strong> Partial refund of specific amount</li>
+                            <li>• <strong>Processing Fee:</strong> Refund of processing fee only</li>
+                            <li>• <strong>EMD:</strong> Refund of Earnest Money Deposit</li>
+                            <li>• <strong>SD:</strong> Refund of Security Deposit</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="font-medium text-gray-900">Common Reasons:</h4>
+                        <ul class="mt-2 text-sm text-gray-600 space-y-1">
+                            <li>• Bid rejected due to technical issues</li>
+                            <li>• Bid withdrawn before evaluation</li>
+                            <li>• Tender cancelled by department</li>
+                            <li>• Payment processing errors</li>
+                            <li>• Duplicate payments</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex">
+                            <i class="ri-information-line text-yellow-400 mr-2 mt-0.5"></i>
+                            <div>
+                                <h4 class="font-medium text-yellow-800">Important Note</h4>
+                                <p class="text-sm text-yellow-700 mt-1">
+                                    Refund requests are subject to approval and may take 5-10 business days to process.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-calculate amount based on refund type
+        document.getElementById('Type').addEventListener('change', function() {
+            const refundType = this.value;
+            const requestedAmountInput = document.getElementById('RequestedAmount');
+            
+            @if (Model.TenderBid != null)
+            {
+                <text>
+                switch(refundType) {
+                    case '1': // Full
+                        requestedAmountInput.value = @Model.TenderBid.TotalAmount;
+                        break;
+                    case '3': // Processing Fee
+                        requestedAmountInput.value = @Model.TenderBid.ProcessingFee;
+                        break;
+                    case '4': // EMD
+                        requestedAmountInput.value = @Model.TenderBid.EmdAmount;
+                        break;
+                    case '5': // SD
+                        requestedAmountInput.value = @Model.TenderBid.EmdAmount; // Assuming SD is same as EMD for now
+                        break;
+                    default:
+                        // Keep current value
+                        break;
+                }
+                </text>
+            }
+        });
+    </script>
+}

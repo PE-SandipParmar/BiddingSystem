@@ -245,6 +245,26 @@
                         <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Financial</span>
                     </div>
 
+                    @if (User.IsInRole("Admin") || User.IsInRole("Maker") || User.IsInRole("Checker"))
+                    {
+                        <a asp-controller="Refund" asp-action="Index"
+                           class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                           data-nav="refund-management">
+                            <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="ri-refund-2-line"></i>
+                            </div>
+                            <span class="sidebar-text">Refund Management</span>
+                        </a>
+                     @*    <a asp-controller="Refund" asp-action="MyRefunds"
+                           class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                           data-nav="my-refunds">
+                            <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="ri-file-list-3-line"></i>
+                            </div>
+                            <span class="sidebar-text">My Refunds</span>
+                        </a> *@
+                    }
+
                   
 
                     @if (User.IsInRole("Admin") || User.IsInRole("Maker") || User.IsInRole("Checker"))
@@ -683,6 +703,13 @@
                 'tenderbid-create': 'tender-bid-management',
                 'tenderbid-details': 'tender-bid-management',
                 'tenderbid-edit': 'tender-bid-management',
+
+                // Refund Management mappings
+                'refund-index': 'refund-management',
+                'refund-create': 'refund-management',
+                'refund-details': 'refund-management',
+                'refund-edit': 'refund-management',
+                'refund-myrefunds': 'my-refunds',
 
                 // Finance mappings
                 'finance-income': 'income-tracking',
