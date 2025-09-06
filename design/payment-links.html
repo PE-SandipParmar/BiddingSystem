@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Links - Tender Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#0c4678',secondary:'#0ea5e9'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+        .table-row {
+            transition: all 0.2s ease;
+        }
+        .table-row:hover {
+            background-color: #f8fafc;
+        }
+        .sortable-header {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .sortable-header:hover {
+            background-color: #f1f5f9;
+        }
+        .sortable-header.active {
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
+        .status-badge {
+            transition: all 0.2s ease;
+        }
+        .status-badge:hover {
+            transform: scale(1.05);
+        }
+        .action-button {
+            transition: all 0.2s ease;
+        }
+        .action-button:hover {
+            transform: translateY(-1px);
+        }
+        .tooltip {
+            position: absolute;
+            z-index: 10;
+            background: #1f2937;
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .tooltip.show {
+            opacity: 1;
+        }
+        .copy-success {
+            animation: copyPulse 0.6s ease;
+        }
+        @keyframes copyPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-lg hidden lg:block">
+            <div class="p-6">
+                <img src="assets/img/FSSAI_Logo.png" alt="Logo" class="w-32 h-auto mx-auto">
+            </div>
+            <nav class="mt-6">
+                <div class="px-4 py-2">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Main</p>
+                </div>
+                <a href="Dashboard.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-dashboard-line"></i>
+                    </div>
+                    <span>Dashboard</span>
+                </a>
+                <div class="px-4 py-2 mt-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tender Management</p>
+                </div>
+                <a href="manage-tenders.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-file-list-line"></i>
+                    </div>
+                    <span>Manage Tenders</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary bg-gray-100 text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-bank-card-line"></i>
+                    </div>
+                    <span>Payment Links</span>
+                </a>
+                <a href="emd-sd-management.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-secure-payment-line"></i>
+                    </div>
+                    <span>EMD/SD Management</span>
+                </a>
+                <a href="refund-management.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-refund-2-line"></i>
+                    </div>
+                    <span>Refund Management</span>
+                </a>
+                <div class="px-4 py-2 mt-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Reports</p>
+                </div>
+                <a href="mis-reports.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-bar-chart-line"></i>
+                    </div>
+                    <span>MIS Reports</span>
+                </a>
+                <div class="px-4 py-2 mt-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Settings</p>
+                </div>
+                <a href="#" id="logoutLink" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-logout-box-r-line"></i>
+                    </div>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Header -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div class="flex items-center">
+                        <button class="lg:hidden mr-4 text-gray-500">
+                            <div class="w-6 h-6 flex items-center justify-center">
+                                <i class="ri-menu-line text-xl"></i>
+                            </div>
+                        </button>
+                        <div class="flex items-center">
+                            <a href="Dashboard.html" class="flex items-center text-gray-500 hover:text-primary mr-4">
+                                <div class="w-6 h-6 flex items-center justify-center">
+                                    <i class="ri-arrow-left-line"></i>
+                                </div>
+                                <span class="ml-1 text-sm">Back</span>
+                            </a>
+                            <div>
+                                <h1 class="text-xl font-semibold text-gray-800">Payment Links</h1>
+                                <p class="text-sm text-gray-500">Dashboard / Payment Links</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 cursor-pointer">
+                                <i class="ri-notification-3-line"></i>
+                            </div>
+                            <span class="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">3</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mr-2">
+                                <span class="font-medium">GB</span>
+                            </div>
+                            <div class="hidden md:block">
+                                <p class="text-sm font-medium text-gray-700">Gaganpreet Bhatia</p>
+                                <p class="text-xs text-gray-500">Administrator</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+                <!-- Header Section -->
+                <div class="bg-white rounded shadow mb-6">
+                    <div class="p-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800">Payment Links</h2>
+                                <p class="text-sm text-gray-500">Manage and track payment links for tender submissions</p>
+                            </div>
+                            <div>
+                                <button type="button" id="generatePaymentLinkBtn" class="flex items-center px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-base font-medium"><i class="ri-link-m mr-2"></i> Generate Payment Link</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Links Table -->
+                <div class="bg-white rounded shadow overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left">
+                                        <button class="sortable-header flex items-center text-sm font-semibold text-gray-500  tracking-wider hover:text-gray-700">
+                                            Link ID
+                                            <i class="ri-arrow-up-down-line ml-1"></i>
+                                        </button>
+                                    </th>
+                                    <th class="px-6 py-3 text-left">
+                                        <button class="sortable-header flex items-center text-sm font-semibold text-gray-500  tracking-wider hover:text-gray-700">
+                                            Tender Details
+                                            <i class="ri-arrow-up-down-line ml-1"></i>
+                                        </button>
+                                    </th>
+                                    <th class="px-6 py-3 text-left">
+                                        <button class="sortable-header flex items-center text-sm font-semibold text-gray-500  tracking-wider hover:text-gray-700">
+                                            Amount
+                                            <i class="ri-arrow-up-down-line ml-1"></i>
+                                        </button>
+                                    </th>
+                                    <th class="px-6 py-3 text-left">
+                                        <button class="sortable-header flex items-center text-sm font-semibold text-gray-500  tracking-wider hover:text-gray-700">
+                                            Status
+                                            <i class="ri-arrow-up-down-line ml-1"></i>
+                                        </button>
+                                    </th>
+                                    <th class="px-6 py-3 text-left">
+                                        <button class="sortable-header flex items-center text-sm font-semibold text-gray-500  tracking-wider hover:text-gray-700">
+                                            Expiry Date
+                                            <i class="ri-arrow-up-down-line ml-1"></i>
+                                        </button>
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr class="table-row">
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-800">PL-2025-0721</td>
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-800">Supply of Laboratory Equipment</p>
+                                            <p class="text-xs text-gray-500">TN-2025-0721</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-800">₹ 250,000</td>
+                                    <td class="px-6 py-4">
+                                        <span class="status-badge px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">Jul 15, 2025</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-2">
+                                            <button class="action-button copy-link text-gray-500 hover:text-primary" data-link="https://pay.example.com/pl-2025-0721" title="Copy Link">
+                                                <i class="ri-link-m"></i>
+                                          </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="Edit Link">
+                                                <i class="ri-edit-line"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="Deactivate Link">
+                                                <i class="ri-lock-line"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="table-row">
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-800">PL-2025-0719</td>
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-800">Construction of Food Testing Lab</p>
+                                            <p class="text-xs text-gray-500">TN-2025-0719</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-800">₹ 120,000</td>
+                                    <td class="px-6 py-4">
+                                        <span class="status-badge px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Used</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">Jul 20, 2025</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-2">
+                                            <button class="action-button copy-link text-gray-500 hover:text-primary" data-link="https://pay.example.com/pl-2025-0719" title="Copy Link">
+                                                <i class="ri-link-m"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="Edit Link">
+                                                <i class="ri-edit-line"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="Deactivate Link">
+                                                <i class="ri-lock-line"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="table-row">
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-800">PL-2025-0715</td>
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-800">IT Infrastructure Upgrade</p>
+                                            <p class="text-xs text-gray-500">TN-2025-0715</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-800">₹ 500,000</td>
+                                    <td class="px-6 py-4">
+                                        <span class="status-badge px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Expired</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">Jul 10, 2025</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-2">
+                                            <button class="action-button copy-link text-gray-500 hover:text-primary" data-link="https://pay.example.com/pl-2025-0715" title="Copy Link">
+                                                <i class="ri-link-m"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="Edit Link">
+                                                <i class="ri-edit-line"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="Deactivate Link">
+                                                <i class="ri-lock-line"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="table-row">
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-800">PL-2025-0712</td>
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-800">Food Safety Equipment</p>
+                                            <p class="text-xs text-gray-500">TN-2025-0712</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-800">₹ 350,000</td>
+                                    <td class="px-6 py-4">
+                                        <span class="status-badge px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">Jul 25, 2025</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-2">
+                                            <button class="action-button copy-link text-gray-500 hover:text-primary" data-link="https://pay.example.com/pl-2025-0712" title="Copy Link">
+                                                <i class="ri-link-m"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="Edit Link">
+                                                <i class="ri-edit-line"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="Deactivate Link">
+                                                <i class="ri-lock-line"></i>
+                                            </button>
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="px-6 py-4 border-t border-gray-200">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                                <span class="text-sm text-gray-700">Showing 1 to 4 of 4 results</span>
+                                <div class="flex items-center space-x-2">
+                                    <label class="text-sm text-gray-700">Items per page:</label>
+                                    <select class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                        <option value="10">10</option>
+                                        <option value="25" selected>25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    Previous
+                                </button>
+                                <button class="px-3 py-1 bg-primary text-white rounded text-sm">1</button>
+                                <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Copy Success Tooltip -->
+    <div id="copyTooltip" class="tooltip">
+        Link copied to clipboard!
+    </div>
+
+    <!-- Generate Payment Link Modal -->
+    <div id="generateModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Generate Payment Link</h3>
+                        <button id="closeGenerateModal" class="text-gray-400 hover:text-gray-600">
+                            <i class="ri-close-line text-xl"></i>
+                        </button>
+                    </div>
+                    <form id="generateLinkForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Tender</label>
+                            <select required class="w-full px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <option value="">Choose a tender</option>
+                                <option value="tn-2025-0721">TN-2025-0721 - Supply of Laboratory Equipment</option>
+                                <option value="tn-2025-0719">TN-2025-0719 - Construction of Food Testing Lab</option>
+                                <option value="tn-2025-0715">TN-2025-0715 - IT Infrastructure Upgrade</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                                <input type="number" required placeholder="0.00" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                            <input type="date" required class="w-full px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        </div>
+                        <div class="flex items-center justify-end space-x-3 pt-4">
+                            <button type="button" id="cancelGenerate" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-button hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">
+                                Generate Link
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Copy link functionality
+        const copyButtons = document.querySelectorAll('.copy-link');
+        const copyTooltip = document.getElementById('copyTooltip');
+
+        copyButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const link = button.getAttribute('data-link');
+                
+                try {
+                    await navigator.clipboard.writeText(link);
+                    
+                    // Show success animation
+                    button.classList.add('copy-success');
+                    
+                    // Show tooltip
+                    const rect = button.getBoundingClientRect();
+                    copyTooltip.style.left = rect.left + 'px';
+                    copyTooltip.style.top = (rect.top - 40) + 'px';
+                    copyTooltip.classList.add('show');
+                    
+                    // Hide tooltip after 2 seconds
+                    setTimeout(() => {
+                        copyTooltip.classList.remove('show');
+                    }, 2000);
+                    
+                    // Remove animation class
+                    setTimeout(() => {
+                        button.classList.remove('copy-success');
+                    }, 600);
+                    
+                } catch (err) {
+                    console.error('Failed to copy link:', err);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = link;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+            });
+        });
+
+        // Sortable headers
+        const sortableHeaders = document.querySelectorAll('.sortable-header');
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                // Remove active class from all headers
+                sortableHeaders.forEach(h => h.classList.remove('active'));
+                // Add active class to clicked header
+                header.classList.add('active');
+            });
+        });
+
+        // Tooltips for action buttons
+        const actionButtons = document.querySelectorAll('.action-button');
+        actionButtons.forEach(button => {
+            const title = button.getAttribute('title');
+            if (title) {
+                button.addEventListener('mouseenter', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip show';
+                    tooltip.textContent = title;
+                    tooltip.style.left = e.pageX + 10 + 'px';
+                    tooltip.style.top = (e.pageY - 30) + 'px';
+                    document.body.appendChild(tooltip);
+                    
+                    button.addEventListener('mouseleave', () => {
+                        document.body.removeChild(tooltip);
+                    }, { once: true });
+                });
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default dates for filters
+            const today = new Date();
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            if (dateInputs.length >= 2) {
+                dateInputs[0].value = today.toISOString().split('T')[0];
+                dateInputs[1].value = nextWeek.toISOString().split('T')[0];
+            }
+
+            var logout = document.getElementById('logoutLink');
+            if (logout) {
+                logout.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = 'Index.html';
+                });
+            }
+        });
+
+        // Payment Link Modal logic
+        const generateLinkBtn = document.getElementById('generatePaymentLinkBtn');
+        const generateModal = document.getElementById('generateModal');
+        const closeGenerateModal = document.getElementById('closeGenerateModal');
+        const cancelGenerate = document.getElementById('cancelGenerate');
+        const generateLinkForm = document.getElementById('generateLinkForm');
+        function showGenerateModal() {
+            generateModal.classList.remove('hidden');
+        }
+        function hideGenerateModal() {
+            generateModal.classList.add('hidden');
+            generateLinkForm.reset();
+        }
+        generateLinkBtn.addEventListener('click', showGenerateModal);
+        closeGenerateModal.addEventListener('click', hideGenerateModal);
+        cancelGenerate.addEventListener('click', hideGenerateModal);
+        generateModal.addEventListener('click', (e) => {
+            if (e.target === generateModal) {
+                hideGenerateModal();
+            }
+        });
+        generateLinkForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const submitBtn = generateLinkForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="ri-loader-4-line loading-spinner mr-2"></i>Generating...';
+            submitBtn.disabled = true;
+            setTimeout(() => {
+                hideGenerateModal();
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                // Show success message (implement toast if needed)
+                console.log('Payment link generated successfully');
+            }, 2000);
+        });
+    </script>
+</body>
+</html> 

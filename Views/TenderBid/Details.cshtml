@@ -1,0 +1,311 @@
+@model BiddingSystem.ViewModels.TenderBidViewModel
+@{
+    ViewData["Title"] = "Tender Bid Details";
+}
+
+<div class="bg-white rounded shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-medium text-gray-900">Tender Bid Details</h2>
+            <div class="flex items-center space-x-3">
+                <a asp-action="Index" class="text-gray-500 hover:text-gray-700">
+                    <i class="ri-arrow-left-line mr-1"></i>Back to List
+                </a>
+                @if (User.IsInRole("Admin") || User.IsInRole("Maker"))
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary hover:bg-primary/90">
+                        <i class="ri-edit-line mr-1"></i>Edit
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Information -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Bidder Information -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <i class="ri-user-line mr-2"></i>Bidder Information
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Bidder Name</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.BidderName</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Email</label>
+                            <p class="mt-1 text-sm text-gray-900">
+                                <a href="mailto:@Model.BidderEmail" class="text-primary hover:text-primary/80">@Model.BidderEmail</a>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Phone</label>
+                            <p class="mt-1 text-sm text-gray-900">
+                                <a href="tel:@Model.BidderPhone" class="text-primary hover:text-primary/80">@Model.BidderPhone</a>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Company</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.CompanyName</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-500">Company Address</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.CompanyAddress</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tender Information -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <i class="ri-file-list-line mr-2"></i>Tender Information
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Tender Title</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.TenderName</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Tender ID</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.TenderId</p>
+                        </div>
+                        @if (Model.Tender != null)
+                        {
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Department</label>
+                                <p class="mt-1 text-sm text-gray-900">@Model.Tender.Department</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Estimated Value</label>
+                                <p class="mt-1 text-sm text-gray-900">₹@Model.Tender.EstimatedValue.ToString("N2")</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Closing Date</label>
+                                <p class="mt-1 text-sm text-gray-900">@Model.Tender.TenderClosingDate.ToString("dd MMM yyyy")</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Opening Date</label>
+                                <p class="mt-1 text-sm text-gray-900">@Model.Tender.TenderOpeningDate.ToString("dd MMM yyyy")</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Financial Information -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <i class="ri-money-dollar-circle-line mr-2"></i>Financial Information
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Bid Amount</label>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">₹@Model.BidAmount.ToString("N2")</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">EMD Amount</label>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">₹@Model.EmdAmount.ToString("N2")</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Processing Fee</label>
+                            <p class="mt-1 text-lg font-semibold text-gray-900">₹@Model.ProcessingFee.ToString("N2")</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Total Amount</label>
+                            <p class="mt-1 text-xl font-bold text-primary">₹@Model.TotalAmount.ToString("N2")</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents -->
+                @if (Model.Documents.Any())
+                {
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                            <i class="ri-file-list-line mr-2"></i>Bid Documents
+                        </h3>
+                        <div class="space-y-3">
+                            @foreach (var document in Model.Documents)
+                            {
+                                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex-shrink-0">
+                                            @if (document.IsPdf)
+                                            {
+                                                <i class="ri-file-pdf-line text-red-500 text-xl"></i>
+                                            }
+                                            else if (document.IsImage)
+                                            {
+                                                <i class="ri-image-line text-blue-500 text-xl"></i>
+                                            }
+                                            else if (document.IsDocument)
+                                            {
+                                                <i class="ri-file-word-line text-blue-600 text-xl"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="ri-file-line text-gray-500 text-xl"></i>
+                                            }
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">@document.DocumentName</p>
+                                            <p class="text-xs text-gray-500">@document.DocumentTypeDisplayName • @document.FileSizeDisplay</p>
+                                            <p class="text-xs text-gray-400">Uploaded @document.UploadedAt.ToString("dd MMM yyyy HH:mm")</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <a href="@document.FilePath" target="_blank" class="text-primary hover:text-primary/80">
+                                            <i class="ri-eye-line"></i>
+                                        </a>
+                                        <a href="@document.FilePath" download class="text-gray-500 hover:text-gray-700">
+                                            <i class="ri-download-line"></i>
+                                        </a>
+                                        @if (User.IsInRole("Admin") || User.IsInRole("Maker"))
+                                        {
+                                            <form asp-action="DeleteDocument" method="post" class="inline">
+                                                <input type="hidden" name="documentId" value="@document.Id" />
+                                                <input type="hidden" name="bidId" value="@Model.Id" />
+                                                <button type="submit" class="text-red-500 hover:text-red-700" 
+                                                        onclick="return confirm('Are you sure you want to delete this document?')">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Remarks -->
+                @if (!string.IsNullOrEmpty(Model.Remarks))
+                {
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                            <i class="ri-message-3-line mr-2"></i>Remarks
+                        </h3>
+                        <p class="text-sm text-gray-900">@Model.Remarks</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Status Cards -->
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Status</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-2">Bid Status</label>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @Model.StatusBadgeClass">
+                                @Model.Status
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-2">Payment Status</label>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @Model.PaymentStatusBadgeClass">
+                                @Model.PaymentStatus
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Information -->
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Payment Information</h3>
+                    <div class="space-y-3">
+                        @if (!string.IsNullOrEmpty(Model.PaymentReference))
+                        {
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Payment Reference</label>
+                                <p class="mt-1 text-sm text-gray-900 font-mono">@Model.PaymentReference</p>
+                            </div>
+                        }
+                        @if (Model.PaymentDate.HasValue)
+                        {
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Payment Date</label>
+                                <p class="mt-1 text-sm text-gray-900">@Model.PaymentDate.Value.ToString("dd MMM yyyy HH:mm")</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Timeline</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Submitted At</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.SubmittedAt.ToString("dd MMM yyyy HH:mm")</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Created At</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</p>
+                        </div>
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Last Updated</label>
+                                <p class="mt-1 text-sm text-gray-900">@Model.UpdatedAt.Value.ToString("dd MMM yyyy HH:mm")</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Document Upload -->
+                @if (User.IsInRole("Admin") || User.IsInRole("Maker"))
+                {
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Upload Document</h3>
+                        <form asp-action="UploadDocument" method="post" enctype="multipart/form-data" class="space-y-3">
+                            <input type="hidden" name="bidId" value="@Model.Id" />
+                            <div>
+                                <label for="documentType" class="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                                <select name="documentType" id="documentType" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-sm">
+                                    <option value="1">General</option>
+                                    <option value="2">Technical Proposal</option>
+                                    <option value="3">Financial Proposal</option>
+                                    <option value="4">Company Profile</option>
+                                    <option value="5">Experience Certificate</option>
+                                    <option value="6">Financial Statement</option>
+                                    <option value="7">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="file" class="block text-sm font-medium text-gray-700 mb-1">Select File</label>
+                                <input type="file" name="file" id="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-sm" required />
+                                <p class="text-xs text-gray-500 mt-1">Max 10MB. Allowed: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG</p>
+                            </div>
+                            <button type="submit" class="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90">
+                                <i class="ri-upload-line mr-2"></i>Upload Document
+                            </button>
+                        </form>
+                    </div>
+                }
+
+                <!-- Actions -->
+                @if (User.IsInRole("Admin") || User.IsInRole("Maker"))
+                {
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Actions</h3>
+                        <div class="space-y-2">
+                            <a asp-action="Edit" asp-route-id="@Model.Id" 
+                               class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90">
+                                <i class="ri-edit-line mr-2"></i>Edit Bid
+                            </a>
+                            <a asp-action="Delete" asp-route-id="@Model.Id" 
+                               class="w-full inline-flex items-center justify-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50">
+                                <i class="ri-delete-bin-line mr-2"></i>Delete Bid
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

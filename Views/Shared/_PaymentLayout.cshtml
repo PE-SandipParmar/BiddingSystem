@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FSSAI Bidding System</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    
+    <!-- Remix Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary: #0c4678;
+            --primary-light: #0ea5e9;
+        }
+        
+        .bg-primary { background-color: var(--primary); }
+        .text-primary { color: var(--primary); }
+        .border-primary { border-color: var(--primary); }
+        .focus\:ring-primary:focus { --tw-ring-color: var(--primary); }
+        .hover\:bg-primary\/90:hover { background-color: color-mix(in srgb, var(--primary) 90%, transparent); }
+        .hover\:text-primary\/80:hover { color: color-mix(in srgb, var(--primary) 80%, transparent); }
+        .focus\:ring-primary\/20:focus { --tw-ring-color: color-mix(in srgb, var(--primary) 20%, transparent); }
+        .focus\:border-primary:focus { border-color: var(--primary); }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @@keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="bg-gray-50">
+    <!-- Anti-forgery token -->
+    @Html.AntiForgeryToken()
+    
+    <main role="main">
+        @RenderBody()
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-sm text-gray-500">
+                    © @DateTime.Now.Year FSSAI Bidding System. All rights reserved.
+                </p>
+                <p class="text-xs text-gray-400 mt-2">
+                    Secure payment processing powered by FSSAI
+                </p>
+            </div>
+        </div>
+    </footer>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

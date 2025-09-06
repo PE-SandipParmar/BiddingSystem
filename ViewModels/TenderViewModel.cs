@@ -152,6 +152,7 @@ namespace BiddingSystem.ViewModels
         [Display(Name = "Document Type")]
         public TenderDocumentType DocumentType { get; set; } = TenderDocumentType.General;
 
+        [Required(ErrorMessage = "File is required")]
         [Display(Name = "File")]
         public IFormFile? File { get; set; }
 
@@ -181,6 +182,7 @@ namespace BiddingSystem.ViewModels
         [Required(ErrorMessage = "Bidder phone is required")]
         [Phone(ErrorMessage = "Invalid phone number format")]
         [StringLength(20, ErrorMessage = "Phone number cannot exceed 20 characters")]
+        [RegularExpression(@"^[\+]?[1-9][\d]{0,15}$", ErrorMessage = "Invalid phone number format")]
         [Display(Name = "Bidder Phone")]
         public string BidderPhone { get; set; } = string.Empty;
 
@@ -193,13 +195,15 @@ namespace BiddingSystem.ViewModels
         public string? CompanyAddress { get; set; }
 
         [Required(ErrorMessage = "Bid amount is required")]
-        [Range(0, double.MaxValue, ErrorMessage = "Bid amount must be positive")]
+        [Range(1, double.MaxValue, ErrorMessage = "Bid amount must be greater than 0")]
         [Display(Name = "Bid Amount")]
         public decimal BidAmount { get; set; }
 
+        [Range(0, double.MaxValue, ErrorMessage = "EMD amount cannot be negative")]
         [Display(Name = "EMD Amount")]
         public decimal EmdAmount { get; set; }
 
+        [Range(0, double.MaxValue, ErrorMessage = "Processing fee cannot be negative")]
         [Display(Name = "Processing Fee")]
         public decimal ProcessingFee { get; set; }
 
@@ -207,10 +211,10 @@ namespace BiddingSystem.ViewModels
         public decimal TotalAmount { get; set; }
 
         [Display(Name = "Bid Status")]
-        public BidStatus Status { get; set; } = BidStatus.Submitted;
+        public string Status { get; set; } = "Submitted";
 
         [Display(Name = "Payment Status")]
-        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+        public string PaymentStatus { get; set; } = "Pending";
 
         [Display(Name = "Payment Reference")]
         [StringLength(100, ErrorMessage = "Payment reference cannot exceed 100 characters")]
@@ -219,6 +223,25 @@ namespace BiddingSystem.ViewModels
         [Display(Name = "Payment Date")]
         public DateTime? PaymentDate { get; set; }
 
+        [Display(Name = "Submitted At")]
+        public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
+
+        [Display(Name = "Is Active")]
+        public bool IsActive { get; set; } = true;
+
+        [Display(Name = "Created At")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Display(Name = "Updated At")]
+        public DateTime? UpdatedAt { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Remarks")]
+        public string? Remarks { get; set; }
+
+        [Display(Name = "Tender Name")]
+        public string TenderName { get; set; } = string.Empty;
+
         // File upload properties
         [Display(Name = "Bid Documents")]
         public List<IFormFile>? BidDocuments { get; set; }
@@ -226,27 +249,171 @@ namespace BiddingSystem.ViewModels
         // Navigation properties
         public Tender? Tender { get; set; }
         public List<TenderBidDocument> ExistingDocuments { get; set; } = new List<TenderBidDocument>();
+        public List<TenderBidDocument> Documents { get; set; } = new List<TenderBidDocument>();
 
         // Computed properties
-        public string StatusDisplayName => Status.GetDisplayName();
+        public string StatusDisplayName => Status;
         public string StatusBadgeClass => Status switch
         {
-            BidStatus.Submitted => "bg-blue-100 text-blue-800",
-            BidStatus.UnderReview => "bg-yellow-100 text-yellow-800",
-            BidStatus.Accepted => "bg-green-100 text-green-800",
-            BidStatus.Rejected => "bg-red-100 text-red-800",
-            BidStatus.Withdrawn => "bg-gray-100 text-gray-800",
+            "Submitted" => "bg-blue-100 text-blue-800",
+            "Under Review" => "bg-yellow-100 text-yellow-800",
+            "Accepted" => "bg-green-100 text-green-800",
+            "Rejected" => "bg-red-100 text-red-800",
+            "Withdrawn" => "bg-gray-100 text-gray-800",
             _ => "bg-gray-100 text-gray-800"
         };
 
-        public string PaymentStatusDisplayName => PaymentStatus.GetDisplayName();
+        public string PaymentStatusDisplayName => PaymentStatus;
         public string PaymentStatusBadgeClass => PaymentStatus switch
         {
-            PaymentStatus.Pending => "bg-yellow-100 text-yellow-800",
-            PaymentStatus.Paid => "bg-green-100 text-green-800",
-            PaymentStatus.Failed => "bg-red-100 text-red-800",
-            PaymentStatus.Refunded => "bg-blue-100 text-blue-800",
+            "Pending" => "bg-yellow-100 text-yellow-800",
+            "Paid" => "bg-green-100 text-green-800",
+            "Failed" => "bg-red-100 text-red-800",
+            "Refunded" => "bg-blue-100 text-blue-800",
             _ => "bg-gray-100 text-gray-800"
         };
+    }
+
+    public class TenderBidListViewModel
+    {
+        public List<TenderBidViewModel> Bids { get; set; } = new List<TenderBidViewModel>();
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 25;
+        public int TotalCount { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+        public string? SearchTerm { get; set; }
+        public string? Status { get; set; }
+        public string? PaymentStatus { get; set; }
+        public List<string> StatusOptions { get; set; } = new List<string> { "Submitted", "Under Review", "Accepted", "Rejected", "Withdrawn" };
+        public List<string> PaymentStatusOptions { get; set; } = new List<string> { "Pending", "Paid", "Failed", "Refunded" };
+    }
+
+    public class TenderBidCreateViewModel
+    {
+        [Required]
+        [Display(Name = "Tender")]
+        public int TenderId { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Bidder Name")]
+        public string BidderName { get; set; } = string.Empty;
+
+        [Required]
+        [EmailAddress]
+        [StringLength(100)]
+        [Display(Name = "Bidder Email")]
+        public string BidderEmail { get; set; } = string.Empty;
+
+        [Required]
+        [Phone]
+        [StringLength(20)]
+        [Display(Name = "Bidder Phone")]
+        public string BidderPhone { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(200)]
+        [Display(Name = "Company Name")]
+        public string CompanyName { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(500)]
+        [Display(Name = "Company Address")]
+        public string CompanyAddress { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Bid Amount")]
+        [DataType(DataType.Currency)]
+        public decimal BidAmount { get; set; }
+
+        [Required]
+        [Display(Name = "EMD Amount")]
+        [DataType(DataType.Currency)]
+        public decimal EmdAmount { get; set; }
+
+        [Required]
+        [Display(Name = "Processing Fee")]
+        [DataType(DataType.Currency)]
+        public decimal ProcessingFee { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Remarks")]
+        public string? Remarks { get; set; }
+
+        public List<Tender> AvailableTenders { get; set; } = new List<Tender>();
+    }
+
+    public class TenderBidEditViewModel
+    {
+        public int Id { get; set; }
+
+        [Required]
+        [Display(Name = "Tender")]
+        public int TenderId { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        [Display(Name = "Bidder Name")]
+        public string BidderName { get; set; } = string.Empty;
+
+        [Required]
+        [EmailAddress]
+        [StringLength(100)]
+        [Display(Name = "Bidder Email")]
+        public string BidderEmail { get; set; } = string.Empty;
+
+        [Required]
+        [Phone]
+        [StringLength(20)]
+        [Display(Name = "Bidder Phone")]
+        public string BidderPhone { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(200)]
+        [Display(Name = "Company Name")]
+        public string CompanyName { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(500)]
+        [Display(Name = "Company Address")]
+        public string CompanyAddress { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Bid Amount")]
+        [DataType(DataType.Currency)]
+        public decimal BidAmount { get; set; }
+
+        [Required]
+        [Display(Name = "EMD Amount")]
+        [DataType(DataType.Currency)]
+        public decimal EmdAmount { get; set; }
+
+        [Required]
+        [Display(Name = "Processing Fee")]
+        [DataType(DataType.Currency)]
+        public decimal ProcessingFee { get; set; }
+
+        [Required]
+        [Display(Name = "Status")]
+        public string Status { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Payment Status")]
+        public string PaymentStatus { get; set; } = string.Empty;
+
+        [Display(Name = "Payment Reference")]
+        public string? PaymentReference { get; set; }
+
+        [Display(Name = "Payment Date")]
+        [DataType(DataType.DateTime)]
+        public DateTime? PaymentDate { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Remarks")]
+        public string? Remarks { get; set; }
+
+        public List<Tender> AvailableTenders { get; set; } = new List<Tender>();
+        public List<string> StatusOptions { get; set; } = new List<string> { "Submitted", "Under Review", "Accepted", "Rejected", "Withdrawn" };
+        public List<string> PaymentStatusOptions { get; set; } = new List<string> { "Pending", "Paid", "Failed", "Refunded" };
     }
 }

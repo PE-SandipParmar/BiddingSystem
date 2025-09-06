@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMD/SD Management - Tender Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#0c4678',secondary:'#0ea5e9'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+        .metric-card {
+            transition: all 0.3s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .table-row {
+            transition: all 0.2s ease;
+        }
+        .table-row:hover {
+            background-color: #f8fafc;
+        }
+        .sortable-header {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .sortable-header:hover {
+            background-color: #f1f5f9;
+        }
+        .sortable-header.active {
+            background-color: #e0e7ff;
+            color: #0c4678;
+        }
+        .status-badge {
+            transition: all 0.2s ease;
+        }
+        .status-badge:hover {
+            transform: scale(1.05);
+        }
+        .action-button {
+            transition: all 0.2s ease;
+        }
+        .action-button:hover {
+            transform: translateY(-1px);
+        }
+        .activity-item {
+            transition: all 0.2s ease;
+        }
+        .activity-item:hover {
+            background-color: #f8fafc;
+        }
+        .modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+        .trend-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-lg hidden lg:block">
+            <div class="p-6">
+                <img src="assets/img/FSSAI_Logo.png" alt="Logo" class="w-32 h-auto mx-auto">
+            </div>
+            <nav class="mt-6">
+                <div class="px-4 py-2">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Main</p>
+                </div>
+                <a href="Dashboard.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-dashboard-line"></i>
+                    </div>
+                    <span>Dashboard</span>
+                </a>
+                <div class="px-4 py-2 mt-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tender Management</p>
+                </div>
+                <a href="manage-tenders.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-file-list-line"></i>
+                    </div>
+                    <span>Manage Tenders</span>
+                </a>
+                <a href="payment-links.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-bank-card-line"></i>
+                    </div>
+                    <span>Payment Links</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary bg-gray-100 text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-secure-payment-line"></i>
+                    </div>
+                    <span>EMD/SD Management</span>
+                </a>
+                <a href="refund-management.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-refund-2-line"></i>
+                    </div>
+                    <span>Refund Management</span>
+                </a>
+                <div class="px-4 py-2 mt-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Reports</p>
+                </div>
+                <a href="mis-reports.html" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-bar-chart-line"></i>
+                    </div>
+                    <span>MIS Reports</span>
+                </a>
+                <div class="px-4 py-2 mt-4">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Settings</p>
+                </div>
+                <a href="#" id="logoutLink" class="flex items-center px-6 py-3 text-gray-500 hover:bg-gray-100 hover:text-primary">
+                    <div class="w-5 h-5 flex items-center justify-center mr-3">
+                        <i class="ri-logout-box-r-line"></i>
+                    </div>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Header -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div class="flex items-center">
+                        <button class="lg:hidden mr-4 text-gray-500">
+                            <div class="w-6 h-6 flex items-center justify-center">
+                                <i class="ri-menu-line text-xl"></i>
+                            </div>
+                        </button>
+                        <div class="flex items-center">
+                            <a href="Dashboard.html" class="flex items-center text-gray-500 hover:text-primary mr-4">
+                                <div class="w-6 h-6 flex items-center justify-center">
+                                    <i class="ri-arrow-left-line"></i>
+                                </div>
+                                <span>Back to Dashboard</span>
+                            </a>
+                            <div>
+                                <h1 class="text-xl font-semibold text-gray-800">EMD/SD Management</h1>
+                                <p class="text-sm text-gray-500">Dashboard / EMD/SD Management</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 cursor-pointer">
+                                <i class="ri-notification-3-line"></i>
+                            </div>
+                            <span class="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">3</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mr-2">
+                                <span class="font-medium">GB</span>
+                            </div>
+                            <div class="hidden md:block">
+                                <p class="text-sm font-medium text-gray-700">Gaganpreet Bhatia</p>
+                                <p class="text-xs text-gray-500">Administrator</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+                <!-- Action Bar -->
+                <div class="bg-white rounded shadow mb-6">
+                    <div class="p-4">
+                        <form class="flex flex-row items-center gap-4">
+                            <h2 class="text-lg font-semibold text-gray-800 whitespace-nowrap">All EMD/SD Payment Transaction</h2>
+                            <input type="number" name="depositId" placeholder="Deposit ID" class="px-4 py-2 border border-gray-300 rounded bg-white text-gray-500 text-base outline-none" style="min-width: 160px;">
+                            <input type="text" name="tenderName" placeholder="Tender Name" class="px-4 py-2 border border-gray-300 rounded bg-white text-gray-500 text-base outline-none" style="min-width: 160px;">
+                            <button type="submit" class="flex items-center px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-base font-medium"><i class="ri-search-line mr-2"></i> Search</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div>
+                    <div class="bg-white rounded shadow overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="bg-gray-50">
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">Deposit ID</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">Tender Name</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">Amount</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">Bidder Name</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">Company Name</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">Transaction Date</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">Bank Name</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">FSSAI Branch Name</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">Transaction ID</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">Status</th>
+                                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-500  tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    <tr class="table-row">
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-800">1001</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Supply of Laboratory Equipment</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">₹ 250,000</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Rahul Sharma</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Techno Solutions Ltd.</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">2025-07-04</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">State Bank of India</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Delhi HQ</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">9876543210</td>
+                                        <td class="px-6 py-4 text-sm text-green-700">Paid</td>
+                                        <td class="px-6 py-4">
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row">
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-800">1002</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Construction of Food Testing Lab</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">₹ 1,200,000</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Priya Verma</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Innovative Builders</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">2025-07-03</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">HDFC Bank</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Mumbai Branch</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">1234567890</td>
+                                        <td class="px-6 py-4 text-sm text-green-700">Paid</td>
+                                        <td class="px-6 py-4">
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row">
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-800">1003</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">IT Infrastructure Upgrade</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">₹ 500,000</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Amit Singh</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Nexus Technologies</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">2025-07-02</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">ICICI Bank</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Bangalore Branch</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">1122334455</td>
+                                        <td class="px-6 py-4 text-sm text-yellow-700">Failed</td>
+                                        <td class="px-6 py-4">
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row">
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-800">1004</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Office Furniture Supply</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">₹ 180,000</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Sneha Kapoor</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Global Safety Equipment</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">2025-07-01</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Axis Bank</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Chennai Branch</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">5566778899</td>
+                                        <td class="px-6 py-4 text-sm text-red-700">Refunded</td>
+                                        <td class="px-6 py-4">
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row">
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-800">1005</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Security Services Contract</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">₹ 320,000</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Vikas Mehra</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Secure Solutions Pvt. Ltd.</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">2025-07-05</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Punjab National Bank</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">Kolkata Branch</td>
+                                        <td class="px-6 py-4 text-sm text-gray-800">9988776655</td>
+                                        <td class="px-6 py-4 text-sm text-green-700">Paid</td>
+                                        <td class="px-6 py-4">
+                                            <button class="action-button text-gray-500 hover:text-primary" title="View Details">
+                                                <i class="ri-eye-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="px-6 py-4 border-t border-gray-200">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                                    <span class="text-sm text-gray-700">Showing 1 to 4 of 156 results</span>
+                                    <div class="flex items-center space-x-2">
+                                        <label class="text-sm text-gray-700">Items per page:</label>
+                                        <select class="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                            <option value="10">10</option>
+                                            <option value="25" selected>25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Previous
+                                    </button>
+                                    <button class="px-3 py-1 bg-primary text-white rounded text-sm">1</button>
+                                    <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">2</button>
+                                    <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">3</button>
+                                    <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">4</button>
+                                    <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">5</button>
+                                    <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- New Deposit Modal -->
+    <div id="newDepositModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">New Deposit</h3>
+                        <button id="closeDepositModal" class="text-gray-400 hover:text-gray-600">
+                            <i class="ri-close-line text-xl"></i>
+                        </button>
+                    </div>
+                    <form id="newDepositForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tender Reference</label>
+                            <select required class="w-full px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <option value="">Select Tender</option>
+                                <option value="tn-2025-0721">TN-2025-0721 - Supply of Laboratory Equipment</option>
+                                <option value="tn-2025-0719">TN-2025-0719 - Construction of Food Testing Lab</option>
+                                <option value="tn-2025-0715">TN-2025-0715 - IT Infrastructure Upgrade</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                            <input type="text" required placeholder="Enter company name" class="w-full px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                                <input type="number" required placeholder="0.00" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                            <select required class="w-full px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <option value="">Select Type</option>
+                                <option value="emd">EMD (Earnest Money Deposit)</option>
+                                <option value="sd">SD (Security Deposit)</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center justify-end space-x-3 pt-4">
+                            <button type="button" id="cancelDeposit" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-button hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">
+                                Create Deposit
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // New Deposit Modal functionality
+        const newDepositBtn = document.querySelector('button:contains("New Deposit")');
+        const newDepositModal = document.getElementById('newDepositModal');
+        const closeDepositModal = document.getElementById('closeDepositModal');
+        const cancelDeposit = document.getElementById('cancelDeposit');
+        const newDepositForm = document.getElementById('newDepositForm');
+
+        // Find the New Deposit button by its text content
+        const newDepositButtons = document.querySelectorAll('button');
+        newDepositButtons.forEach(button => {
+            if (button.textContent.includes('New Deposit')) {
+                button.addEventListener('click', showNewDepositModal);
+            }
+        });
+
+        function showNewDepositModal() {
+            newDepositModal.classList.remove('hidden');
+        }
+
+        function hideNewDepositModal() {
+            newDepositModal.classList.add('hidden');
+            newDepositForm.reset();
+        }
+
+        closeDepositModal.addEventListener('click', hideNewDepositModal);
+        cancelDeposit.addEventListener('click', hideNewDepositModal);
+
+        // Close modal when clicking outside
+        newDepositModal.addEventListener('click', (e) => {
+            if (e.target === newDepositModal) {
+                hideNewDepositModal();
+            }
+        });
+
+        // Form submission
+        newDepositForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Show loading state
+            const submitBtn = newDepositForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="ri-loader-4-line loading-spinner mr-2"></i>Creating...';
+            submitBtn.disabled = true;
+            
+            // Simulate API call
+            setTimeout(() => {
+                hideNewDepositModal();
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                // Show success message (you can implement a toast notification here)
+                console.log('Deposit created successfully');
+            }, 2000);
+        });
+
+        // Sortable headers
+        const sortableHeaders = document.querySelectorAll('.sortable-header');
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                // Remove active class from all headers
+                sortableHeaders.forEach(h => h.classList.remove('active'));
+                // Add active class to clicked header
+                header.classList.add('active');
+            });
+        });
+
+        // Tooltips for action buttons
+        const actionButtons = document.querySelectorAll('.action-button');
+        actionButtons.forEach(button => {
+            const title = button.getAttribute('title');
+            if (title) {
+                button.addEventListener('mouseenter', (e) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip show';
+                    tooltip.textContent = title;
+                    tooltip.style.left = e.pageX + 10 + 'px';
+                    tooltip.style.top = (e.pageY - 30) + 'px';
+                    document.body.appendChild(tooltip);
+                    
+                    button.addEventListener('mouseleave', () => {
+                        document.body.removeChild(tooltip);
+                    }, { once: true });
+                });
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add any initialization code here
+            console.log('EMD/SD Management page loaded');
+            var logout = document.getElementById('logoutLink');
+            if (logout) {
+                logout.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = 'Index.html';
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

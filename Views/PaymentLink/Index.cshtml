@@ -1,0 +1,392 @@
+@model BiddingSystem.ViewModels.PaymentLinkListViewModel
+@using BiddingSystem.Models
+@{
+    ViewData["Title"] = "Payment Links";
+}
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Payment Links</h1>
+        <p class="text-gray-600 mt-1">Manage and track payment links for tender submissions</p>
+    </div>
+    <a asp-action="Create" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center">
+        <i class="ri-link-m mr-2"></i>
+        Generate Payment Link
+    </a>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="ri-file-list-line text-blue-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Total Links</p>
+                <p class="text-2xl font-bold text-gray-800">@Model.TotalCount</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="ri-check-line text-green-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Active</p>
+                <p class="text-2xl font-bold text-gray-800">@(Model.StatusOptions.FirstOrDefault(s => s.Value == "1")?.Text ?? "0")</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="ri-check-double-line text-blue-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Used</p>
+                <p class="text-2xl font-bold text-gray-800">@(Model.StatusOptions.FirstOrDefault(s => s.Value == "2")?.Text ?? "0")</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="ri-time-line text-red-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Expired</p>
+                <p class="text-2xl font-bold text-gray-800">@(Model.StatusOptions.FirstOrDefault(s => s.Value == "3")?.Text ?? "0")</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input type="text" name="searchTerm" value="@Model.SearchTerm" 
+                   placeholder="Search by link ID or tender..." 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <option value="">All Statuses</option>
+                @foreach (var status in Model.StatusOptions)
+                {
+                    <option value="@status.Value" selected="@(Model.Status?.ToString() == status.Value)">@status.Text</option>
+                }
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+            <select name="paymentType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <option value="">All Types</option>
+                @foreach (var type in Model.PaymentTypeOptions)
+                {
+                    <option value="@type.Value" selected="@(Model.PaymentType?.ToString() == type.Value)">@type.Text</option>
+                }
+            </select>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+            <input type="date" name="fromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+        </div>
+        
+        <div class="flex items-end">
+            <button type="submit" class="w-full bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                <i class="ri-search-line mr-2"></i>Filter
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Payment Links Table -->
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tender Details</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @if (Model.PaymentLinks.Any())
+                {
+                    @foreach (var link in Model.PaymentLinks)
+                    {
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-800">@link.LinkId</td>
+                            <td class="px-6 py-4">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-800">@link.TenderTitle</p>
+                                    <p class="text-xs text-gray-500">@link.TenderId</p>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-800">₹@link.Amount.ToString("N0")</td>
+                            <td class="px-6 py-4 text-sm text-gray-800">@link.PaymentType.GetDisplayName()</td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @GetStatusBadgeClass(link.Status)">
+                                    @link.Status.GetDisplayName()
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">@link.ExpiryDate.ToString("dd MMM yyyy")</td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    <button onclick="copyLink('@link.PaymentUrl')" class="text-gray-500 hover:text-primary" title="Copy Link">
+                                        <i class="ri-link-m"></i>
+                                    </button>
+                                    
+                                    <a asp-action="Details" asp-route-id="@link.Id" class="text-gray-500 hover:text-primary" title="View Details">
+                                        <i class="ri-eye-line"></i>
+                                    </a>
+                                    
+                                    @if (link.Status == PaymentLinkStatus.Active && link.ExpiryDate > DateTime.UtcNow)
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@link.Id" class="text-gray-500 hover:text-primary" title="Edit Link">
+                                            <i class="ri-edit-line"></i>
+                                        </a>
+                                        
+                                        <button onclick="cancelLink(@link.Id)" class="text-gray-500 hover:text-red-600" title="Cancel Link">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                    }
+                                    
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <button onclick="deleteLink(@link.Id)" class="text-gray-500 hover:text-red-600" title="Delete Link">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="text-gray-500">
+                                <i class="ri-file-list-line text-4xl mb-4"></i>
+                                <p class="text-lg font-medium">No payment links found</p>
+                                <p class="text-sm">Generate your first payment link to get started</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    @if (Model.TotalCount > Model.PageSize)
+    {
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                @if (Model.Page > 1)
+                {
+                    <a href="?page=@(Model.Page - 1)&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&paymentType=@((int?)Model.PaymentType)&fromDate=@Model.FromDate?.ToString("yyyy-MM-dd")&toDate=@Model.ToDate?.ToString("yyyy-MM-dd")" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Previous
+                    </a>
+                }
+                @if (Model.Page < Math.Ceiling((double)Model.TotalCount / Model.PageSize))
+                {
+                    <a href="?page=@(Model.Page + 1)&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&paymentType=@((int?)Model.PaymentType)&fromDate=@Model.FromDate?.ToString("yyyy-MM-dd")&toDate=@Model.ToDate?.ToString("yyyy-MM-dd")" 
+                       class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Next
+                    </a>
+                }
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">@((Model.Page - 1) * Model.PageSize + 1)</span>
+                        to <span class="font-medium">@Math.Min(Model.Page * Model.PageSize, Model.TotalCount)</span>
+                        of <span class="font-medium">@Model.TotalCount</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        @if (Model.Page > 1)
+                        {
+                            <a href="?page=@(Model.Page - 1)&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&paymentType=@((int?)Model.PaymentType)&fromDate=@Model.FromDate?.ToString("yyyy-MM-dd")&toDate=@Model.ToDate?.ToString("yyyy-MM-dd")" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="ri-arrow-left-s-line"></i>
+                            </a>
+                        }
+                        
+                        @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Math.Ceiling((double)Model.TotalCount / Model.PageSize), Model.Page + 2); i++)
+                        {
+                            <a href="?page=@i&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&paymentType=@((int?)Model.PaymentType)&fromDate=@Model.FromDate?.ToString("yyyy-MM-dd")&toDate=@Model.ToDate?.ToString("yyyy-MM-dd")" 
+                               class="relative inline-flex items-center px-4 py-2 border text-sm font-medium @(i == Model.Page ? "z-10 bg-primary border-primary text-white" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50")">
+                                @i
+                            </a>
+                        }
+                        
+                        @if (Model.Page < Math.Ceiling((double)Model.TotalCount / Model.PageSize))
+                        {
+                            <a href="?page=@(Model.Page + 1)&pageSize=@Model.PageSize&searchTerm=@Model.SearchTerm&status=@((int?)Model.Status)&paymentType=@((int?)Model.PaymentType)&fromDate=@Model.FromDate?.ToString("yyyy-MM-dd")&toDate=@Model.ToDate?.ToString("yyyy-MM-dd")" 
+                               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="ri-arrow-right-s-line"></i>
+                            </a>
+                        }
+                    </nav>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Copy Success Tooltip -->
+<div id="copyTooltip" class="fixed z-50 bg-gray-800 text-white px-3 py-2 rounded-lg text-sm opacity-0 transition-opacity duration-300">
+    Link copied to clipboard!
+</div>
+
+<!-- Cancel Link Modal -->
+<div id="cancelModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Cancel Payment Link</h3>
+                    <button onclick="closeCancelModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+                <form id="cancelForm">
+                    <input type="hidden" id="cancelLinkId" />
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cancellation Reason</label>
+                        <textarea id="cancelReason" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" rows="3" placeholder="Enter reason for cancellation"></textarea>
+                    </div>
+                    <div class="flex items-center justify-end space-x-3">
+                        <button type="button" onclick="closeCancelModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                            Cancel Link
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Copy link functionality
+        async function copyLink(url) {
+            try {
+                await navigator.clipboard.writeText(url);
+                showCopyTooltip();
+            } catch (err) {
+                console.error('Failed to copy link:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCopyTooltip();
+            }
+        }
+
+        function showCopyTooltip() {
+            const tooltip = document.getElementById('copyTooltip');
+            tooltip.style.opacity = '1';
+            setTimeout(() => {
+                tooltip.style.opacity = '0';
+            }, 2000);
+        }
+
+        // Cancel link functionality
+        function cancelLink(id) {
+            document.getElementById('cancelLinkId').value = id;
+            document.getElementById('cancelModal').classList.remove('hidden');
+        }
+
+        function closeCancelModal() {
+            document.getElementById('cancelModal').classList.add('hidden');
+            document.getElementById('cancelForm').reset();
+        }
+
+        document.getElementById('cancelForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('cancelLinkId').value;
+            const reason = document.getElementById('cancelReason').value;
+            
+            try {
+                const response = await fetch(`/PaymentLink/Cancel/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: `reason=${encodeURIComponent(reason)}`
+                });
+                
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to cancel payment link');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while cancelling the payment link');
+            }
+        });
+
+        // Delete link functionality
+        function deleteLink(id) {
+            if (confirm('Are you sure you want to delete this payment link? This action cannot be undone.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/PaymentLink/Delete/${id}`;
+                
+                const token = document.createElement('input');
+                token.type = 'hidden';
+                token.name = '__RequestVerificationToken';
+                token.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                
+                form.appendChild(token);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+}
+
+@functions {
+    private string GetStatusBadgeClass(PaymentLinkStatus status)
+    {
+        return status switch
+        {
+            PaymentLinkStatus.Active => "bg-green-100 text-green-800",
+            PaymentLinkStatus.Used => "bg-blue-100 text-blue-800",
+            PaymentLinkStatus.Expired => "bg-red-100 text-red-800",
+            PaymentLinkStatus.Cancelled => "bg-gray-100 text-gray-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
+}

@@ -42,11 +42,11 @@ namespace BiddingSystem.Data
         Task<int> AddTenderBidAsync(TenderBid bid);
         Task<bool> UpdateTenderBidAsync(TenderBid bid);
         Task<bool> DeleteTenderBidAsync(int bidId);
-        Task<List<TenderBid>> GetBidsByStatusAsync(BidStatus status);
-        Task<List<TenderBid>> GetBidsByPaymentStatusAsync(PaymentStatus paymentStatus);
+        Task<List<TenderBid>> GetBidsByStatusAsync(string status);
+        Task<List<TenderBid>> GetBidsByPaymentStatusAsync(string paymentStatus);
 
         // Payment operations
-        Task<bool> UpdateBidPaymentStatusAsync(int bidId, PaymentStatus status, string? paymentReference = null);
+        Task<bool> UpdateBidPaymentStatusAsync(int bidId, string status, string? paymentReference = null);
         Task<List<TenderBid>> GetPendingPaymentsAsync();
         Task<decimal> GetTotalEmdCollectedAsync();
         Task<decimal> GetTotalProcessingFeesCollectedAsync();

@@ -1,0 +1,254 @@
+@model BiddingSystem.ViewModels.EMDSDDepositViewModel
+@{
+    ViewData["Title"] = "EMD/SD Deposit Details";
+}
+
+<!-- Header -->
+<div class="bg-white shadow rounded-lg mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">EMD/SD Deposit Details</h1>
+                <p class="text-sm text-gray-600">Deposit ID: @Model.DepositId</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="@Url.Action("Index")" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <i class="ri-arrow-left-line mr-2"></i>
+                    Back to List
+                </a>
+                <a href="@Url.Action("Edit", new { id = Model.Id })" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90">
+                    <i class="ri-edit-line mr-2"></i>
+                    Edit
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- Success/Error Messages -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                @TempData["ErrorMessage"]
+            </div>
+        }
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Details -->
+            <div class="lg:col-span-2">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-medium text-gray-900">Deposit Information</h2>
+                    </div>
+                    <div class="px-6 py-4">
+                        <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Deposit ID</dt>
+                                <dd class="mt-1 text-sm text-gray-900">@Model.DepositId</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Type</dt>
+                                <dd class="mt-1 text-sm text-gray-900">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(Model.Type == "EMD" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800")">
+                                        @Model.Type
+                                    </span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Tender Name</dt>
+                                <dd class="mt-1 text-sm text-gray-900">@Model.TenderName</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Amount</dt>
+                                <dd class="mt-1 text-sm text-gray-900 font-semibold">₹ @Model.Amount.ToString("N0")</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Bidder Name</dt>
+                                <dd class="mt-1 text-sm text-gray-900">@Model.BidderName</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Company Name</dt>
+                                <dd class="mt-1 text-sm text-gray-900">@Model.CompanyName</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Transaction Date</dt>
+                                <dd class="mt-1 text-sm text-gray-900">@Model.TransactionDate.ToString("dd MMM yyyy")</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Status</dt>
+                                <dd class="mt-1 text-sm">
+                                    @switch (Model.Status)
+                                    {
+                                        case "Paid":
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="ri-check-line mr-1"></i>
+                                                @Model.Status
+                                            </span>
+                                            break;
+                                        case "Failed":
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                <i class="ri-close-line mr-1"></i>
+                                                @Model.Status
+                                            </span>
+                                            break;
+                                        case "Refunded":
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                <i class="ri-refund-2-line mr-1"></i>
+                                                @Model.Status
+                                            </span>
+                                            break;
+                                        default:
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                <i class="ri-time-line mr-1"></i>
+                                                @Model.Status
+                                            </span>
+                                            break;
+                                    }
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Bank Name</dt>
+                                <dd class="mt-1 text-sm text-gray-900">@Model.BankName</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">FSSAI Branch Name</dt>
+                                <dd class="mt-1 text-sm text-gray-900">@Model.FSSAIBranchName</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Transaction ID</dt>
+                                <dd class="mt-1 text-sm text-gray-900 font-mono">@Model.TransactionId</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Created At</dt>
+                                <dd class="mt-1 text-sm text-gray-900">@Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</dd>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.Remarks))
+                            {
+                                <div class="sm:col-span-2">
+                                    <dt class="text-sm font-medium text-gray-500">Remarks</dt>
+                                    <dd class="mt-1 text-sm text-gray-900">@Model.Remarks</dd>
+                                </div>
+                            }
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Transaction History -->
+                @if (Model.Transactions.Any())
+                {
+                    <div class="bg-white shadow rounded-lg mt-6">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h2 class="text-lg font-medium text-gray-900">Transaction History</h2>
+                        </div>
+                        <div class="px-6 py-4">
+                            <div class="flow-root">
+                                <ul class="-mb-8">
+                                    @foreach (var transaction in Model.Transactions.OrderByDescending(t => t.CreatedAt))
+                                    {
+                                        <li>
+                                            <div class="relative pb-8">
+                                                @if (transaction != Model.Transactions.Last())
+                                                {
+                                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                                }
+                                                <div class="relative flex space-x-3">
+                                                    <div>
+                                                        <span class="h-8 w-8 rounded-full @(transaction.Status == "Success" ? "bg-green-500" : "bg-red-500") flex items-center justify-center ring-8 ring-white">
+                                                            <i class="ri-check-line text-white text-sm"></i>
+                                                        </span>
+                                                    </div>
+                                                    <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                                        <div>
+                                                            <p class="text-sm text-gray-500">
+                                                                <span class="font-medium text-gray-900">@transaction.TransactionType</span>
+                                                                - ₹ @transaction.Amount.ToString("N0")
+                                                            </p>
+                                                            <p class="text-sm text-gray-500">
+                                                                Reference: @transaction.TransactionReference
+                                                            </p>
+                                                            @if (!string.IsNullOrEmpty(transaction.Remarks))
+                                                            {
+                                                                <p class="text-sm text-gray-500">@transaction.Remarks</p>
+                                                            }
+                                                        </div>
+                                                        <div class="text-right text-sm whitespace-nowrap text-gray-500">
+                                                            <time datetime="@transaction.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ssZ")">
+                                                                @transaction.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                                                            </time>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Actions Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-medium text-gray-900">Actions</h2>
+                    </div>
+                    <div class="px-6 py-4 space-y-4">
+                        @if (Model.Status == "Pending")
+                        {
+                            <form asp-action="ProcessPayment" method="post" class="space-y-3">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Transaction ID</label>
+                                    <input type="text" name="transactionId" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Bank Reference</label>
+                                    <input type="text" name="bankReference" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+                                </div>
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                                    <i class="ri-check-line mr-2"></i>
+                                    Process Payment
+                                </button>
+                            </form>
+                        }
+
+                        @if (Model.Status == "Paid")
+                        {
+                            <form asp-action="ProcessRefund" method="post" class="space-y-3">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Refund Reason</label>
+                                    <textarea name="reason" required rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"></textarea>
+                                </div>
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                                    <i class="ri-refund-2-line mr-2"></i>
+                                    Process Refund
+                                </button>
+                            </form>
+                        }
+
+                        <div class="border-t border-gray-200 pt-4">
+                            <a href="@Url.Action("Edit", new { id = Model.Id })" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                <i class="ri-edit-line mr-2"></i>
+                                Edit Deposit
+                            </a>
+                        </div>
+
+                        <div>
+                            <a href="@Url.Action("Delete", new { id = Model.Id })" class="w-full inline-flex justify-center items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50">
+                                <i class="ri-delete-bin-line mr-2"></i>
+                                Delete Deposit
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>

@@ -23,6 +23,7 @@ namespace BiddingSystem.ViewModels
         [RegularExpression(@"^[a-zA-Z0-9._]+$", ErrorMessage = "Username can only contain letters, numbers, periods, and underscores")]
         public string Username { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Password is required")]
         [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long")]
         public string? Password { get; set; }
 

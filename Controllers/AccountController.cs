@@ -6,9 +6,6 @@ using BiddingSystem.Data;
 using BiddingSystem.Models;
 using BiddingSystem.ViewModels;
 using System.Security.Claims;
-using BiddingSystem.Data;
-using BiddingSystem.Models;
-using BiddingSystem.ViewModels;
 
 namespace BiddingSystem.Controllers
 {
@@ -18,17 +15,23 @@ namespace BiddingSystem.Controllers
         private readonly IPasswordService _passwordService;
         private readonly IEmailService _emailService;
         private readonly ILogger<AccountController> _logger;
+        private readonly IInputValidationService _inputValidation;
+        private readonly ISecurityAuditService _securityAudit;
 
         public AccountController(
             IUserRepository userRepository,
             IPasswordService passwordService,
             IEmailService emailService,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger,
+            IInputValidationService inputValidation,
+            ISecurityAuditService securityAudit)
         {
             _userRepository = userRepository;
             _passwordService = passwordService;
             _emailService = emailService;
             _logger = logger;
+            _inputValidation = inputValidation;
+            _securityAudit = securityAudit;
         }
 
         // GET: /Account/Register

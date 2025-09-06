@@ -14,12 +14,13 @@ builder.Services.AddScoped<ITenderRepository, TenderRepository>();
 
 // Register repositories
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<IEMDSDRepository, EMDSDRepository>();
+builder.Services.AddScoped<ITenderBidRepository, TenderBidRepository>();
 
 // Register services
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-
-
-
+builder.Services.AddScoped<IEMDSDService, EMDSDService>();
+builder.Services.AddScoped<ITenderBidService, TenderBidService>();
 
 // Configure options
 builder.Services.Configure<PasswordOptions>(
@@ -28,8 +29,16 @@ builder.Services.Configure<PasswordOptions>(
 builder.Services.Configure<EmailOptions>(
     builder.Configuration.GetSection("EmailSettings"));
 
+builder.Services.Configure<SecurityOptions>(
+    builder.Configuration.GetSection("Security"));
+
+// Register security services
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IPaymentLinkRepository, PaymentLinkRepository>();
+builder.Services.AddScoped<ISecurityService, SecurityService>();
+builder.Services.AddScoped<IInputValidationService, InputValidationService>();
+builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
 
 // Configure email options
 //builder.Services.Configure<BiddingSystem.Services.EmailOptions>(
@@ -90,12 +99,13 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-//app.UseStaticFiles(new StaticFileOptions
-//{
-//    FileProvider = new PhysicalFileProvider(
-//        Path.Combine(builder.Environment.ContentRootPath, "Content")),
-//    RequestPath = "/Content"
-//});
+
+// Add global exception handling middleware
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Add rate limiting middleware
+app.UseMiddleware<RateLimitingMiddleware>();
+
 app.UseRouting();
 
 // Security headers
@@ -105,6 +115,8 @@ app.Use(async (context, next) =>
     context.Response.Headers.Add("X-Frame-Options", "DENY");
     context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
     context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'");
+    context.Response.Headers.Add("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
     await next();
 });
 

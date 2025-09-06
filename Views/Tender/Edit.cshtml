@@ -1,0 +1,311 @@
+@model BiddingSystem.ViewModels.TenderViewModel
+@{
+    ViewData["Title"] = "Edit Tender";
+}
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Edit Tender</h1>
+        <p class="text-gray-600 mt-1">Update tender information</p>
+    </div>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center">
+        <i class="ri-arrow-left-line mr-2"></i>
+        Back to Details
+    </a>
+</div>
+
+<form asp-action="Edit" method="post" class="space-y-8">
+    <input type="hidden" asp-for="Id" />
+    
+    <div class="bg-white rounded-lg shadow p-8">
+        <div class="flex items-center mb-8">
+            <div class="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-primary mr-5">
+                <i class="ri-edit-line text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800">Tender Details</h2>
+                <p class="text-sm text-gray-500 mt-1">Update the details of the tender</p>
+            </div>
+        </div>
+        
+        <div asp-validation-summary="ModelOnly" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert"></div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <label asp-for="TenderId" class="block text-sm font-medium text-gray-700 mb-2">
+                    Tender ID <span class="text-red-500">*</span>
+                </label>
+                <input asp-for="TenderId" type="text" 
+                       placeholder="Enter tender ID" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="TenderId" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="TenderTitle" class="block text-sm font-medium text-gray-700 mb-2">
+                    Tender Title <span class="text-red-500">*</span>
+                </label>
+                <input asp-for="TenderTitle" type="text" 
+                       placeholder="Enter tender title" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="TenderTitle" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div class="md:col-span-2">
+                <label asp-for="Description" class="block text-sm font-medium text-gray-700 mb-2">
+                    Description <span class="text-red-500">*</span>
+                </label>
+                <textarea asp-for="Description" maxlength="1000" rows="4" 
+                          placeholder="Enter tender details (maximum 1000 characters)" 
+                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base"></textarea>
+                <span asp-validation-for="Description" class="text-red-500 text-sm"></span>
+                <div class="text-sm text-gray-500 mt-1">
+                    <span id="descriptionCount">@(Model.Description?.Length ?? 0)</span>/1000 characters
+                </div>
+            </div>
+            
+            <div>
+                <label asp-for="Department" class="block text-sm font-medium text-gray-700 mb-2">
+                    Department <span class="text-red-500">*</span>
+                </label>
+                <select asp-for="Department" asp-items="@ViewBag.Departments" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                    <option value="">Select Department</option>
+                </select>
+                <span asp-validation-for="Department" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="PublishDate" class="block text-sm font-medium text-gray-700 mb-2">
+                    Tender Publish Date <span class="text-red-500">*</span>
+                </label>
+                <input asp-for="PublishDate" type="date" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="PublishDate" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="EmdAmount" class="block text-sm font-medium text-gray-700 mb-2">
+                    EMD Amount <span class="text-red-500">*</span>
+                </label>
+                <input asp-for="EmdAmount" type="number" step="0.01" min="0" 
+                       placeholder="Enter EMD amount" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="EmdAmount" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="SdAmount" class="block text-sm font-medium text-gray-700 mb-2">
+                    SD Amount <span class="text-red-500">*</span>
+                </label>
+                <input asp-for="SdAmount" type="number" step="0.01" min="0" 
+                       placeholder="Enter SD amount" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="SdAmount" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="ProcessingFee" class="block text-sm font-medium text-gray-700 mb-2">
+                    Processing Fee <span class="text-red-500">*</span>
+                </label>
+                <input asp-for="ProcessingFee" type="number" step="0.01" min="0" 
+                       placeholder="Enter processing fee" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="ProcessingFee" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="EstimatedValue" class="block text-sm font-medium text-gray-700 mb-2">
+                    Estimated Value <span class="text-red-500">*</span>
+                </label>
+                <input asp-for="EstimatedValue" type="number" step="0.01" min="0" 
+                       placeholder="Enter estimated value" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="EstimatedValue" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="LastDateEmd" class="block text-sm font-medium text-gray-700 mb-2">
+                    Last Date to Pay EMD <span class="text-red-500">*</span>
+                </label>
+                <input asp-for="LastDateEmd" type="date" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="LastDateEmd" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="TenderClosingDate" class="block text-sm font-medium text-gray-700 mb-2">
+                    Tender Closing Date
+                </label>
+                <input asp-for="TenderClosingDate" type="date" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="TenderClosingDate" class="text-red-500 text-sm"></span>
+            </div>
+            
+            <div>
+                <label asp-for="TenderOpeningDate" class="block text-sm font-medium text-gray-700 mb-2">
+                    Tender Opening Date
+                </label>
+                <input asp-for="TenderOpeningDate" type="date" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
+                <span asp-validation-for="TenderOpeningDate" class="text-red-500 text-sm"></span>
+            </div>
+        </div>
+        
+        <div class="flex justify-end gap-4 mt-8">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                <i class="ri-save-line mr-2"></i>Update Tender
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Information Footer -->
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+    <div class="flex items-start">
+        <div class="w-5 h-5 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mr-3 mt-0.5">
+            <i class="ri-information-line text-sm"></i>
+        </div>
+        <div>
+            <h4 class="text-sm font-medium text-blue-800 mb-1">Important Information</h4>
+            <ul class="text-sm text-blue-700 space-y-1">
+                <li>• All fields marked with <span class="text-red-500">*</span> are required</li>
+                <li>• Tender ID must be unique across the system</li>
+                <li>• Last date to pay EMD must be after the publish date</li>
+                <li>• Tender closing date must be after EMD last date</li>
+                <li>• Tender opening date must be after closing date</li>
+                <li>• EMD amount must be less than estimated value</li>
+                <li>• Changes will be saved and can be published later</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Character counter for description
+        document.getElementById('Description').addEventListener('input', function() {
+            const count = this.value.length;
+            document.getElementById('descriptionCount').textContent = count;
+            
+            if (count > 1000) {
+                this.value = this.value.substring(0, 1000);
+                document.getElementById('descriptionCount').textContent = 1000;
+            }
+        });
+        
+        // Set minimum date for LastDateEmd based on PublishDate
+        document.getElementById('PublishDate').addEventListener('change', function() {
+            const publishDate = new Date(this.value);
+            const lastDateEmd = document.getElementById('LastDateEmd');
+            
+            if (publishDate) {
+                const minDate = new Date(publishDate);
+                minDate.setDate(minDate.getDate() + 1);
+                lastDateEmd.min = minDate.toISOString().split('T')[0];
+                
+                // If LastDateEmd is before the new minimum, update it
+                if (lastDateEmd.value && new Date(lastDateEmd.value) <= publishDate) {
+                    lastDateEmd.value = minDate.toISOString().split('T')[0];
+                }
+            }
+        });
+        
+        // Set minimum date for TenderClosingDate based on LastDateEmd
+        document.getElementById('LastDateEmd').addEventListener('change', function() {
+            const lastDateEmd = new Date(this.value);
+            const tenderClosingDate = document.getElementById('TenderClosingDate');
+            
+            if (lastDateEmd) {
+                const minDate = new Date(lastDateEmd);
+                minDate.setDate(minDate.getDate() + 1);
+                tenderClosingDate.min = minDate.toISOString().split('T')[0];
+                
+                // If TenderClosingDate is before the new minimum, update it
+                if (tenderClosingDate.value && new Date(tenderClosingDate.value) <= lastDateEmd) {
+                    tenderClosingDate.value = minDate.toISOString().split('T')[0];
+                }
+            }
+        });
+        
+        // Set minimum date for TenderOpeningDate based on TenderClosingDate
+        document.getElementById('TenderClosingDate').addEventListener('change', function() {
+            const tenderClosingDate = new Date(this.value);
+            const tenderOpeningDate = document.getElementById('TenderOpeningDate');
+            
+            if (tenderClosingDate) {
+                const minDate = new Date(tenderClosingDate);
+                minDate.setDate(minDate.getDate() + 1);
+                tenderOpeningDate.min = minDate.toISOString().split('T')[0];
+                
+                // If TenderOpeningDate is before the new minimum, update it
+                if (tenderOpeningDate.value && new Date(tenderOpeningDate.value) <= tenderClosingDate) {
+                    tenderOpeningDate.value = minDate.toISOString().split('T')[0];
+                }
+            }
+        });
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const publishDate = new Date(document.getElementById('PublishDate').value);
+            const lastDateEmd = new Date(document.getElementById('LastDateEmd').value);
+            const tenderClosingDate = document.getElementById('TenderClosingDate').value ? new Date(document.getElementById('TenderClosingDate').value) : null;
+            const tenderOpeningDate = document.getElementById('TenderOpeningDate').value ? new Date(document.getElementById('TenderOpeningDate').value) : null;
+            const emdAmount = parseFloat(document.getElementById('EmdAmount').value);
+            const estimatedValue = parseFloat(document.getElementById('EstimatedValue').value);
+            
+            if (lastDateEmd <= publishDate) {
+                e.preventDefault();
+                alert('Last date to pay EMD must be after the publish date.');
+                return false;
+            }
+            
+            if (tenderClosingDate && tenderClosingDate <= lastDateEmd) {
+                e.preventDefault();
+                alert('Tender closing date must be after EMD last date.');
+                return false;
+            }
+            
+            if (tenderOpeningDate && tenderClosingDate && tenderOpeningDate <= tenderClosingDate) {
+                e.preventDefault();
+                alert('Tender opening date must be after closing date.');
+                return false;
+            }
+            
+            if (emdAmount >= estimatedValue) {
+                e.preventDefault();
+                alert('EMD amount must be less than estimated value.');
+                return false;
+            }
+        });
+        
+        // Initialize date constraints on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const publishDate = document.getElementById('PublishDate').value;
+            const lastDateEmd = document.getElementById('LastDateEmd').value;
+            const tenderClosingDate = document.getElementById('TenderClosingDate').value;
+            
+            if (publishDate) {
+                const minDate = new Date(publishDate);
+                minDate.setDate(minDate.getDate() + 1);
+                document.getElementById('LastDateEmd').min = minDate.toISOString().split('T')[0];
+            }
+            
+            if (lastDateEmd) {
+                const minDate = new Date(lastDateEmd);
+                minDate.setDate(minDate.getDate() + 1);
+                document.getElementById('TenderClosingDate').min = minDate.toISOString().split('T')[0];
+            }
+            
+            if (tenderClosingDate) {
+                const minDate = new Date(tenderClosingDate);
+                minDate.setDate(minDate.getDate() + 1);
+                document.getElementById('TenderOpeningDate').min = minDate.toISOString().split('T')[0];
+            }
+        });
+    </script>
+}

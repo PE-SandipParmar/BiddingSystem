@@ -469,7 +469,7 @@ namespace BiddingSystem.Data
             return rowsAffected > 0;
         }
 
-        public async Task<List<TenderBid>> GetBidsByStatusAsync(BidStatus status)
+        public async Task<List<TenderBid>> GetBidsByStatusAsync(string status)
         {
             using var connection = CreateConnection();
             const string sql = @"
@@ -481,7 +481,7 @@ namespace BiddingSystem.Data
             return bids.ToList();
         }
 
-        public async Task<List<TenderBid>> GetBidsByPaymentStatusAsync(PaymentStatus paymentStatus)
+        public async Task<List<TenderBid>> GetBidsByPaymentStatusAsync(string paymentStatus)
         {
             using var connection = CreateConnection();
             const string sql = @"
@@ -497,7 +497,7 @@ namespace BiddingSystem.Data
 
         #region Payment Operations
 
-        public async Task<bool> UpdateBidPaymentStatusAsync(int bidId, PaymentStatus status, string? paymentReference = null)
+        public async Task<bool> UpdateBidPaymentStatusAsync(int bidId, string status, string? paymentReference = null)
         {
             using var connection = CreateConnection();
             const string sql = @"
@@ -511,7 +511,7 @@ namespace BiddingSystem.Data
                 Id = bidId,
                 PaymentStatus = status,
                 PaymentReference = paymentReference,
-                PaymentDate = status == PaymentStatus.Paid ? DateTime.UtcNow : (DateTime?)null
+                PaymentDate = status == "Paid" ? DateTime.UtcNow : (DateTime?)null
             });
             return rowsAffected > 0;
         }
@@ -524,7 +524,7 @@ namespace BiddingSystem.Data
                 WHERE PaymentStatus = @PaymentStatus AND IsActive = 1
                 ORDER BY SubmittedAt ASC";
 
-            var bids = await connection.QueryAsync<TenderBid>(sql, new { PaymentStatus = PaymentStatus.Pending });
+            var bids = await connection.QueryAsync<TenderBid>(sql, new { PaymentStatus = "Pending" });
             return bids.ToList();
         }
 
@@ -536,7 +536,7 @@ namespace BiddingSystem.Data
                 FROM TenderBids 
                 WHERE PaymentStatus = @PaymentStatus AND IsActive = 1";
 
-            return await connection.QuerySingleAsync<decimal>(sql, new { PaymentStatus = PaymentStatus.Paid });
+            return await connection.QuerySingleAsync<decimal>(sql, new { PaymentStatus = "Paid" });
         }
 
         public async Task<decimal> GetTotalProcessingFeesCollectedAsync()
@@ -547,7 +547,7 @@ namespace BiddingSystem.Data
                 FROM TenderBids 
                 WHERE PaymentStatus = @PaymentStatus AND IsActive = 1";
 
-            return await connection.QuerySingleAsync<decimal>(sql, new { PaymentStatus = PaymentStatus.Paid });
+            return await connection.QuerySingleAsync<decimal>(sql, new { PaymentStatus = "Paid" });
         }
 
         #endregion
@@ -562,9 +562,9 @@ namespace BiddingSystem.Data
                     (SELECT COUNT(1) FROM Tenders WHERE IsActive = 1) as TotalTenders,
                     (SELECT COUNT(1) FROM Tenders WHERE Status = 2 AND IsActive = 1) as PublishedTenders,
                     (SELECT COUNT(1) FROM TenderBids WHERE IsActive = 1) as TotalBids,
-                    (SELECT COUNT(1) FROM TenderBids WHERE PaymentStatus = 2 AND IsActive = 1) as PaidBids,
-                    (SELECT ISNULL(SUM(EmdAmount), 0) FROM TenderBids WHERE PaymentStatus = 2 AND IsActive = 1) as TotalEmdCollected,
-                    (SELECT ISNULL(SUM(ProcessingFee), 0) FROM TenderBids WHERE PaymentStatus = 2 AND IsActive = 1) as TotalProcessingFeesCollected";
+                    (SELECT COUNT(1) FROM TenderBids WHERE PaymentStatus = 'Paid' AND IsActive = 1) as PaidBids,
+                    (SELECT ISNULL(SUM(EmdAmount), 0) FROM TenderBids WHERE PaymentStatus = 'Paid' AND IsActive = 1) as TotalEmdCollected,
+                    (SELECT ISNULL(SUM(ProcessingFee), 0) FROM TenderBids WHERE PaymentStatus = 'Paid' AND IsActive = 1) as TotalProcessingFeesCollected";
 
             var result = await connection.QueryFirstOrDefaultAsync(sql);
             return result?.ToDictionary() ?? new Dictionary<string, object>();

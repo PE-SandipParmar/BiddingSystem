@@ -102,6 +102,7 @@ namespace BiddingSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Maker")]
         public IActionResult Create()
         {
             var viewModel = new TenderViewModel
@@ -116,6 +117,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Create(TenderViewModel model)
         {
             try
@@ -138,6 +140,31 @@ namespace BiddingSystem.Controllers
                 if (model.LastDateEmd <= model.PublishDate)
                 {
                     ModelState.AddModelError("LastDateEmd", "Last date to pay EMD must be after publish date.");
+                    ViewBag.Departments = GetDepartmentOptions();
+                    return View(model);
+                }
+
+                // Validate tender closing date
+                if (model.TenderClosingDate.HasValue && model.TenderClosingDate <= model.LastDateEmd)
+                {
+                    ModelState.AddModelError("TenderClosingDate", "Tender closing date must be after EMD last date.");
+                    ViewBag.Departments = GetDepartmentOptions();
+                    return View(model);
+                }
+
+                // Validate tender opening date
+                if (model.TenderOpeningDate.HasValue && model.TenderClosingDate.HasValue && 
+                    model.TenderOpeningDate <= model.TenderClosingDate)
+                {
+                    ModelState.AddModelError("TenderOpeningDate", "Tender opening date must be after closing date.");
+                    ViewBag.Departments = GetDepartmentOptions();
+                    return View(model);
+                }
+
+                // Validate amount relationships
+                if (model.EmdAmount >= model.EstimatedValue)
+                {
+                    ModelState.AddModelError("EmdAmount", "EMD amount should be less than estimated value.");
                     ViewBag.Departments = GetDepartmentOptions();
                     return View(model);
                 }
@@ -207,6 +234,7 @@ namespace BiddingSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Edit(int id)
         {
             try
@@ -238,6 +266,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Edit(TenderViewModel model)
         {
             try
@@ -273,6 +302,31 @@ namespace BiddingSystem.Controllers
                 if (model.LastDateEmd <= model.PublishDate)
                 {
                     ModelState.AddModelError("LastDateEmd", "Last date to pay EMD must be after publish date.");
+                    ViewBag.Departments = GetDepartmentOptions();
+                    return View(model);
+                }
+
+                // Validate tender closing date
+                if (model.TenderClosingDate.HasValue && model.TenderClosingDate <= model.LastDateEmd)
+                {
+                    ModelState.AddModelError("TenderClosingDate", "Tender closing date must be after EMD last date.");
+                    ViewBag.Departments = GetDepartmentOptions();
+                    return View(model);
+                }
+
+                // Validate tender opening date
+                if (model.TenderOpeningDate.HasValue && model.TenderClosingDate.HasValue && 
+                    model.TenderOpeningDate <= model.TenderClosingDate)
+                {
+                    ModelState.AddModelError("TenderOpeningDate", "Tender opening date must be after closing date.");
+                    ViewBag.Departments = GetDepartmentOptions();
+                    return View(model);
+                }
+
+                // Validate amount relationships
+                if (model.EmdAmount >= model.EstimatedValue)
+                {
+                    ModelState.AddModelError("EmdAmount", "EMD amount should be less than estimated value.");
                     ViewBag.Departments = GetDepartmentOptions();
                     return View(model);
                 }
@@ -314,6 +368,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -358,6 +413,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Publish(int id)
         {
             try
@@ -398,6 +454,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Close(int id)
         {
             try
@@ -438,6 +495,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Cancel(int id)
         {
             try
@@ -514,6 +572,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> UploadDocument(TenderDocumentViewModel model)
         {
             try
@@ -565,6 +624,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> DeleteDocument(int id, int tenderId)
         {
             try
@@ -702,13 +762,18 @@ namespace BiddingSystem.Controllers
 
         private async Task<string> SaveFileAsync(IFormFile file)
         {
-            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "tenders");
+            // Create secure upload path with sanitized tender ID
+            var sanitizedTenderId = Path.GetFileNameWithoutExtension(file.FileName).Replace("..", "").Replace("/", "").Replace("\\", "");
+            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "tenders", sanitizedTenderId);
+            
             if (!Directory.Exists(uploadsFolder))
             {
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            // Generate secure filename with timestamp
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var fileName = $"{DateTime.UtcNow:yyyyMMddHHmmss}_{Guid.NewGuid()}{fileExtension}";
             var filePath = Path.Combine(uploadsFolder, fileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))

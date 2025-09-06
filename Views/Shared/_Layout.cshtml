@@ -203,72 +203,57 @@
                         <span class="sidebar-text">Manage Tenders</span>
                     </a>
 
-                    <a asp-controller="Tender" asp-action="Create"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="create-tender">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-add-line"></i>
-                        </div>
-                        <span class="sidebar-text">Create Tender</span>
-                    </a>
+                
 
                     <!-- User Management Section -->
                     <div class="mt-4 mb-2">
                         <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">User Management</span>
                     </div>
 
-                    @if (User.IsInRole("Admin") || User.IsInRole("Employee"))
-                    {
-                        <a asp-controller="Employee" asp-action="Index"
-                           class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                           data-nav="employee-management">
-                            <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                                <i class="ri-user-line"></i>
-                            </div>
-                            <span class="sidebar-text">Employee Management</span>
-                        </a>
-
-                        <a asp-controller="Vendor" asp-action="Index"
-                           class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                           data-nav="vendor-management">
-                            <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                                <i class="ri-store-line"></i>
-                            </div>
-                            <span class="sidebar-text">Vendor Management</span>
-                        </a>
-                    }
+                  
 
                     <!-- Financial Section -->
                     <div class="mt-4 mb-2">
                         <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Financial</span>
                     </div>
 
-                    <a asp-controller="Tender" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="emd-management">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-money-dollar-circle-line"></i>
-                        </div>
-                        <span class="sidebar-text">EMD Management</span>
-                    </a>
+                  
 
-                    <a asp-controller="Tender" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="sd-management">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-safe-2-line"></i>
-                        </div>
-                        <span class="sidebar-text">SD Management</span>
-                    </a>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Maker") || User.IsInRole("Checker"))
+                    {
+                        <a asp-controller="PaymentLink" asp-action="Index"
+                           class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                           data-nav="payment-links">
+                            <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="ri-links-line"></i>
+                            </div>
+                            <span class="sidebar-text">Payment Links</span>
+                        </a>
+                    }
 
-                    <a asp-controller="Tender" asp-action="Index"
-                       class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
-                       data-nav="processing-fees">
-                        <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="ri-bank-card-line"></i>
-                        </div>
-                        <span class="sidebar-text">Processing Fees</span>
-                    </a>
+                    @if (User.IsInRole("Admin") || User.IsInRole("Maker") || User.IsInRole("Checker"))
+                    {
+                        <a asp-controller="EMDSD" asp-action="Index"
+                           class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                           data-nav="emd-sd-management">
+                            <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="ri-secure-payment-line"></i>
+                            </div>
+                            <span class="sidebar-text">EMD/SD Management</span>
+                        </a>
+                    }
+
+                    @if (User.IsInRole("Admin") || User.IsInRole("Maker") || User.IsInRole("Checker"))
+                    {
+                        <a asp-controller="TenderBid" asp-action="Index"
+                           class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
+                           data-nav="tender-bid-management">
+                            <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="ri-auction-line"></i>
+                            </div>
+                            <span class="sidebar-text">Tender Bid Management</span>
+                        </a>
+                    }
 
                 
                     <!-- Reports Section -->
@@ -663,6 +648,24 @@
                 'payment-monthlyrent': 'monthly-rent',
                 'payment-brokerage': 'brokerage-payment',
                 'payment-securitydeposit': 'security-deposit',
+
+                // Payment Link mappings
+                'paymentlink-index': 'payment-links',
+                'paymentlink-create': 'payment-links',
+                'paymentlink-details': 'payment-links',
+                'paymentlink-edit': 'payment-links',
+
+                // EMD/SD Management mappings
+                'emdsd-index': 'emd-sd-management',
+                'emdsd-create': 'emd-sd-management',
+                'emdsd-details': 'emd-sd-management',
+                'emdsd-edit': 'emd-sd-management',
+
+                // Tender Bid Management mappings
+                'tenderbid-index': 'tender-bid-management',
+                'tenderbid-create': 'tender-bid-management',
+                'tenderbid-details': 'tender-bid-management',
+                'tenderbid-edit': 'tender-bid-management',
 
                 // Finance mappings
                 'finance-income': 'income-tracking',

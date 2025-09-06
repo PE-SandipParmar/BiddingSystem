@@ -1,0 +1,29 @@
+@model string
+@{
+    ViewData["Title"] = "Payment Error";
+    Layout = "~/Views/Shared/_PaymentLayout.cshtml";
+}
+
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="text-center">
+            <img src="~/assets/img/FSSAI_Logo.png" alt="FSSAI Logo" class="mx-auto h-16 w-auto">
+            <h2 class="mt-6 text-3xl font-bold text-gray-900">Payment Error</h2>
+        </div>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <i class="ri-error-warning-line text-red-600 text-xl"></i>
+                </div>
+                <h3 class="mt-4 text-lg font-medium text-gray-900">Payment Link Error</h3>
+                <p class="mt-2 text-sm text-gray-500">@Model</p>
+                <div class="mt-6">
+                    <p class="text-xs text-gray-400">Please contact the tender administrator for assistance.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

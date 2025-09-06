@@ -1,0 +1,286 @@
+@model BiddingSystem.ViewModels.PaymentLinkDetailsViewModel
+@{
+    ViewData["Title"] = "Payment";
+    Layout = "~/Views/Shared/_PaymentLayout.cshtml";
+}
+
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="text-center">
+            <img src="~/assets/img/FSSAI_Logo.png" alt="FSSAI Logo" class="mx-auto h-16 w-auto">
+            <h2 class="mt-6 text-3xl font-bold text-gray-900">Payment Portal</h2>
+            <p class="mt-2 text-sm text-gray-600">Secure payment for tender submission</p>
+        </div>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            @if (!Model.IsUsable)
+            {
+                <!-- Payment Link Not Available -->
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                        <i class="ri-close-line text-red-600 text-xl"></i>
+                    </div>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">Payment Link Not Available</h3>
+                    <p class="mt-2 text-sm text-gray-500">
+                        @if (Model.IsExpired)
+                        {
+                            <span>This payment link has expired on @Model.ExpiryDate.ToString("dd MMM yyyy").</span>
+                        }
+                        else
+                        {
+                            <span>This payment link is no longer active.</span>
+                        }
+                    </p>
+                    <div class="mt-6">
+                        <p class="text-xs text-gray-400">Please contact the tender administrator for assistance.</p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Payment Form -->
+                <div class="space-y-6">
+                    <!-- Tender Information -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-blue-900 mb-2">Tender Information</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-blue-700">Tender ID:</span>
+                                <span class="text-sm font-medium text-blue-900">@Model.TenderId</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-blue-700">Title:</span>
+                                <span class="text-sm font-medium text-blue-900">@Model.TenderTitle</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-blue-700">Payment Type:</span>
+                                <span class="text-sm font-medium text-blue-900">@Model.PaymentType.GetDisplayName()</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Details -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Payment Details</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Amount to Pay:</span>
+                                <span class="text-2xl font-bold text-gray-900">@Model.AmountDisplay</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600">Link ID:</span>
+                                <span class="text-sm font-mono text-gray-900">@Model.LinkId</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600">Expires On:</span>
+                                <span class="text-sm text-gray-900">@Model.ExpiryDate.ToString("dd MMM yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Form -->
+                    <form id="paymentForm" class="space-y-4">
+                        <div>
+                            <label for="transactionId" class="block text-sm font-medium text-gray-700 mb-2">
+                                Transaction ID <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="transactionId" name="transactionId" required
+                                   placeholder="Enter your transaction ID from payment gateway"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <p class="mt-1 text-xs text-gray-500">Enter the transaction ID provided by your payment gateway</p>
+                        </div>
+
+                        <div>
+                            <label for="payerName" class="block text-sm font-medium text-gray-700 mb-2">
+                                Payer Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="payerName" name="payerName" required
+                                   placeholder="Enter your full name"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        </div>
+
+                        <div>
+                            <label for="payerEmail" class="block text-sm font-medium text-gray-700 mb-2">
+                                Email Address <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" id="payerEmail" name="payerEmail" required
+                                   placeholder="Enter your email address"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        </div>
+
+                        <div>
+                            <label for="payerPhone" class="block text-sm font-medium text-gray-700 mb-2">
+                                Phone Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="tel" id="payerPhone" name="payerPhone" required
+                                   placeholder="Enter your phone number"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        </div>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" id="termsAccepted" name="termsAccepted" required
+                                   class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <label for="termsAccepted" class="ml-2 block text-sm text-gray-700">
+                                I agree to the <a href="#" class="text-primary hover:text-primary/80">terms and conditions</a>
+                            </label>
+                        </div>
+
+                        <div>
+                            <button type="submit" id="submitPayment" 
+                                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">
+                                <span id="submitText">Process Payment</span>
+                                <span id="loadingText" class="hidden">
+                                    <i class="ri-loader-4-line animate-spin mr-2"></i>Processing...
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Security Notice -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="ri-shield-check-line text-green-400 text-lg"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-green-800">Secure Payment</h3>
+                                <div class="mt-2 text-sm text-green-700">
+                                    <p>This is a secure payment portal. Your payment information is protected and encrypted.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                    <i class="ri-check-line text-green-600 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Payment Successful!</h3>
+                <p class="text-sm text-gray-500 mb-4">Your payment has been processed successfully.</p>
+                <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                    <p class="text-xs text-gray-600">Transaction ID: <span id="successTransactionId" class="font-mono font-medium"></span></p>
+                </div>
+                <p class="text-xs text-gray-400">You will receive a confirmation email shortly.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <i class="ri-error-warning-line text-red-600 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Payment Failed</h3>
+                <p id="errorMessage" class="text-sm text-gray-500 mb-4"></p>
+                <button onclick="closeErrorModal()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitPayment');
+            const submitText = document.getElementById('submitText');
+            const loadingText = document.getElementById('loadingText');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitText.classList.add('hidden');
+            loadingText.classList.remove('hidden');
+            
+            try {
+                const formData = new FormData(this);
+                const transactionId = formData.get('transactionId');
+                
+                const response = await fetch('@Url.Action("ProcessPayment", new { id = Model.Id })', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `transactionId=${encodeURIComponent(transactionId)}`
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const responseText = await response.text();
+                let result;
+                
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Failed to parse JSON response:', responseText);
+                    throw new Error('Invalid response format from server');
+                }
+                
+                if (result.success) {
+                    // Show success modal
+                    document.getElementById('successTransactionId').textContent = transactionId;
+                    document.getElementById('successModal').classList.remove('hidden');
+                } else {
+                    // Show error modal
+                    document.getElementById('errorMessage').textContent = result.message || 'An error occurred while processing your payment.';
+                    document.getElementById('errorModal').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('errorMessage').textContent = 'An error occurred while processing your payment. Please try again.';
+                document.getElementById('errorModal').classList.remove('hidden');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                loadingText.classList.add('hidden');
+            }
+        });
+        
+        function closeErrorModal() {
+            document.getElementById('errorModal').classList.add('hidden');
+        }
+        
+        // Form validation
+        document.getElementById('paymentForm').addEventListener('input', function() {
+            const submitBtn = document.getElementById('submitPayment');
+            const requiredFields = this.querySelectorAll('input[required], input[type="checkbox"][required]');
+            let allValid = true;
+            
+            requiredFields.forEach(field => {
+                if (field.type === 'checkbox') {
+                    if (!field.checked) allValid = false;
+                } else {
+                    if (!field.value.trim()) allValid = false;
+                }
+            });
+            
+            submitBtn.disabled = !allValid;
+        });
+        
+        // Initial validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const submitBtn = document.getElementById('submitPayment');
+            submitBtn.disabled = true;
+        });
+    </script>
+}
