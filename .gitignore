@@ -65,3 +65,4 @@ _ReSharper*/
 *.ncrunch*
 *.local.json
 *.swp
+/Database
