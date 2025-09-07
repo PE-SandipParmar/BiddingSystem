@@ -2,41 +2,41 @@
 {
     public class DashboardStatistics
     {
-        public decimal TotalExpenditure { get; set; }
-        public int ActiveLeases { get; set; }
-        public int TotalEmployeesOnLease { get; set; }
-        public int TotalVendors { get; set; }
-        public decimal MonthlyLeaseToPay { get; set; }
-        public decimal SecurityDepositPaid { get; set; }
-        public decimal BrokeragePaid { get; set; }
-        public int ApprovedCount { get; set; }
-        public int PendingCount { get; set; }
-        public int FinancialYear { get; set; }
+        public int TotalTenders { get; set; }
+        public int TotalBids { get; set; }
+        public int ActiveTenders { get; set; }
+        public int SubmittedBids { get; set; }
+        public int PendingRefunds { get; set; }
+        public int ProcessedRefunds { get; set; }
+        public decimal TotalBidAmount { get; set; }
+        public decimal TotalEMDSDAmount { get; set; }
+        public decimal TotalSDAmount { get; set; }
+        public decimal TotalRefundAmount { get; set; }
     }
 
     public class MonthlyTrendData
     {
-        public string MonthName { get; set; }
+        public string MonthName { get; set; } = string.Empty;
         public decimal Amount { get; set; }
     }
 
     public class LeasePaymentStatusData
     {
-        public string Status { get; set; }
+        public string Status { get; set; } = string.Empty;
         public int Count { get; set; }
-        public string Color { get; set; }
+        public string Color { get; set; } = string.Empty;
     }
 
     public class DepartmentLeaseDistribution
     {
-        public string DepartmentName { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
         public int EmployeeCount { get; set; }
         public decimal TotalRent { get; set; }
     }
 
     public class TopVendorData
     {
-        public string VendorName { get; set; }
+        public string VendorName { get; set; } = string.Empty;
         public int LeaseCount { get; set; }
         public decimal TotalMonthlyRent { get; set; }
         public decimal TotalDeposit { get; set; }
@@ -45,9 +45,9 @@
     public class LeaseExpiryAlert
     {
         public int Id { get; set; }
-        public string RefNo { get; set; }
-        public string EmployeeName { get; set; }
-        public string VendorName { get; set; }
+        public string RefNo { get; set; } = string.Empty;
+        public string EmployeeName { get; set; } = string.Empty;
+        public string VendorName { get; set; } = string.Empty;
         public decimal MonthlyRentPayable { get; set; }
         public DateTime EndDate { get; set; }
         public int DaysRemaining { get; set; }
@@ -55,29 +55,21 @@
 
     public class PaymentSummary
     {
-        public string PaymentType { get; set; }
+        public string PaymentType { get; set; } = string.Empty;
         public decimal Amount { get; set; }
-        public string Color { get; set; }
+        public string Color { get; set; } = string.Empty;
     }
 
     public class RecentActivity
     {
-        public string ActivityType { get; set; }
-        public string Description { get; set; }
-        public string UserName { get; set; }
-        public DateTime ActivityDate { get; set; }
-        public string Status { get; set; }
+        public int Id { get; set; }
+        public string ActivityType { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public string EntityType { get; set; } = string.Empty;
+        public int EntityId { get; set; }
+        public string Status { get; set; } = string.Empty;
     }
 
-    public class DashboardViewModel
-    {
-        public DashboardStatistics Statistics { get; set; }
-        public List<MonthlyTrendData> MonthlyTrend { get; set; }
-        public List<LeasePaymentStatusData> LeasePaymentStatus { get; set; }
-        public List<DepartmentLeaseDistribution> DepartmentDistribution { get; set; }
-        public List<TopVendorData> TopVendors { get; set; }
-        public List<LeaseExpiryAlert> ExpiringLeases { get; set; }
-        public List<PaymentSummary> PaymentSummary { get; set; }
-        public List<RecentActivity> RecentActivities { get; set; }
-    }
 }

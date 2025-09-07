@@ -14,6 +14,7 @@ namespace BiddingSystem.Controllers
     {
         private readonly IPaymentLinkRepository _paymentLinkRepository;
         private readonly ITenderRepository _tenderRepository;
+        private readonly ITenderBidRepository _tenderBidRepository;
         private readonly ISecurityService _securityService;
         private readonly IEMDSDRepository _emdSdRepository;
         private readonly ILogger<PaymentLinkController> _logger;
@@ -21,12 +22,14 @@ namespace BiddingSystem.Controllers
         public PaymentLinkController(
             IPaymentLinkRepository paymentLinkRepository,
             ITenderRepository tenderRepository,
+            ITenderBidRepository tenderBidRepository,
             ISecurityService securityService,
             IEMDSDRepository emdSdRepository,
             ILogger<PaymentLinkController> logger)
         {
             _paymentLinkRepository = paymentLinkRepository;
             _tenderRepository = tenderRepository;
+            _tenderBidRepository = tenderBidRepository;
             _securityService = securityService;
             _emdSdRepository = emdSdRepository;
             _logger = logger;
@@ -149,6 +152,7 @@ namespace BiddingSystem.Controllers
                 {
                     LinkId = linkId,
                     TenderId = model.TenderId,
+                    TenderBidId = model.TenderBidId,
                     Amount = model.Amount,
                     PaymentType = model.PaymentType,
                     PaymentUrl = paymentUrl,
@@ -224,18 +228,22 @@ namespace BiddingSystem.Controllers
                 {
                     Id = paymentLink.Id,
                     TenderId = paymentLink.TenderId,
+                    TenderBidId = paymentLink.TenderBidId,
                     Amount = paymentLink.Amount,
                     PaymentType = paymentLink.PaymentType,
                     ExpiryDate = paymentLink.ExpiryDate,
                     Notes = paymentLink.Notes,
                     TenderTitle = paymentLink.Tender.TenderTitle,
                     TenderIdString = paymentLink.Tender.TenderId,
+                    BidderName = paymentLink.TenderBid?.BidderName,
+                    CompanyName = paymentLink.TenderBid?.CompanyName,
                     LinkId = paymentLink.LinkId,
                     Status = paymentLink.Status
                 };
 
                 ViewBag.TenderOptions = await GetTenderOptionsAsync();
                 ViewBag.PaymentTypeOptions = GetPaymentTypeOptions();
+                ViewBag.TenderBidOptions = await GetTenderBidOptionsAsync(paymentLink.TenderId);
 
                 return View(viewModel);
             }
@@ -285,6 +293,7 @@ namespace BiddingSystem.Controllers
                 }
 
                 // Update payment link
+                existingPaymentLink.TenderBidId = model.TenderBidId;
                 existingPaymentLink.Amount = model.Amount;
                 existingPaymentLink.PaymentType = model.PaymentType;
                 existingPaymentLink.ExpiryDate = model.ExpiryDate;
@@ -452,13 +461,34 @@ namespace BiddingSystem.Controllers
                     try
                     {
                         var depositId = await _emdSdRepository.GenerateUniqueDepositIdAsync();
+                        
+                        // Get bidder information if linked to a specific bid
+                        string bidderName = "Anonymous User";
+                        string companyName = "Payment Link User";
+                        
+                        if (paymentLink.TenderBidId.HasValue)
+                        {
+                            var tenderBid = await _tenderBidRepository.GetBidByIdAsync(paymentLink.TenderBidId.Value);
+                            if (tenderBid != null)
+                            {
+                                bidderName = tenderBid.BidderName;
+                                companyName = tenderBid.CompanyName;
+                                
+                                // Update the tender bid payment status
+                                tenderBid.PaymentStatus = "Paid";
+                                tenderBid.PaymentReference = transactionId;
+                                tenderBid.PaymentDate = DateTime.UtcNow;
+                                await _tenderBidRepository.UpdateBidAsync(tenderBid);
+                            }
+                        }
+                        
                         var emdSdDeposit = new EMDSDDeposit
                         {
                             DepositId = depositId,
                             TenderId = paymentLink.TenderId,
                             Amount = paymentLink.Amount,
-                            BidderName = "Anonymous User", // Since it's anonymous payment
-                            CompanyName = "Payment Link User",
+                            BidderName = bidderName,
+                            CompanyName = companyName,
                             TransactionDate = DateTime.UtcNow,
                             BankName = "Online Payment Gateway",
                             FSSAIBranchName = "FSSAI Main Branch",
@@ -466,7 +496,8 @@ namespace BiddingSystem.Controllers
                             Status = "Paid",
                             Type = paymentLink.PaymentType == PaymentType.EMD ? "EMD" : "SD",
                             CreatedAt = DateTime.UtcNow,
-                            Remarks = $"Payment processed via Payment Link: {paymentLink.LinkId}"
+                            Remarks = $"Payment processed via Payment Link: {paymentLink.LinkId}" + 
+                                     (paymentLink.TenderBidId.HasValue ? $" (Linked to Bid ID: {paymentLink.TenderBidId})" : "")
                         };
 
                         await _emdSdRepository.CreateDepositAsync(emdSdDeposit);
@@ -492,6 +523,31 @@ namespace BiddingSystem.Controllers
             {
                 _logger.LogError(ex, "Error processing payment for link: {Id}", id);
                 return Json(new { success = false, message = "An error occurred while processing the payment." });
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Maker,Checker")]
+        public async Task<IActionResult> GetTenderBids(int tenderId)
+        {
+            try
+            {
+                var bids = await _tenderBidRepository.GetBidsByTenderIdAsync(tenderId);
+                var result = bids.Select(bid => new
+                {
+                    id = bid.Id,
+                    bidderName = bid.BidderName,
+                    companyName = bid.CompanyName,
+                    bidAmount = bid.BidAmount,
+                    paymentStatus = bid.PaymentStatus
+                }).ToList();
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tender bids for tender: {TenderId}", tenderId);
+                return Json(new List<object>());
             }
         }
 
@@ -599,18 +655,39 @@ namespace BiddingSystem.Controllers
                 .ToList();
         }
 
+        private async Task<List<SelectListItem>> GetTenderBidOptionsAsync(int tenderId)
+        {
+            try
+            {
+                var bids = await _tenderBidRepository.GetBidsByTenderIdAsync(tenderId);
+                return bids.Select(bid => new SelectListItem
+                {
+                    Value = bid.Id.ToString(),
+                    Text = $"{bid.BidderName} - {bid.CompanyName} (₹{bid.BidAmount})"
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tender bid options for tender: {TenderId}", tenderId);
+                return new List<SelectListItem>();
+            }
+        }
+
         private PaymentLinkViewModel MapToViewModel(PaymentLink paymentLink)
         {
             return new PaymentLinkViewModel
             {
                 Id = paymentLink.Id,
                 TenderId = paymentLink.TenderId,
+                TenderBidId = paymentLink.TenderBidId,
                 Amount = paymentLink.Amount,
                 PaymentType = paymentLink.PaymentType,
                 ExpiryDate = paymentLink.ExpiryDate,
                 Notes = paymentLink.Notes,
                 TenderTitle = paymentLink.Tender.TenderTitle,
                 TenderIdString = paymentLink.Tender.TenderId,
+                BidderName = paymentLink.TenderBid?.BidderName,
+                CompanyName = paymentLink.TenderBid?.CompanyName,
                 LinkId = paymentLink.LinkId,
                 PaymentUrl = paymentLink.PaymentUrl,
                 Status = paymentLink.Status,
@@ -630,6 +707,8 @@ namespace BiddingSystem.Controllers
                 LinkId = paymentLink.LinkId,
                 TenderTitle = paymentLink.Tender.TenderTitle,
                 TenderId = paymentLink.Tender.TenderId,
+                BidderName = paymentLink.TenderBid?.BidderName,
+                CompanyName = paymentLink.TenderBid?.CompanyName,
                 Amount = paymentLink.Amount,
                 PaymentType = paymentLink.PaymentType,
                 PaymentUrl = paymentLink.PaymentUrl,

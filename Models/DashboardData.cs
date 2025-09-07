@@ -1,8 +1,8 @@
-﻿using BiddingSystem.Models;
+using BiddingSystem.ViewModels;
 
-namespace BiddingSystem.ViewModels
+namespace BiddingSystem.Models
 {
-    public class DashboardViewModel
+    public class DashboardData
     {
         public DashboardStatistics Statistics { get; set; } = new();
         public List<Tender> RecentTenders { get; set; } = new();
@@ -10,7 +10,5 @@ namespace BiddingSystem.ViewModels
         public List<RefundRequest> PendingRefunds { get; set; } = new();
         public List<Tender> ActiveTenders { get; set; } = new();
         public List<Tender> ExpiringTenders { get; set; } = new();
-        public int SelectedYear { get; set; }
-        public List<int> AvailableYears { get; set; } = new();
     }
 }

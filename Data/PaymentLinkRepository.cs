@@ -29,9 +29,11 @@ namespace BiddingSystem.Data
                 using var connection = CreateConnection();
                 var sql = @"
                     SELECT pl.*, t.TenderTitle, t.TenderId as TenderIdString,
+                           tb.BidderName, tb.CompanyName,
                            cb.Username as CreatedByUserName, ub.Username as UsedByUserName
                     FROM PaymentLinks pl
                     INNER JOIN Tenders t ON pl.TenderId = t.Id
+                    LEFT JOIN TenderBids tb ON pl.TenderBidId = tb.Id
                     INNER JOIN Users cb ON pl.CreatedBy = cb.Id
                     LEFT JOIN Users ub ON pl.UsedBy = ub.Id
                     WHERE pl.Id = @Id AND pl.IsActive = 1";
@@ -101,9 +103,11 @@ namespace BiddingSystem.Data
                 using var connection = CreateConnection();
                 var sql = @"
                     SELECT pl.*, t.TenderTitle, t.TenderId as TenderIdString,
+                           tb.BidderName, tb.CompanyName,
                            cb.Username as CreatedByUserName, ub.Username as UsedByUserName
                     FROM PaymentLinks pl
                     INNER JOIN Tenders t ON pl.TenderId = t.Id
+                    LEFT JOIN TenderBids tb ON pl.TenderBidId = tb.Id
                     INNER JOIN Users cb ON pl.CreatedBy = cb.Id
                     LEFT JOIN Users ub ON pl.UsedBy = ub.Id
                     WHERE pl.IsActive = 1
@@ -175,9 +179,9 @@ namespace BiddingSystem.Data
             {
                 using var connection = CreateConnection();
                 var sql = @"
-                    INSERT INTO PaymentLinks (LinkId, TenderId, Amount, PaymentType, PaymentUrl, SecurityToken, 
+                    INSERT INTO PaymentLinks (LinkId, TenderId, TenderBidId, Amount, PaymentType, PaymentUrl, SecurityToken, 
                                             Status, CreatedDate, ExpiryDate, CreatedBy, IsActive, Notes)
-                    VALUES (@LinkId, @TenderId, @Amount, @PaymentType, @PaymentUrl, @SecurityToken, 
+                    VALUES (@LinkId, @TenderId, @TenderBidId, @Amount, @PaymentType, @PaymentUrl, @SecurityToken, 
                             @Status, @CreatedDate, @ExpiryDate, @CreatedBy, @IsActive, @Notes);
                     SELECT CAST(SCOPE_IDENTITY() as int);";
 
@@ -185,6 +189,7 @@ namespace BiddingSystem.Data
                 {
                     paymentLink.LinkId,
                     paymentLink.TenderId,
+                    paymentLink.TenderBidId,
                     paymentLink.Amount,
                     PaymentType = (int)paymentLink.PaymentType,
                     paymentLink.PaymentUrl,
@@ -214,7 +219,7 @@ namespace BiddingSystem.Data
                 using var connection = CreateConnection();
                 var sql = @"
                     UPDATE PaymentLinks 
-                    SET Amount = @Amount, PaymentType = @PaymentType, PaymentUrl = @PaymentUrl,
+                    SET TenderBidId = @TenderBidId, Amount = @Amount, PaymentType = @PaymentType, PaymentUrl = @PaymentUrl,
                         Status = @Status, ExpiryDate = @ExpiryDate, UsedDate = @UsedDate,
                         UsedBy = @UsedBy, TransactionId = @TransactionId, Notes = @Notes
                     WHERE Id = @Id AND IsActive = 1";
@@ -222,6 +227,7 @@ namespace BiddingSystem.Data
                 await connection.ExecuteAsync(sql, new
                 {
                     paymentLink.Id,
+                    paymentLink.TenderBidId,
                     paymentLink.Amount,
                     PaymentType = (int)paymentLink.PaymentType,
                     paymentLink.PaymentUrl,
@@ -310,9 +316,11 @@ namespace BiddingSystem.Data
                 using var connection = CreateConnection();
                 var sql = @"
                     SELECT pl.*, t.TenderTitle, t.TenderId as TenderIdString,
+                           tb.BidderName, tb.CompanyName,
                            cb.Username as CreatedByUserName, ub.Username as UsedByUserName
                     FROM PaymentLinks pl
                     INNER JOIN Tenders t ON pl.TenderId = t.Id
+                    LEFT JOIN TenderBids tb ON pl.TenderBidId = tb.Id
                     INNER JOIN Users cb ON pl.CreatedBy = cb.Id
                     LEFT JOIN Users ub ON pl.UsedBy = ub.Id
                     WHERE pl.IsActive = 1";
@@ -322,7 +330,7 @@ namespace BiddingSystem.Data
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
-                    conditions.Add("(pl.LinkId LIKE @SearchTerm OR t.TenderTitle LIKE @SearchTerm OR t.TenderId LIKE @SearchTerm)");
+                    conditions.Add("(pl.LinkId LIKE @SearchTerm OR t.TenderTitle LIKE @SearchTerm OR t.TenderId LIKE @SearchTerm OR tb.BidderName LIKE @SearchTerm OR tb.CompanyName LIKE @SearchTerm)");
                     parameters.Add("SearchTerm", $"%{searchTerm}%");
                 }
 
@@ -386,7 +394,7 @@ namespace BiddingSystem.Data
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
-                    conditions.Add("(pl.LinkId LIKE @SearchTerm OR t.TenderTitle LIKE @SearchTerm OR t.TenderId LIKE @SearchTerm)");
+                    conditions.Add("(pl.LinkId LIKE @SearchTerm OR t.TenderTitle LIKE @SearchTerm OR t.TenderId LIKE @SearchTerm OR tb.BidderName LIKE @SearchTerm OR tb.CompanyName LIKE @SearchTerm)");
                     parameters.Add("SearchTerm", $"%{searchTerm}%");
                 }
 
@@ -727,6 +735,7 @@ namespace BiddingSystem.Data
                 Id = result.Id,
                 LinkId = result.LinkId,
                 TenderId = result.TenderId,
+                TenderBidId = result.TenderBidId,
                 Amount = result.Amount,
                 PaymentType = (PaymentType)result.PaymentType,
                 PaymentUrl = result.PaymentUrl,
@@ -741,6 +750,12 @@ namespace BiddingSystem.Data
                 CreatedBy = result.CreatedBy,
                 IsActive = result.IsActive,
                 Tender = new Tender { Id = result.TenderId, TenderTitle = result.TenderTitle, TenderId = result.TenderIdString },
+                TenderBid = result.BidderName != null ? new TenderBid 
+                { 
+                    Id = result.TenderBidId ?? 0, 
+                    BidderName = result.BidderName, 
+                    CompanyName = result.CompanyName 
+                } : null,
                 CreatedByUser = new User { Username = result.CreatedByUserName },
                 UsedByUser = result.UsedByUserName != null ? new User { Username = result.UsedByUserName } : null
             };

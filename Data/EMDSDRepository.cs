@@ -70,7 +70,7 @@ namespace BiddingSystem.Data
                         LastDateEmd = result.Tender_LastDateEmd,
                         TenderClosingDate = result.Tender_TenderClosingDate,
                         TenderOpeningDate = result.Tender_TenderOpeningDate,
-                        Status = result.Tender_Status,
+                        Status = (TenderStatus)result.Tender_Status,
                         CreatedBy = result.Tender_CreatedBy,
                         CreatedAt = result.Tender_CreatedAt,
                         UpdatedAt = result.Tender_UpdatedAt,
@@ -138,7 +138,7 @@ namespace BiddingSystem.Data
                     LastDateEmd = result.Tender_LastDateEmd,
                     TenderClosingDate = result.Tender_TenderClosingDate,
                     TenderOpeningDate = result.Tender_TenderOpeningDate,
-                    Status = result.Tender_Status,
+                    Status = (TenderStatus)result.Tender_Status,
                     CreatedBy = result.Tender_CreatedBy,
                     CreatedAt = result.Tender_CreatedAt,
                     UpdatedAt = result.Tender_UpdatedAt,
@@ -266,7 +266,7 @@ namespace BiddingSystem.Data
                         LastDateEmd = result.Tender_LastDateEmd,
                         TenderClosingDate = result.Tender_TenderClosingDate,
                         TenderOpeningDate = result.Tender_TenderOpeningDate,
-                        Status = result.Tender_Status,
+                        Status = (TenderStatus)result.Tender_Status,
                         CreatedBy = result.Tender_CreatedBy,
                         CreatedAt = result.Tender_CreatedAt,
                         UpdatedAt = result.Tender_UpdatedAt,
@@ -483,19 +483,54 @@ namespace BiddingSystem.Data
             parameters.Add("Offset", offset);
             parameters.Add("PageSize", pageSize);
 
-            var result = await connection.QueryAsync<EMDSDDeposit, Tender, EMDSDDeposit>(sql,
-                (deposit, tender) =>
-                {
-                    deposit.Tender = tender;
-                    return deposit;
-                },
-                parameters,
-                splitOn: "Tender_Id");
+            var results = await connection.QueryAsync<dynamic>(sql, parameters);
+            var deposits = new List<EMDSDDeposit>();
 
-            var deposits = result.ToList();
-            foreach (var deposit in deposits)
+            foreach (var result in results)
             {
+                var deposit = new EMDSDDeposit
+                {
+                    Id = result.Id,
+                    DepositId = result.DepositId,
+                    TenderId = result.TenderId,
+                    Amount = result.Amount,
+                    BidderName = result.BidderName,
+                    CompanyName = result.CompanyName,
+                    TransactionDate = result.TransactionDate,
+                    BankName = result.BankName,
+                    FSSAIBranchName = result.FSSAIBranchName,
+                    TransactionId = result.TransactionId,
+                    Status = result.Status,
+                    Type = result.Type,
+                    CreatedAt = result.CreatedAt,
+                    UpdatedAt = result.UpdatedAt,
+                    Remarks = result.Remarks,
+                    Tender = result.Tender_Id != null ? new Tender
+                    {
+                        Id = result.Tender_Id,
+                        TenderId = result.Tender_TenderId,
+                        TenderTitle = result.Tender_TenderTitle,
+                        Description = result.Tender_Description,
+                        Department = result.Tender_Department,
+                        PublishDate = result.Tender_PublishDate,
+                        EmdAmount = result.Tender_EmdAmount,
+                        SdAmount = result.Tender_SdAmount,
+                        ProcessingFee = result.Tender_ProcessingFee,
+                        EstimatedValue = result.Tender_EstimatedValue,
+                        LastDateEmd = result.Tender_LastDateEmd,
+                        TenderClosingDate = result.Tender_TenderClosingDate,
+                        TenderOpeningDate = result.Tender_TenderOpeningDate,
+                        Status = (TenderStatus)result.Tender_Status,
+                        CreatedBy = result.Tender_CreatedBy,
+                        CreatedAt = result.Tender_CreatedAt,
+                        UpdatedAt = result.Tender_UpdatedAt,
+                        PublishedAt = result.Tender_PublishedAt,
+                        IsActive = result.Tender_IsActive
+                    } : null
+                };
+
                 deposit.Transactions = (await GetTransactionsByDepositIdAsync(deposit.Id)).ToList();
+                deposits.Add(deposit);
             }
 
             return (deposits, totalCount);

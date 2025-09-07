@@ -1,419 +1,430 @@
-﻿@model BiddingSystem.Models.DashboardViewModel
+﻿@model BiddingSystem.ViewModels.DashboardViewModel
+@using BiddingSystem.Models
 @{
     ViewData["Title"] = "Dashboard";
-    Layout = "_Layout";
-    var financialYear = ViewBag.FinancialYear ?? DateTime.Now.Year;
 }
 
-@Html.AntiForgeryToken()
-
-<div class="p-6">
-    <!-- Header Section -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between">
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <div class="flex flex-wrap items-center justify-between mb-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
-              
+                <h2 class="text-2xl font-bold text-gray-800">Dashboard</h2>
+                <p class="text-gray-600">@DateTime.Now.ToString("MMMM dd, yyyy") | @DateTime.Now.DayOfWeek</p>
             </div>
-            <div class="flex items-center space-x-4">
-                <div class="relative">
-                    <select id="financialYearSelect" class="bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        @for (int year = 2020; year <= 2030; year++)
-                        {
-                            <option value="@year" selected="@(year == financialYear)">FY @year</option>
-                        }
-                    </select>
-                </div>
-                <button id="exportReportBtn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 flex items-center transition-colors">
-                    <i class="ri-download-line mr-2"></i>Export Report
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Key Metrics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Total Tenders -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i class="ri-auction-line text-blue-600 text-xl"></i>
-                </div>
-                <div class="text-right">
-                    <p class="text-2xl font-bold text-gray-800"></p>
-                    <p class="text-sm text-gray-500">Total Tenders</p>
-                </div>
-            </div>
-            <div class="flex items-center text-sm">
-                <span class="text-green-600 flex items-center">
-                    <i class="ri-arrow-up-line mr-1"></i>
-                    +12%
-                </span>
-                <span class="text-gray-500 ml-2">vs last month</span>
+            <div class="flex space-x-3 mt-4 sm:mt-0">
+               @*  <button class="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-button text-gray-700 hover:bg-gray-50 whitespace-nowrap">
+                    <div class="w-4 h-4 flex items-center justify-center mr-2">
+                        <i class="ri-download-line"></i>
+                    </div>
+                    <span>Export</span>
+                </button> *@
+                <a asp-controller="Tender" asp-action="Create" class="flex items-center px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 whitespace-nowrap">
+                    <div class="w-4 h-4 flex items-center justify-center mr-2">
+                        <i class="ri-add-line"></i>
+                    </div>
+                    <span>Add Tender</span>
+                </a>
             </div>
         </div>
 
-        <!-- EMD Collected -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <i class="ri-money-dollar-circle-line text-green-600 text-xl"></i>
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+            <div class="bg-white rounded shadow p-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Active Tenders</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">@(Model.Statistics?.ActiveTenders ?? 0)</h3>
+                    </div>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-primary">
+                        <i class="ri-file-list-3-line text-xl"></i>
+                    </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-2xl font-bold text-gray-800">₹0</p>
-                    <p class="text-sm text-gray-500">EMD Collected</p>
-                </div>
+             @*    <div class="flex items-center mt-4">
+                    <div class="w-4 h-4 flex items-center justify-center text-green-500">
+                        <i class="ri-arrow-up-line"></i>
+                    </div>
+                    <span class="text-green-500 text-sm ml-1">12.5%</span>
+                    <span class="text-gray-500 text-sm ml-2">from last month</span>
+                </div> *@
             </div>
-            <div class="flex items-center text-sm">
-                <span class="text-green-600 flex items-center">
-                    <i class="ri-arrow-up-line mr-1"></i>
-                    +8%
-                </span>
-                <span class="text-gray-500 ml-2">vs last month</span>
-            </div>
-        </div>
-
-        <!-- Active Bidders -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <i class="ri-user-line text-purple-600 text-xl"></i>
-                </div>
-                <div class="text-right">
-                    <p class="text-2xl font-bold text-gray-800">₹0</p>
-                    <p class="text-sm text-gray-500">Active Bidders</p>
-                </div>
-            </div>
-            <div class="flex items-center text-sm">
-                <span class="text-green-600 flex items-center">
-                    <i class="ri-arrow-up-line mr-1"></i>
-                    +15%
-                </span>
-                <span class="text-gray-500 ml-2">vs last month</span>
-            </div>
-        </div>
-
-        <!-- Processing Fees -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <i class="ri-bank-card-line text-orange-600 text-xl"></i>
-                </div>
-                <div class="text-right">
-                    <p class="text-2xl font-bold text-gray-800">₹0</p>
-                    <p class="text-sm text-gray-500">Processing Fees</p>
-                </div>
-            </div>
-            <div class="flex items-center text-sm">
-                <span class="text-green-600 flex items-center">
-                    <i class="ri-arrow-up-line mr-1"></i>
-                    +5%
-                </span>
-                <span class="text-gray-500 ml-2">vs last month</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions Panel -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <a asp-controller="Tender" asp-action="Create" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
-                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-blue-200 transition-colors">
-                    <i class="ri-add-line text-blue-600"></i>
-                </div>
-                <div>
-                    <p class="font-medium text-gray-800">Create Tender</p>
-                    <p class="text-sm text-gray-500">Add new tender</p>
-                </div>
-            </a>
             
-            <a asp-controller="Tender" asp-action="Index" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
-                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-green-200 transition-colors">
-                    <i class="ri-file-list-line text-green-600"></i>
+            <div class="bg-white rounded shadow p-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">EMD Collected</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">₹ @(((Model.Statistics?.TotalEMDSDAmount ?? 0) / 1000000).ToString("F1"))M</h3>
+                        <p class="text-xs text-gray-400 mt-1">Raw: ₹@(Model.Statistics?.TotalEMDSDAmount.ToString("N0") ?? "0")</p>
+                    </div>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-600">
+                        <i class="ri-money-dollar-circle-line text-xl"></i>
+                    </div>
                 </div>
-                <div>
-                    <p class="font-medium text-gray-800">Manage Tenders</p>
-                    <p class="text-sm text-gray-500">View all tenders</p>
-                </div>
-            </a>
+              @*   <div class="flex items-center mt-4">
+                    <div class="w-4 h-4 flex items-center justify-center text-green-500">
+                        <i class="ri-arrow-up-line"></i>
+                    </div>
+                    <span class="text-green-500 text-sm ml-1">8.2%</span>
+                    <span class="text-gray-500 text-sm ml-2">from last month</span>
+                </div> *@
+            </div>
             
-            <a asp-controller="Tender" asp-action="Dashboard" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
-                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-200 transition-colors">
-                    <i class="ri-money-dollar-circle-line text-purple-600"></i>
+            <div class="bg-white rounded shadow p-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">SD Collected</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">₹ @(((Model.Statistics?.TotalSDAmount ?? 0) / 1000000).ToString("F1"))M</h3>
+                        <p class="text-xs text-gray-400 mt-1">Raw: ₹@(Model.Statistics?.TotalSDAmount.ToString("N0") ?? "0")</p>
+                    </div>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                        <i class="ri-secure-payment-line text-xl"></i>
+                    </div>
                 </div>
-                <div>
-                    <p class="font-medium text-gray-800">EMD Management</p>
-                    <p class="text-sm text-gray-500">Manage EMD payments</p>
-                </div>
-            </a>
+               @*  <div class="flex items-center mt-4">
+                    <div class="w-4 h-4 flex items-center justify-center text-green-500">
+                        <i class="ri-arrow-up-line"></i>
+                    </div>
+                    <span class="text-green-500 text-sm ml-1">6.7%</span>
+                    <span class="text-gray-500 text-sm ml-2">from last month</span>
+                </div> *@
+            </div>
             
-            <a asp-controller="Tender" asp-action="Index" 
-               class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
-                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-orange-200 transition-colors">
-                    <i class="ri-safe-2-line text-orange-600"></i>
-                </div>
-                <div>
-                    <p class="font-medium text-gray-800">SD Management</p>
-                    <p class="text-sm text-gray-500">Manage SD deposits</p>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- Analytics Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Tender Status Distribution -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-gray-800">Tender Status Distribution</h3>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="ri-more-2-line"></i>
-                </button>
-            </div>
-            <div id="tenderStatusChart" class="h-64"></div>
-        </div>
-
-        <!-- Monthly Tender Trends -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-gray-800">Monthly Tender Trends</h3>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="ri-more-2-line"></i>
-                </button>
-            </div>
-            <div id="monthlyTrendChart" class="h-64"></div>
-        </div>
-    </div>
-
-    <!-- Recent Activities & Alerts -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Recent Tenders -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-gray-800">Recent Activities</h3>
-                <a asp-controller="Tender" asp-action="Index" class="text-primary hover:text-primary/80 text-sm">View All</a>
-            </div>
-            <div class="space-y-4">
-          @*       @if (Model.RecentUsers?.Any() == true)
-                {
-                    @foreach (var user in Model.RecentUsers.Take(5))
-                    {
-                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                                    <i class="ri-user-line text-blue-600"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">@user.FirstName @user.LastName</p>
-                                    <p class="text-xs text-gray-500">@user.Email</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-3">
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @(user.Role == BiddingSystem.Models.UserRole.Admin ? "bg-red-100 text-red-800" : user.Role == BiddingSystem.Models.UserRole.Employee ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800")">
-                                    @user.Role
-                                </span>
-                            </div>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="ri-file-list-line text-4xl mb-2"></i>
-                        <p>No recent activities</p>
+            <div class="bg-white rounded shadow p-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Pending Refunds</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">@(Model.Statistics?.PendingRefunds ?? 0)</h3>
+                        <p class="text-xs text-gray-400 mt-1">EMDSDDeposits | Status: Pending</p>
+                    
+                      @*   <p class="text-xs text-gray-400 mt-1">Status: Pending (1)</p> *@
                     </div>
-                } *@
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="ri-refund-2-line text-xl"></i>
+                    </div>
+                </div>
+              @*   <div class="flex items-center mt-4">
+                    <div class="w-4 h-4 flex items-center justify-center text-red-500">
+                        <i class="ri-arrow-up-line"></i>
+                    </div>
+                    <span class="text-red-500 text-sm ml-1">3.1%</span>
+                    <span class="text-gray-500 text-sm ml-2">from last month</span>
+                </div> *@
+            </div>
+            
+            <div class="bg-white rounded shadow p-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Processed Refunds</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">@(Model.Statistics?.ProcessedRefunds ?? 0)</h3>
+                        <p class="text-xs text-gray-400 mt-1">EMDSDDeposits | Status: Refunded</p>
+                     
+        @*                 <p class="text-xs text-gray-400 mt-1">Status: Completed (4)</p> *@
+                    </div>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-teal-100 text-teal-600">
+                        <i class="ri-bank-card-line text-xl"></i>
+                    </div>
+                </div>
+              @*   <div class="flex items-center mt-4">
+                    <div class="w-4 h-4 flex items-center justify-center text-green-500">
+                        <i class="ri-arrow-up-line"></i>
+                    </div>
+                    <span class="text-green-500 text-sm ml-1">22.1%</span>
+                    <span class="text-gray-500 text-sm ml-2">from last month</span>
+                </div> *@
             </div>
         </div>
 
-        <!-- Important Alerts -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-semibold text-gray-800">System Status</h3>
-                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">All Systems Operational</span>
+        <!-- Main Content Grid -->
+        <div class="space-y-6">
+            <!-- Tender Overview -->
+            <div class="bg-white rounded shadow">
+                <div class="flex items-center justify-between p-5 border-b">
+                    <h3 class="text-lg font-semibold text-gray-800">Tender Overview</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-5 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">Tender ID</th>
+                                <th class="px-5 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">Tender Title</th>
+                                <th class="px-5 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">Publish Date</th>
+                                <th class="px-5 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">EMD/SD Amount</th>
+                                <th class="px-5 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">No. of Bidder</th>
+                                <th class="px-5 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">Last date of EMD</th>
+                                <th class="px-5 py-3 text-left text-sm font-semibold text-gray-500 tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            @if (Model.RecentTenders.Any())
+                            {
+                                @foreach (var tender in Model.RecentTenders.Take(5))
+                                {
+                                    <tr>
+                                        <td class="px-5 py-4 text-sm text-gray-800">@tender.TenderId</td>
+                                        <td class="px-5 py-4 text-sm text-gray-800">@tender.TenderTitle</td>
+                                        <td class="px-5 py-4 text-sm text-gray-800">@tender.PublishDate.ToString("yyyy-MM-dd")</td>
+                                        <td class="px-5 py-4 text-sm text-gray-800">@tender.EmdAmount.ToString("N2")</td>
+                                        <td class="px-5 py-4 text-sm text-gray-800">@(Model.RecentBids?.Count(b => b.TenderId == tender.Id) ?? 0)</td>
+                                        <td class="px-5 py-4 text-sm text-gray-800">@tender.TenderClosingDate?.ToString("yyyy-MM-dd")</td>
+                                        <td class="px-5 py-4">
+                                            <span class="px-2 py-1 text-xs rounded-full @(tender.Status == TenderStatus.Published ? "bg-green-100 text-green-800" : tender.Status == TenderStatus.Closed ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800")">
+                                                @tender.StatusDisplayName
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="7" class="px-5 py-12 text-center">
+                                        <div class="text-gray-500">
+                                            <i class="ri-inbox-line text-4xl mb-4"></i>
+                                            <p class="text-lg font-medium">No tenders available</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="space-y-4">
-                <div class="flex items-start p-4 border border-green-200 rounded-lg bg-green-50">
-                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                        <i class="ri-check-line text-green-600"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">System Health</p>
-                        <p class="text-xs text-gray-600 mt-1">All services are running normally</p>
-                        <p class="text-xs text-gray-500 mt-2">@DateTime.Now.ToString("MMM dd, yyyy HH:mm")</p>
-                    </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded shadow p-5">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">EMD Collection Trends</h3>
+                    <div id="emdChart" class="w-full h-64"></div>
                 </div>
-                
-                <div class="flex items-start p-4 border border-blue-200 rounded-lg bg-blue-50">
-                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                        <i class="ri-information-line text-blue-600"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">Database Status</p>
-                        <p class="text-xs text-gray-600 mt-1">Database connection is stable</p>
-                        <p class="text-xs text-gray-500 mt-2">@DateTime.Now.ToString("MMM dd, yyyy HH:mm")</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-start p-4 border border-purple-200 rounded-lg bg-purple-50">
-                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                        <i class="ri-shield-check-line text-purple-600"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">Security Status</p>
-                        <p class="text-xs text-gray-600 mt-1">All security protocols are active</p>
-                        <p class="text-xs text-gray-500 mt-2">@DateTime.Now.ToString("MMM dd, yyyy HH:mm")</p>
-                    </div>
+                <div class="bg-white rounded shadow p-5">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Tender Status Distribution</h3>
+                    <div id="tenderChart" class="w-full h-64"></div>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const financialYear = @financialYear;
+            // EMD Collection Trends Chart
+            const emdChart = echarts.init(document.getElementById('emdChart'));
             
-            // Initialize charts
-            initializeTenderStatusChart();
-            initializeMonthlyTrendChart();
-            
-            // Financial Year Change Handler
-            document.getElementById('financialYearSelect').addEventListener('change', function() {
-                window.location.href = '@Url.Action("Index", "Dashboard")?year=' + this.value;
-            });
-            
-            // Export Report Handler
-            document.getElementById('exportReportBtn').addEventListener('click', function() {
-                // Placeholder for export functionality
-                alert('Export functionality will be implemented soon');
-            });
-            
-            // Initialize Tender Status Chart
-            function initializeTenderStatusChart() {
-                const chart = echarts.init(document.getElementById('tenderStatusChart'));
-                
-                const option = {
-                    tooltip: {
-                        trigger: 'item',
-                        formatter: '{b}: {c} ({d}%)'
-                    },
-                    legend: {
-                        orient: 'vertical',
-                        right: 10,
-                        top: 'center',
-                        data: ['Draft', 'Published', 'Closed', 'Cancelled']
-                    },
-                    series: [{
-                        name: 'Tender Status',
-                        type: 'pie',
-                        radius: ['50%', '70%'],
-                        avoidLabelOverlap: false,
-                        itemStyle: {
-                            borderRadius: 8,
-                            borderColor: '#fff',
-                            borderWidth: 2
+            // Load EMD trends data
+            fetch('/Dashboard/GetMonthlyTrends?year=@Model.SelectedYear')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error loading EMD trends:', data.error);
+                        return;
+                    }
+                    
+                    const emdOption = {
+                        animation: false,
+                        tooltip: {
+                            trigger: 'axis',
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            borderColor: '#e2e8f0',
+                            textStyle: {
+                                color: '#1f2937'
+                            }
                         },
+                        grid: {
+                            top: 10,
+                            right: 10,
+                            bottom: 30,
+                            left: 50
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data.months || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#e2e8f0'
+                                }
+                            },
+                            axisLabel: {
+                                color: '#1f2937'
+                            }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            axisLine: {
+                                show: false
+                            },
+                            axisLabel: {
+                                color: '#1f2937'
+                            },
+                            splitLine: {
+                                lineStyle: {
+                                    color: '#e2e8f0'
+                                }
+                            }
+                        },
+                        series: [{
+                            name: 'EMD Collections',
+                            data: data.totalEMDSDAmounts ? data.totalEMDSDAmounts.map(amount => (amount / 1000000).toFixed(1)) : [0.8, 1.2, 1.7, 2.3, 2.8, 3.5, 4.2],
+                            type: 'line',
+                            smooth: true,
+                            symbol: 'none',
+                            lineStyle: {
+                                width: 3,
+                                color: 'rgba(87, 181, 231, 1)'
+                            },
+                            areaStyle: {
+                                color: {
+                                    type: 'linear',
+                                    x: 0,
+                                    y: 0,
+                                    x2: 0,
+                                    y2: 1,
+                                    colorStops: [{
+                                        offset: 0,
+                                        color: 'rgba(87, 181, 231, 0.2)'
+                                    }, {
+                                        offset: 1,
+                                        color: 'rgba(87, 181, 231, 0.05)'
+                                    }]
+                                }
+                            }
+                        }]
+                    };
+                    emdChart.setOption(emdOption);
+                })
+                .catch(error => {
+                    console.error('Error loading EMD trends:', error);
+                    // Fallback to static data
+                    const emdOption = {
+                        animation: false,
+                        tooltip: {
+                            trigger: 'axis',
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            borderColor: '#e2e8f0',
+                            textStyle: {
+                                color: '#1f2937'
+                            }
+                        },
+                        grid: {
+                            top: 10,
+                            right: 10,
+                            bottom: 30,
+                            left: 50
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#e2e8f0'
+                                }
+                            },
+                            axisLabel: {
+                                color: '#1f2937'
+                            }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            axisLine: {
+                                show: false
+                            },
+                            axisLabel: {
+                                color: '#1f2937'
+                            },
+                            splitLine: {
+                                lineStyle: {
+                                    color: '#e2e8f0'
+                                }
+                            }
+                        },
+                        series: [{
+                            name: 'EMD Collections',
+                            data: [0.8, 1.2, 1.7, 2.3, 2.8, 3.5, 4.2],
+                            type: 'line',
+                            smooth: true,
+                            symbol: 'none',
+                            lineStyle: {
+                                width: 3,
+                                color: 'rgba(87, 181, 231, 1)'
+                            },
+                            areaStyle: {
+                                color: {
+                                    type: 'linear',
+                                    x: 0,
+                                    y: 0,
+                                    x2: 0,
+                                    y2: 1,
+                                    colorStops: [{
+                                        offset: 0,
+                                        color: 'rgba(87, 181, 231, 0.2)'
+                                    }, {
+                                        offset: 1,
+                                        color: 'rgba(87, 181, 231, 0.05)'
+                                    }]
+                                }
+                            }
+                        }]
+                    };
+                    emdChart.setOption(emdOption);
+                });
+
+            // Tender Status Distribution Chart
+            const tenderChart = echarts.init(document.getElementById('tenderChart'));
+            const tenderOption = {
+                animation: false,
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    borderColor: '#e2e8f0',
+                    textStyle: {
+                        color: '#1f2937'
+                    }
+                },
+                legend: {
+                    bottom: '0',
+                    left: 'center',
+                    textStyle: {
+                        color: '#1f2937'
+                    }
+                },
+                series: [{
+                    name: 'Tender Status',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['50%', '45%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: false
+                    },
+                    emphasis: {
                         label: {
                             show: true,
-                            position: 'outside',
-                            formatter: '{b}: {c}'
-                        },
-                        labelLine: {
-                            show: true
-                        },
-                        data: [
-                            { value: 5, name: 'Draft', itemStyle: { color: '#6b7280' } },
-                            { value: 12, name: 'Published', itemStyle: { color: '#22c55e' } },
-                            { value: 8, name: 'Closed', itemStyle: { color: '#ef4444' } },
-                            { value: 2, name: 'Cancelled', itemStyle: { color: '#eab308' } }
-                        ]
-                    }]
-                };
-                
-                chart.setOption(option);
-                window.addEventListener('resize', () => chart.resize());
-            }
-            
-            // Initialize Monthly Trend Chart
-            function initializeMonthlyTrendChart() {
-                const chart = echarts.init(document.getElementById('monthlyTrendChart'));
-                
-                const option = {
-                    animation: true,
-                    grid: {
-                        top: 10,
-                        right: 10,
-                        bottom: 20,
-                        left: 40,
-                        containLabel: true
-                    },
-                    tooltip: {
-                        trigger: 'axis',
-                        formatter: function(params) {
-                            return params[0].name + '<br/>' +
-                                   'Tenders: ' + params[0].value;
+                            fontSize: '12',
+                            fontWeight: 'bold'
                         }
                     },
-                    xAxis: {
-                        type: 'category',
-                        data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                        axisLine: {
-                            lineStyle: {
-                                color: '#E5E7EB'
-                            }
-                        },
-                        axisLabel: {
-                            color: '#1F2937'
-                        }
+                    labelLine: {
+                        show: false
                     },
-                    yAxis: {
-                        type: 'value',
-                        axisLine: {
-                            show: false
-                        },
-                        axisLabel: {
-                            color: '#1F2937'
-                        },
-                        splitLine: {
-                            lineStyle: {
-                                color: '#E5E7EB'
-                            }
-                        }
-                    },
-                    series: [{
-                        data: [3, 5, 7, 4, 8, 6, 9, 5, 7, 8, 6, 4],
-                        type: 'line',
-                        smooth: true,
-                        symbol: 'circle',
-                        symbolSize: 8,
-                        itemStyle: {
-                            color: '#3b82f6'
-                        },
-                        lineStyle: {
-                            width: 3,
-                            color: '#3b82f6'
-                        },
-                        areaStyle: {
-                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-                                offset: 0,
-                                color: 'rgba(59, 130, 246, 0.3)'
-                            }, {
-                                offset: 1,
-                                color: 'rgba(59, 130, 246, 0)'
-                            }])
-                        }
-                    }]
-                };
-                
-                chart.setOption(option);
-                window.addEventListener('resize', () => chart.resize());
-            }
+                    data: [
+                        { value: @(Model.Statistics?.ActiveTenders ?? 0), name: 'Active', itemStyle: { color: 'rgba(87, 181, 231, 1)' } },
+                        { value: @((Model.Statistics?.TotalTenders ?? 0) - (Model.Statistics?.ActiveTenders ?? 0)), name: 'Other', itemStyle: { color: 'rgba(251, 191, 114, 1)' } }
+                    ]
+                }]
+            };
+            tenderChart.setOption(tenderOption);
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                emdChart.resize();
+                tenderChart.resize();
+            });
         });
     </script>
 }

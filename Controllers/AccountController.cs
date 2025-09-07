@@ -250,17 +250,12 @@ namespace BiddingSystem.Controllers
 
                 var model = new ViewModels.DashboardViewModel
                 {
-                    CurrentUser = currentUser
+                    SelectedYear = DateTime.Now.Year,
+                    AvailableYears = new List<int> { DateTime.Now.Year, DateTime.Now.Year - 1, DateTime.Now.Year - 2 }
                 };
 
-                // Add role-specific data
-                if (currentUser.Role == UserRole.Admin)
-                {
-                    model.TotalUsers = await _userRepository.GetTotalUsersCountAsync();
-                    model.RecentRegistrations = await _userRepository.GetRecentRegistrationsCountAsync();
-                    model.RecentUsers = await _userRepository.GetRecentUsersAsync();
-                    model.UsersByRole = await _userRepository.GetUserCountByRoleAsync();
-                }
+                // For now, initialize with empty data - this can be enhanced later
+                // if needed for user management dashboard
 
 
 

@@ -12,6 +12,9 @@ namespace BiddingSystem.ViewModels
         [Display(Name = "Tender")]
         public int TenderId { get; set; }
 
+        [Display(Name = "Tender Bid")]
+        public int? TenderBidId { get; set; }
+
         [Required(ErrorMessage = "Amount is required")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
         [Display(Name = "Amount")]
@@ -32,6 +35,8 @@ namespace BiddingSystem.ViewModels
         // Display properties
         public string? TenderTitle { get; set; }
         public string? TenderIdString { get; set; }
+        public string? BidderName { get; set; }
+        public string? CompanyName { get; set; }
         public string? LinkId { get; set; }
         public string? PaymentUrl { get; set; }
         public PaymentLinkStatus Status { get; set; }
@@ -56,6 +61,7 @@ namespace BiddingSystem.ViewModels
         public List<SelectListItem> StatusOptions { get; set; } = new List<SelectListItem>();
         public List<SelectListItem> PaymentTypeOptions { get; set; } = new List<SelectListItem>();
         public List<SelectListItem> TenderOptions { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> TenderBidOptions { get; set; } = new List<SelectListItem>();
     }
 
     public class PaymentLinkDetailsViewModel
@@ -65,6 +71,8 @@ namespace BiddingSystem.ViewModels
         public string TenderTitle { get; set; } = string.Empty;
         public string TenderId { get; set; } = string.Empty;
         public string TenderIdString { get; set; } = string.Empty;
+        public string? BidderName { get; set; }
+        public string? CompanyName { get; set; }
         public decimal Amount { get; set; }
         public PaymentType PaymentType { get; set; }
         public string PaymentUrl { get; set; } = string.Empty;

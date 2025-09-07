@@ -202,14 +202,14 @@
                         <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Tender Management</span>
                     </div>
 
-                    <a asp-controller="Tender" asp-action="Dashboard"
+                  @*   <a asp-controller="Tender" asp-action="Dashboard"
                        class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
                        data-nav="tender-dashboard">
                         <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
                             <i class="ri-dashboard-line"></i>
                         </div>
                         <span class="sidebar-text">Tender Dashboard</span>
-                    </a>
+                    </a> *@
 
                     <a asp-controller="Tender" asp-action="Index"
                        class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
@@ -247,14 +247,14 @@
 
                     @if (User.IsInRole("Admin") || User.IsInRole("Maker") || User.IsInRole("Checker"))
                     {
-                        <a asp-controller="Refund" asp-action="Index"
+                   @*      <a asp-controller="Refund" asp-action="Index"
                            class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
                            data-nav="refund-management">
                             <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
                                 <i class="ri-refund-2-line"></i>
                             </div>
                             <span class="sidebar-text">Refund Management</span>
-                        </a>
+                        </a> *@
                      @*    <a asp-controller="Refund" asp-action="MyRefunds"
                            class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
                            data-nav="my-refunds">
@@ -298,7 +298,7 @@
                         <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Reports & Analytics</span>
                     </div>
 
-                    <a asp-controller="Tender" asp-action="Index"
+                    @* <a asp-controller="Tender" asp-action="Index"
                        class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
                        data-nav="tender-reports">
                         <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
@@ -333,7 +333,7 @@
                         </div>
                         <span class="sidebar-text">Analytics</span>
                     </a>
-
+ *@
                     <!-- Settings Section -->
                     <div class="mt-4 mb-2">
                         <span class="sidebar-text text-xs font-medium text-gray-500 uppercase tracking-wide px-3">Settings</span>

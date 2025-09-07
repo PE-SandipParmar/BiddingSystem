@@ -18,6 +18,9 @@ namespace BiddingSystem.Models
         [Display(Name = "Tender ID")]
         public int TenderId { get; set; }
 
+        [Display(Name = "Tender Bid ID")]
+        public int? TenderBidId { get; set; }
+
         [Required]
         [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
         [Display(Name = "Amount")]
@@ -73,6 +76,7 @@ namespace BiddingSystem.Models
 
         // Navigation properties
         public virtual Tender Tender { get; set; } = null!;
+        public virtual TenderBid? TenderBid { get; set; }
         public virtual User CreatedByUser { get; set; } = null!;
         public virtual User? UsedByUser { get; set; }
 
