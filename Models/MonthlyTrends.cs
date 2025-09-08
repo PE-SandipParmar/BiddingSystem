@@ -7,5 +7,6 @@ namespace BiddingSystem.Models
         public List<int> BidCounts { get; set; } = new();
         public List<decimal> TotalBidAmounts { get; set; } = new();
         public List<decimal> TotalEMDSDAmounts { get; set; } = new();
+        public List<decimal> TotalCollectedEMDs { get; set; } = new();
     }
 }

@@ -27,6 +27,12 @@ namespace BiddingSystem.Models
         [ForeignKey("PaymentLinkId")]
         public virtual PaymentLink PaymentLink { get; set; } = null!;
 
+        [Display(Name = "EMD/SD Deposit ID")]
+        public int? EMDSDDepositId { get; set; }
+
+        [ForeignKey("EMDSDDepositId")]
+        public virtual EMDSDDeposit? EMDSDDeposit { get; set; }
+
         [Required]
         [Display(Name = "Refund Type")]
         public RefundType Type { get; set; } = RefundType.Full;
@@ -39,6 +45,15 @@ namespace BiddingSystem.Models
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Approved Amount")]
         public decimal? ApprovedAmount { get; set; }
+
+        [Display(Name = "Approved By")]
+        public int? ApprovedBy { get; set; }
+
+        [ForeignKey("ApprovedBy")]
+        public virtual User? ApprovedByUser { get; set; }
+
+        [Display(Name = "Approved At")]
+        public DateTime? ApprovedAt { get; set; }
 
         [Required]
         [Display(Name = "Refund Reason")]
@@ -58,6 +73,42 @@ namespace BiddingSystem.Models
 
         [ForeignKey("ProcessedBy")]
         public virtual User? ProcessedByUser { get; set; }
+
+        // Checker-Maker Workflow Fields
+        [Display(Name = "Created By (Maker)")]
+        public int? CreatedBy { get; set; }
+
+        [ForeignKey("CreatedBy")]
+        public virtual User? CreatedByUser { get; set; }
+
+        [Display(Name = "First Checker")]
+        public int? FirstCheckerId { get; set; }
+
+        [ForeignKey("FirstCheckerId")]
+        public virtual User? FirstChecker { get; set; }
+
+        [Display(Name = "First Checker Approval Date")]
+        public DateTime? FirstCheckerApprovedAt { get; set; }
+
+        [Display(Name = "First Checker Remarks")]
+        [StringLength(500)]
+        public string? FirstCheckerRemarks { get; set; }
+
+        [Display(Name = "Second Checker")]
+        public int? SecondCheckerId { get; set; }
+
+        [ForeignKey("SecondCheckerId")]
+        public virtual User? SecondChecker { get; set; }
+
+        [Display(Name = "Second Checker Approval Date")]
+        public DateTime? SecondCheckerApprovedAt { get; set; }
+
+        [Display(Name = "Second Checker Remarks")]
+        [StringLength(500)]
+        public string? SecondCheckerRemarks { get; set; }
+
+        [Display(Name = "Workflow Status")]
+        public RefundWorkflowStatus WorkflowStatus { get; set; } = RefundWorkflowStatus.Draft;
 
         [Required]
         [Display(Name = "Requested At")]
@@ -122,10 +173,6 @@ namespace BiddingSystem.Models
             return $"REF-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
         }
 
-        public bool CanBeProcessed()
-        {
-            return Status == RefundStatus.Approved && ApprovedAmount.HasValue && ApprovedAmount > 0;
-        }
 
         public bool IsCompleted()
         {
@@ -135,6 +182,62 @@ namespace BiddingSystem.Models
         public bool IsRejected()
         {
             return Status == RefundStatus.Rejected;
+        }
+
+        // Checker-Maker Workflow Helper Methods
+        public bool CanBeSubmittedForFirstCheck()
+        {
+            return WorkflowStatus == RefundWorkflowStatus.Draft && Status == RefundStatus.Pending;
+        }
+
+        public bool CanBeFirstChecked()
+        {
+            return WorkflowStatus == RefundWorkflowStatus.SubmittedForFirstCheck;
+        }
+
+        public bool CanBeSubmittedForSecondCheck()
+        {
+            return WorkflowStatus == RefundWorkflowStatus.FirstCheckApproved;
+        }
+
+        public bool CanBeSecondChecked()
+        {
+            return WorkflowStatus == RefundWorkflowStatus.SubmittedForSecondCheck;
+        }
+
+        public bool CanBeProcessed()
+        {
+            return WorkflowStatus == RefundWorkflowStatus.ReadyForProcessing && Status == RefundStatus.Approved;
+        }
+
+        public bool IsWorkflowCompleted()
+        {
+            return WorkflowStatus == RefundWorkflowStatus.Completed;
+        }
+
+        public bool IsWorkflowRejected()
+        {
+            return WorkflowStatus == RefundWorkflowStatus.FirstCheckRejected || 
+                   WorkflowStatus == RefundWorkflowStatus.SecondCheckRejected;
+        }
+
+        public string GetWorkflowStatusBadgeClass()
+        {
+            return WorkflowStatus switch
+            {
+                RefundWorkflowStatus.Draft => "bg-gray-100 text-gray-800",
+                RefundWorkflowStatus.SubmittedForFirstCheck => "bg-yellow-100 text-yellow-800",
+                RefundWorkflowStatus.FirstCheckApproved => "bg-blue-100 text-blue-800",
+                RefundWorkflowStatus.FirstCheckRejected => "bg-red-100 text-red-800",
+                RefundWorkflowStatus.SubmittedForSecondCheck => "bg-yellow-100 text-yellow-800",
+                RefundWorkflowStatus.SecondCheckApproved => "bg-green-100 text-green-800",
+                RefundWorkflowStatus.SecondCheckRejected => "bg-red-100 text-red-800",
+                RefundWorkflowStatus.ReadyForProcessing => "bg-green-100 text-green-800",
+                RefundWorkflowStatus.Processing => "bg-blue-100 text-blue-800",
+                RefundWorkflowStatus.Completed => "bg-green-100 text-green-800",
+                RefundWorkflowStatus.Failed => "bg-red-100 text-red-800",
+                _ => "bg-gray-100 text-gray-800"
+            };
         }
     }
 
@@ -201,6 +304,42 @@ namespace BiddingSystem.Models
         Failed = 6
     }
 
+    public enum RefundWorkflowStatus
+    {
+        [Display(Name = "Draft")]
+        Draft = 1,
+
+        [Display(Name = "Submitted for First Check")]
+        SubmittedForFirstCheck = 2,
+
+        [Display(Name = "First Check Approved")]
+        FirstCheckApproved = 3,
+
+        [Display(Name = "First Check Rejected")]
+        FirstCheckRejected = 4,
+
+        [Display(Name = "Submitted for Second Check")]
+        SubmittedForSecondCheck = 5,
+
+        [Display(Name = "Second Check Approved")]
+        SecondCheckApproved = 6,
+
+        [Display(Name = "Second Check Rejected")]
+        SecondCheckRejected = 7,
+
+        [Display(Name = "Ready for Processing")]
+        ReadyForProcessing = 8,
+
+        [Display(Name = "Processing")]
+        Processing = 9,
+
+        [Display(Name = "Completed")]
+        Completed = 10,
+
+        [Display(Name = "Failed")]
+        Failed = 11
+    }
+
     public static class RefundTypeExtensions
     {
         public static string GetDisplayName(this RefundType type)
@@ -247,6 +386,28 @@ namespace BiddingSystem.Models
                 RefundStatus.Completed => "Completed",
                 RefundStatus.Rejected => "Rejected",
                 RefundStatus.Failed => "Failed",
+                _ => "Unknown"
+            };
+        }
+    }
+
+    public static class RefundWorkflowStatusExtensions
+    {
+        public static string GetDisplayName(this RefundWorkflowStatus status)
+        {
+            return status switch
+            {
+                RefundWorkflowStatus.Draft => "Draft",
+                RefundWorkflowStatus.SubmittedForFirstCheck => "Submitted for First Check",
+                RefundWorkflowStatus.FirstCheckApproved => "First Check Approved",
+                RefundWorkflowStatus.FirstCheckRejected => "First Check Rejected",
+                RefundWorkflowStatus.SubmittedForSecondCheck => "Submitted for Second Check",
+                RefundWorkflowStatus.SecondCheckApproved => "Second Check Approved",
+                RefundWorkflowStatus.SecondCheckRejected => "Second Check Rejected",
+                RefundWorkflowStatus.ReadyForProcessing => "Ready for Processing",
+                RefundWorkflowStatus.Processing => "Processing",
+                RefundWorkflowStatus.Completed => "Completed",
+                RefundWorkflowStatus.Failed => "Failed",
                 _ => "Unknown"
             };
         }

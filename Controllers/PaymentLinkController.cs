@@ -486,6 +486,7 @@ namespace BiddingSystem.Controllers
                         {
                             DepositId = depositId,
                             TenderId = paymentLink.TenderId,
+                            TenderBidId = paymentLink.TenderBidId ?? 1, // Use TenderBidId from payment link, default to 1 if null
                             Amount = paymentLink.Amount,
                             BidderName = bidderName,
                             CompanyName = companyName,

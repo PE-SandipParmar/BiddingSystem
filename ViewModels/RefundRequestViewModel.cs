@@ -58,10 +58,41 @@ namespace BiddingSystem.ViewModels
         public User? ProcessedByUser { get; set; }
         public List<RefundTransaction> Transactions { get; set; } = new();
         
+        // Checker-Maker Workflow Fields
+        [Display(Name = "Created By (Maker)")]
+        public int? CreatedBy { get; set; }
+        
+        [Display(Name = "First Checker")]
+        public int? FirstCheckerId { get; set; }
+        
+        [Display(Name = "First Checker Approval Date")]
+        public DateTime? FirstCheckerApprovedAt { get; set; }
+        
+        [Display(Name = "First Checker Remarks")]
+        public string? FirstCheckerRemarks { get; set; }
+        
+        [Display(Name = "Second Checker")]
+        public int? SecondCheckerId { get; set; }
+        
+        [Display(Name = "Second Checker Approval Date")]
+        public DateTime? SecondCheckerApprovedAt { get; set; }
+        
+        [Display(Name = "Second Checker Remarks")]
+        public string? SecondCheckerRemarks { get; set; }
+        
+        [Display(Name = "Workflow Status")]
+        public RefundWorkflowStatus WorkflowStatus { get; set; }
+        
+        // Related workflow users
+        public User? CreatedByUser { get; set; }
+        public User? FirstChecker { get; set; }
+        public User? SecondChecker { get; set; }
+        
         // Display properties
         public string StatusDisplayName => Status.GetDisplayName();
         public string TypeDisplayName => Type.GetDisplayName();
         public string ReasonDisplayName => Reason.GetDisplayName();
+        public string WorkflowStatusDisplayName => WorkflowStatus.GetDisplayName();
         public string RequestedAmountDisplay => RequestedAmount.ToString("C", new System.Globalization.CultureInfo("en-IN"));
         public string ApprovedAmountDisplay => ApprovedAmount?.ToString("C", new System.Globalization.CultureInfo("en-IN")) ?? "N/A";
         
@@ -75,6 +106,22 @@ namespace BiddingSystem.ViewModels
             RefundStatus.Failed => "bg-red-100 text-red-800",
             _ => "bg-gray-100 text-gray-800"
         };
+        
+        public string WorkflowStatusBadgeClass => WorkflowStatus switch
+        {
+            RefundWorkflowStatus.Draft => "bg-gray-100 text-gray-800",
+            RefundWorkflowStatus.SubmittedForFirstCheck => "bg-yellow-100 text-yellow-800",
+            RefundWorkflowStatus.FirstCheckApproved => "bg-blue-100 text-blue-800",
+            RefundWorkflowStatus.FirstCheckRejected => "bg-red-100 text-red-800",
+            RefundWorkflowStatus.SubmittedForSecondCheck => "bg-yellow-100 text-yellow-800",
+            RefundWorkflowStatus.SecondCheckApproved => "bg-green-100 text-green-800",
+            RefundWorkflowStatus.SecondCheckRejected => "bg-red-100 text-red-800",
+            RefundWorkflowStatus.ReadyForProcessing => "bg-green-100 text-green-800",
+            RefundWorkflowStatus.Processing => "bg-blue-100 text-blue-800",
+            RefundWorkflowStatus.Completed => "bg-green-100 text-green-800",
+            RefundWorkflowStatus.Failed => "bg-red-100 text-red-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
     }
 
     public class RefundRequestCreateViewModel
@@ -86,6 +133,12 @@ namespace BiddingSystem.ViewModels
         [Required]
         [Display(Name = "Payment Link")]
         public int PaymentLinkId { get; set; }
+        
+        [Display(Name = "Created By")]
+        public int CreatedBy { get; set; }
+        
+        [Display(Name = "Approved By")]
+        public int? ApprovedBy { get; set; }
         
         [Required]
         [Display(Name = "Refund Type")]

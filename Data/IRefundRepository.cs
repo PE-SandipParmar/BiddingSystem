@@ -66,5 +66,20 @@ namespace BiddingSystem.Data
         Task<IEnumerable<RefundRequest>> GetRecentRefundRequestsAsync(int count = 10);
         Task<IEnumerable<RefundRequest>> GetRefundRequestsByDateRangeAsync(DateTime fromDate, DateTime toDate);
         Task<object> GetRefundStatisticsAsync(DateTime? fromDate = null, DateTime? toDate = null);
+        
+        // Checker-Maker Workflow Operations
+        Task<bool> SubmitForFirstCheckAsync(int id, int submittedBy);
+        Task<bool> FirstCheckApproveAsync(int id, int checkerId, decimal approvedAmount, string? remarks = null);
+        Task<bool> FirstCheckRejectAsync(int id, int checkerId, string? remarks = null);
+        Task<bool> SubmitForSecondCheckAsync(int id, int submittedBy);
+        Task<bool> SecondCheckApproveAsync(int id, int checkerId, string? remarks = null);
+        Task<bool> SecondCheckRejectAsync(int id, int checkerId, string? remarks = null);
+        Task<bool> MarkReadyForProcessingAsync(int id);
+        
+        // Checker-Maker Query Operations
+        Task<IEnumerable<RefundRequest>> GetRefundsPendingFirstCheckAsync();
+        Task<IEnumerable<RefundRequest>> GetRefundsPendingSecondCheckAsync();
+        Task<IEnumerable<RefundRequest>> GetRefundsReadyForProcessingAsync();
+        Task<object> GetCheckerMakerStatisticsAsync();
     }
 }

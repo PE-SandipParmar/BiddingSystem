@@ -438,13 +438,21 @@ namespace BiddingSystem.Data
             
             const string sql = @"
                 INSERT INTO RefundRequests 
-                (RefundId, TenderBidId, PaymentLinkId, Type, RequestedAmount, ApprovedAmount, 
+                (RefundId, TenderBidId, PaymentLinkId, EMDSDDepositId, Type, RequestedAmount, ApprovedAmount, 
                  Reason, Status, RequestedBy, ProcessedBy, RequestedAt, ProcessedAt, 
-                 Remarks, BankDetails, RefundReference, CreatedAt, UpdatedAt)
+                 Remarks, BankDetails, RefundReference, CreatedAt, UpdatedAt,
+                 CreatedBy, ApprovedBy, ApprovedAt,
+                 FirstCheckerId, FirstCheckerApprovedAt, FirstCheckerRemarks,
+                 SecondCheckerId, SecondCheckerApprovedAt, SecondCheckerRemarks,
+                 WorkflowStatus)
                 VALUES 
-                (@RefundId, @TenderBidId, @PaymentLinkId, @Type, @RequestedAmount, @ApprovedAmount, 
+                (@RefundId, @TenderBidId, @PaymentLinkId, @EMDSDDepositId, @Type, @RequestedAmount, @ApprovedAmount, 
                  @Reason, @Status, @RequestedBy, @ProcessedBy, @RequestedAt, @ProcessedAt, 
-                 @Remarks, @BankDetails, @RefundReference, @CreatedAt, @UpdatedAt);
+                 @Remarks, @BankDetails, @RefundReference, @CreatedAt, @UpdatedAt,
+                 @CreatedBy, @ApprovedBy, @ApprovedAt,
+                 @FirstCheckerId, @FirstCheckerApprovedAt, @FirstCheckerRemarks,
+                 @SecondCheckerId, @SecondCheckerApprovedAt, @SecondCheckerRemarks,
+                 @WorkflowStatus);
                 SELECT CAST(SCOPE_IDENTITY() as int);";
 
             try
@@ -910,6 +918,331 @@ namespace BiddingSystem.Data
                 ORDER BY CreatedAt DESC";
 
             return await connection.QueryAsync<RefundTransaction>(sql, new { RefundRequestId = refundRequestId });
+        }
+
+        #endregion
+
+        #region Checker-Maker Workflow Operations
+
+        public async Task<bool> SubmitForFirstCheckAsync(int id, int submittedBy)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                UPDATE RefundRequests 
+                SET WorkflowStatus = 'SubmittedForFirstCheck', UpdatedAt = @UpdatedAt
+                WHERE Id = @Id AND WorkflowStatus = 'Draft'";
+
+            try
+            {
+                var parameters = new
+                {
+                    Id = id,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting refund for first check. Id: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<bool> FirstCheckApproveAsync(int id, int checkerId, decimal approvedAmount, string? remarks = null)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                UPDATE RefundRequests 
+                SET WorkflowStatus = 'FirstCheckApproved', 
+                    FirstCheckerId = @CheckerId, 
+                    FirstCheckerApprovedAt = @ApprovedAt,
+                    FirstCheckerRemarks = @Remarks,
+                    ApprovedAmount = @ApprovedAmount,
+                    UpdatedAt = @UpdatedAt
+                WHERE Id = @Id AND WorkflowStatus = 'SubmittedForFirstCheck'";
+
+            try
+            {
+                var parameters = new
+                {
+                    Id = id,
+                    CheckerId = checkerId,
+                    ApprovedAt = DateTime.UtcNow,
+                    Remarks = remarks,
+                    ApprovedAmount = approvedAmount,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in first check approval. Id: {Id}, CheckerId: {CheckerId}", id, checkerId);
+                throw;
+            }
+        }
+
+        public async Task<bool> FirstCheckRejectAsync(int id, int checkerId, string? remarks = null)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                UPDATE RefundRequests 
+                SET WorkflowStatus = 'FirstCheckRejected', 
+                    FirstCheckerId = @CheckerId, 
+                    FirstCheckerApprovedAt = @RejectedAt,
+                    FirstCheckerRemarks = @Remarks,
+                    Status = 'Rejected',
+                    UpdatedAt = @UpdatedAt
+                WHERE Id = @Id AND WorkflowStatus = 'SubmittedForFirstCheck'";
+
+            try
+            {
+                var parameters = new
+                {
+                    Id = id,
+                    CheckerId = checkerId,
+                    RejectedAt = DateTime.UtcNow,
+                    Remarks = remarks,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in first check rejection. Id: {Id}, CheckerId: {CheckerId}", id, checkerId);
+                throw;
+            }
+        }
+
+        public async Task<bool> SubmitForSecondCheckAsync(int id, int submittedBy)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                UPDATE RefundRequests 
+                SET WorkflowStatus = 'SubmittedForSecondCheck', UpdatedAt = @UpdatedAt
+                WHERE Id = @Id AND WorkflowStatus = 'FirstCheckApproved'";
+
+            try
+            {
+                var parameters = new
+                {
+                    Id = id,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting refund for second check. Id: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<bool> SecondCheckApproveAsync(int id, int checkerId, string? remarks = null)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                UPDATE RefundRequests 
+                SET WorkflowStatus = 'ReadyForProcessing', 
+                    SecondCheckerId = @CheckerId, 
+                    SecondCheckerApprovedAt = @ApprovedAt,
+                    SecondCheckerRemarks = @Remarks,
+                    Status = 'Approved',
+                    UpdatedAt = @UpdatedAt
+                WHERE Id = @Id AND WorkflowStatus = 'SubmittedForSecondCheck'";
+
+            try
+            {
+                var parameters = new
+                {
+                    Id = id,
+                    CheckerId = checkerId,
+                    ApprovedAt = DateTime.UtcNow,
+                    Remarks = remarks,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in second check approval. Id: {Id}, CheckerId: {CheckerId}", id, checkerId);
+                throw;
+            }
+        }
+
+        public async Task<bool> SecondCheckRejectAsync(int id, int checkerId, string? remarks = null)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                UPDATE RefundRequests 
+                SET WorkflowStatus = 'SecondCheckRejected', 
+                    SecondCheckerId = @CheckerId, 
+                    SecondCheckerApprovedAt = @RejectedAt,
+                    SecondCheckerRemarks = @Remarks,
+                    Status = 'Rejected',
+                    UpdatedAt = @UpdatedAt
+                WHERE Id = @Id AND WorkflowStatus = 'SubmittedForSecondCheck'";
+
+            try
+            {
+                var parameters = new
+                {
+                    Id = id,
+                    CheckerId = checkerId,
+                    RejectedAt = DateTime.UtcNow,
+                    Remarks = remarks,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in second check rejection. Id: {Id}, CheckerId: {CheckerId}", id, checkerId);
+                throw;
+            }
+        }
+
+        public async Task<bool> MarkReadyForProcessingAsync(int id)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                UPDATE RefundRequests 
+                SET WorkflowStatus = 'ReadyForProcessing', UpdatedAt = @UpdatedAt
+                WHERE Id = @Id AND WorkflowStatus = 'SecondCheckApproved'";
+
+            try
+            {
+                var parameters = new
+                {
+                    Id = id,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking refund ready for processing. Id: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<RefundRequest>> GetRefundsPendingFirstCheckAsync()
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                SELECT rr.*, tb.*, pl.*, u.*, cb.*
+                FROM RefundRequests rr
+                LEFT JOIN TenderBids tb ON rr.TenderBidId = tb.Id
+                LEFT JOIN PaymentLinks pl ON rr.PaymentLinkId = pl.Id
+                LEFT JOIN Users u ON rr.ProcessedBy = u.Id
+                LEFT JOIN Users cb ON rr.CreatedBy = cb.Id
+                WHERE rr.WorkflowStatus = 'SubmittedForFirstCheck'
+                ORDER BY rr.RequestedAt ASC";
+
+            var result = await connection.QueryAsync<RefundRequest, TenderBid, PaymentLink, User, User, RefundRequest>(
+                sql, (refund, tenderBid, paymentLink, user, createdBy) =>
+                {
+                    refund.TenderBid = tenderBid;
+                    refund.PaymentLink = paymentLink;
+                    refund.ProcessedByUser = user;
+                    refund.CreatedByUser = createdBy;
+                    return refund;
+                }, splitOn: "Id,Id,Id,Id");
+
+            return result;
+        }
+
+        public async Task<IEnumerable<RefundRequest>> GetRefundsPendingSecondCheckAsync()
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                SELECT rr.*, tb.*, pl.*, u.*, cb.*, fc.*
+                FROM RefundRequests rr
+                LEFT JOIN TenderBids tb ON rr.TenderBidId = tb.Id
+                LEFT JOIN PaymentLinks pl ON rr.PaymentLinkId = pl.Id
+                LEFT JOIN Users u ON rr.ProcessedBy = u.Id
+                LEFT JOIN Users cb ON rr.CreatedBy = cb.Id
+                LEFT JOIN Users fc ON rr.FirstCheckerId = fc.Id
+                WHERE rr.WorkflowStatus = 'SubmittedForSecondCheck'
+                ORDER BY rr.RequestedAt ASC";
+
+            var result = await connection.QueryAsync<RefundRequest, TenderBid, PaymentLink, User, User, User, RefundRequest>(
+                sql, (refund, tenderBid, paymentLink, user, createdBy, firstChecker) =>
+                {
+                    refund.TenderBid = tenderBid;
+                    refund.PaymentLink = paymentLink;
+                    refund.ProcessedByUser = user;
+                    refund.CreatedByUser = createdBy;
+                    refund.FirstChecker = firstChecker;
+                    return refund;
+                }, splitOn: "Id,Id,Id,Id,Id");
+
+            return result;
+        }
+
+        public async Task<IEnumerable<RefundRequest>> GetRefundsReadyForProcessingAsync()
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                SELECT rr.*, tb.*, pl.*, u.*, cb.*, fc.*, sc.*
+                FROM RefundRequests rr
+                LEFT JOIN TenderBids tb ON rr.TenderBidId = tb.Id
+                LEFT JOIN PaymentLinks pl ON rr.PaymentLinkId = pl.Id
+                LEFT JOIN Users u ON rr.ProcessedBy = u.Id
+                LEFT JOIN Users cb ON rr.CreatedBy = cb.Id
+                LEFT JOIN Users fc ON rr.FirstCheckerId = fc.Id
+                LEFT JOIN Users sc ON rr.SecondCheckerId = sc.Id
+                WHERE rr.WorkflowStatus = 'ReadyForProcessing'
+                ORDER BY rr.RequestedAt ASC";
+
+            var result = await connection.QueryAsync<RefundRequest, TenderBid, PaymentLink, User, User, User, User, RefundRequest>(
+                sql, (refund, tenderBid, paymentLink, user, createdBy, firstChecker, secondChecker) =>
+                {
+                    refund.TenderBid = tenderBid;
+                    refund.PaymentLink = paymentLink;
+                    refund.ProcessedByUser = user;
+                    refund.CreatedByUser = createdBy;
+                    refund.FirstChecker = firstChecker;
+                    refund.SecondChecker = secondChecker;
+                    return refund;
+                }, splitOn: "Id,Id,Id,Id,Id,Id");
+
+            return result;
+        }
+
+        public async Task<object> GetCheckerMakerStatisticsAsync()
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                SELECT 
+                    COUNT(*) as TotalRefunds,
+                    SUM(CASE WHEN WorkflowStatus = 'Draft' THEN 1 ELSE 0 END) as DraftCount,
+                    SUM(CASE WHEN WorkflowStatus = 'SubmittedForFirstCheck' THEN 1 ELSE 0 END) as PendingFirstCheckCount,
+                    SUM(CASE WHEN WorkflowStatus = 'FirstCheckApproved' THEN 1 ELSE 0 END) as FirstCheckApprovedCount,
+                    SUM(CASE WHEN WorkflowStatus = 'FirstCheckRejected' THEN 1 ELSE 0 END) as FirstCheckRejectedCount,
+                    SUM(CASE WHEN WorkflowStatus = 'SubmittedForSecondCheck' THEN 1 ELSE 0 END) as PendingSecondCheckCount,
+                    SUM(CASE WHEN WorkflowStatus = 'SecondCheckApproved' THEN 1 ELSE 0 END) as SecondCheckApprovedCount,
+                    SUM(CASE WHEN WorkflowStatus = 'SecondCheckRejected' THEN 1 ELSE 0 END) as SecondCheckRejectedCount,
+                    SUM(CASE WHEN WorkflowStatus = 'ReadyForProcessing' THEN 1 ELSE 0 END) as ReadyForProcessingCount,
+                    SUM(CASE WHEN WorkflowStatus = 'Processing' THEN 1 ELSE 0 END) as ProcessingCount,
+                    SUM(CASE WHEN WorkflowStatus = 'Completed' THEN 1 ELSE 0 END) as CompletedCount,
+                    SUM(CASE WHEN WorkflowStatus = 'Failed' THEN 1 ELSE 0 END) as FailedCount
+                FROM RefundRequests";
+
+            return await connection.QuerySingleAsync(sql);
         }
 
         #endregion

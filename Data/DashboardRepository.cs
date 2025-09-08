@@ -247,7 +247,8 @@ namespace BiddingSystem.Data
                     ISNULL(t.TenderCount, 0) as TenderCount,
                     ISNULL(b.BidCount, 0) as BidCount,
                     ISNULL(b.TotalBidAmount, 0) as TotalBidAmount,
-                    ISNULL(b.TotalEMDSDAmount, 0) as TotalEMDSDAmount
+                    ISNULL(b.TotalEMDSDAmount, 0) as TotalEMDSDAmount,
+                    ISNULL(e.TotalCollectedEMD, 0) as TotalCollectedEMD
                 FROM Months m
                 LEFT JOIN (
                     SELECT MONTH(CreatedAt) as Month, COUNT(*) as TenderCount
@@ -262,6 +263,13 @@ namespace BiddingSystem.Data
                     FROM TenderBids WHERE YEAR(CreatedAt) = @Year
                     GROUP BY MONTH(CreatedAt)
                 ) b ON m.Month = b.Month
+                LEFT JOIN (
+                    SELECT MONTH(TransactionDate) as Month,
+                           ISNULL(SUM(Amount), 0) as TotalCollectedEMD
+                    FROM EMDSDDeposits 
+                    WHERE YEAR(TransactionDate) = @Year AND Status = 'Paid'
+                    GROUP BY MONTH(TransactionDate)
+                ) e ON m.Month = e.Month
                 ORDER BY m.Month";
 
             var result = await connection.QueryAsync<dynamic>(sql, new { Year = year });
@@ -272,7 +280,8 @@ namespace BiddingSystem.Data
                 TenderCounts = result.Select(x => (int)x.TenderCount).ToList(),
                 BidCounts = result.Select(x => (int)x.BidCount).ToList(),
                 TotalBidAmounts = result.Select(x => (decimal)x.TotalBidAmount).ToList(),
-                TotalEMDSDAmounts = result.Select(x => (decimal)x.TotalEMDSDAmount).ToList()
+                TotalEMDSDAmounts = result.Select(x => (decimal)x.TotalEMDSDAmount).ToList(),
+                TotalCollectedEMDs = result.Select(x => (decimal)x.TotalCollectedEMD).ToList()
             };
         }
 

@@ -226,25 +226,63 @@ namespace BiddingSystem.Data
                     throw new InvalidOperationException("A refund request already exists for this tender bid and payment link.");
                 }
 
-                // Create the refund request
+                // ✅ CRITICAL: Find the EMD/SD deposit record for this payment
+                var emdSdDeposit = await _emdSdRepository.GetDepositByTenderBidAndPaymentLinkAsync(model.TenderBidId, model.PaymentLinkId);
+                if (emdSdDeposit == null)
+                {
+                    throw new InvalidOperationException("EMD/SD deposit record not found for this payment. Refunds can only be processed for EMD/SD payments that have corresponding deposit records.");
+                }
+
+                // Create the refund request with ALL required fields
                 var refundRequest = new RefundRequest
                 {
+                    // Core identification fields
                     RefundId = RefundRequest.GenerateRefundId(),
                     TenderBidId = model.TenderBidId,
                     PaymentLinkId = model.PaymentLinkId,
+                    EMDSDDepositId = emdSdDeposit.Id, // ✅ CRITICAL: Store EMD/SD reference
+                    
+                    // Refund details
                     Type = model.Type,
                     RequestedAmount = model.RequestedAmount,
+                    ApprovedAmount = null, // Will be set during approval process
                     Reason = model.Reason,
+                    
+                    // Status and workflow
                     Status = RefundStatus.Pending,
+                    WorkflowStatus = RefundWorkflowStatus.Draft,
+                    
+                    // User tracking
                     RequestedBy = requestedBy,
+                    CreatedBy = model.CreatedBy, // Maker who created the request
+                    ProcessedBy = null, // Will be set when processed
+                    ApprovedBy = null, // Will be set when approved
+                    
+                    // Timestamps
+                    RequestedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = null,
+                    ProcessedAt = null,
+                    ApprovedAt = null,
+                    
+                    // Additional information
                     Remarks = model.Remarks,
-                    BankDetails = model.BankDetails
+                    BankDetails = model.BankDetails,
+                    RefundReference = null, // Will be set during processing
+                    
+                    // Checker-Maker workflow fields (initialized as null)
+                    FirstCheckerId = null,
+                    FirstCheckerApprovedAt = null,
+                    FirstCheckerRemarks = null,
+                    SecondCheckerId = null,
+                    SecondCheckerApprovedAt = null,
+                    SecondCheckerRemarks = null
                 };
 
                 var createdRefund = await _refundRepository.CreateRefundRequestAsync(refundRequest);
 
                 // Log the action
-                await LogRefundActionAsync(createdRefund.Id, "Created", 0, $"Refund request created by {requestedBy}");
+                await LogRefundActionAsync(createdRefund.Id, "Created", refundRequest.CreatedBy ?? 0, $"Refund request created by {requestedBy}");
 
                 // Send notification
                 await SendRefundRequestNotificationAsync(createdRefund.Id);
@@ -559,6 +597,28 @@ namespace BiddingSystem.Data
             {
                 result.Errors.Add("Payment link not found.");
                 result.IsValid = false;
+            }
+
+            // ✅ CRITICAL: Only allow EMD/SD refunds
+            if (paymentLink != null && paymentLink.PaymentType != PaymentType.EMD && paymentLink.PaymentType != PaymentType.SD)
+            {
+                result.Errors.Add("Refunds are only allowed for EMD (Earnest Money Deposit) and SD (Security Deposit) payments.");
+                result.IsValid = false;
+            }
+
+            // ✅ CRITICAL: Validate refund type matches payment type
+            if (paymentLink != null)
+            {
+                if (paymentLink.PaymentType == PaymentType.EMD && model.Type != RefundType.EMD)
+                {
+                    result.Errors.Add("Refund type must match payment type. For EMD payments, refund type must be 'EMD Refund'.");
+                    result.IsValid = false;
+                }
+                else if (paymentLink.PaymentType == PaymentType.SD && model.Type != RefundType.SD)
+                {
+                    result.Errors.Add("Refund type must match payment type. For SD payments, refund type must be 'SD Refund'.");
+                    result.IsValid = false;
+                }
             }
 
             // Validate amount
@@ -990,6 +1050,500 @@ namespace BiddingSystem.Data
                 UpdatedAt = transaction.UpdatedAt,
                 CreatedBy = transaction.CreatedBy
             };
+        }
+
+        #endregion
+
+        #region Checker-Maker Workflow Operations
+
+        public async Task<bool> SubmitForFirstCheckAsync(int id, int submittedBy)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(id);
+                if (refundRequest == null)
+                {
+                    return false;
+                }
+
+                if (!refundRequest.CanBeSubmittedForFirstCheck())
+                {
+                    throw new InvalidOperationException("Refund request cannot be submitted for first check in its current state.");
+                }
+
+                var success = await _refundRepository.SubmitForFirstCheckAsync(id, submittedBy);
+
+                if (success)
+                {
+                    await LogRefundActionAsync(id, "SubmittedForFirstCheck", submittedBy, "Refund request submitted for first check");
+                    await SendFirstCheckNotificationAsync(id);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting refund for first check: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<bool> FirstCheckApproveAsync(int id, int checkerId, decimal approvedAmount, string? remarks = null)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(id);
+                if (refundRequest == null)
+                {
+                    return false;
+                }
+
+                if (!refundRequest.CanBeFirstChecked())
+                {
+                    throw new InvalidOperationException("Refund request cannot be first checked in its current state.");
+                }
+
+                var success = await _refundRepository.FirstCheckApproveAsync(id, checkerId, approvedAmount, remarks);
+
+                if (success)
+                {
+                    await LogRefundActionAsync(id, "FirstCheckApproved", checkerId, $"First check approved with amount: {approvedAmount:C}");
+                    await SendFirstCheckApprovalNotificationAsync(id);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in first check approval: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<bool> FirstCheckRejectAsync(int id, int checkerId, string? remarks = null)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(id);
+                if (refundRequest == null)
+                {
+                    return false;
+                }
+
+                if (!refundRequest.CanBeFirstChecked())
+                {
+                    throw new InvalidOperationException("Refund request cannot be first checked in its current state.");
+                }
+
+                var success = await _refundRepository.FirstCheckRejectAsync(id, checkerId, remarks);
+
+                if (success)
+                {
+                    await LogRefundActionAsync(id, "FirstCheckRejected", checkerId, remarks ?? "First check rejected");
+                    await SendFirstCheckRejectionNotificationAsync(id, remarks);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in first check rejection: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<bool> SubmitForSecondCheckAsync(int id, int submittedBy)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(id);
+                if (refundRequest == null)
+                {
+                    return false;
+                }
+
+                if (!refundRequest.CanBeSubmittedForSecondCheck())
+                {
+                    throw new InvalidOperationException("Refund request cannot be submitted for second check in its current state.");
+                }
+
+                var success = await _refundRepository.SubmitForSecondCheckAsync(id, submittedBy);
+
+                if (success)
+                {
+                    await LogRefundActionAsync(id, "SubmittedForSecondCheck", submittedBy, "Refund request submitted for second check");
+                    await SendSecondCheckNotificationAsync(id);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting refund for second check: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<bool> SecondCheckApproveAsync(int id, int checkerId, string? remarks = null)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(id);
+                if (refundRequest == null)
+                {
+                    return false;
+                }
+
+                if (!refundRequest.CanBeSecondChecked())
+                {
+                    throw new InvalidOperationException("Refund request cannot be second checked in its current state.");
+                }
+
+                var success = await _refundRepository.SecondCheckApproveAsync(id, checkerId, remarks);
+
+                if (success)
+                {
+                    await LogRefundActionAsync(id, "SecondCheckApproved", checkerId, "Second check approved");
+                    await SendSecondCheckApprovalNotificationAsync(id);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in second check approval: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<bool> SecondCheckRejectAsync(int id, int checkerId, string? remarks = null)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(id);
+                if (refundRequest == null)
+                {
+                    return false;
+                }
+
+                if (!refundRequest.CanBeSecondChecked())
+                {
+                    throw new InvalidOperationException("Refund request cannot be second checked in its current state.");
+                }
+
+                var success = await _refundRepository.SecondCheckRejectAsync(id, checkerId, remarks);
+
+                if (success)
+                {
+                    await LogRefundActionAsync(id, "SecondCheckRejected", checkerId, remarks ?? "Second check rejected");
+                    await SendSecondCheckRejectionNotificationAsync(id, remarks);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in second check rejection: {Id}", id);
+                throw;
+            }
+        }
+
+        public async Task<bool> MarkReadyForProcessingAsync(int id)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(id);
+                if (refundRequest == null)
+                {
+                    return false;
+                }
+
+                if (!refundRequest.CanBeProcessed())
+                {
+                    throw new InvalidOperationException("Refund request cannot be marked ready for processing in its current state.");
+                }
+
+                var success = await _refundRepository.MarkReadyForProcessingAsync(id);
+
+                if (success)
+                {
+                    await LogRefundActionAsync(id, "MarkedReadyForProcessing", 0, "Refund request marked ready for processing");
+                    await SendReadyForProcessingNotificationAsync(id);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking refund ready for processing: {Id}", id);
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Checker-Maker Query Operations
+
+        public async Task<IEnumerable<RefundRequestViewModel>> GetRefundsPendingFirstCheckAsync()
+        {
+            try
+            {
+                var refundRequests = await _refundRepository.GetRefundsPendingFirstCheckAsync();
+                return refundRequests.Select(MapToViewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting refunds pending first check");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<RefundRequestViewModel>> GetRefundsPendingSecondCheckAsync()
+        {
+            try
+            {
+                var refundRequests = await _refundRepository.GetRefundsPendingSecondCheckAsync();
+                return refundRequests.Select(MapToViewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting refunds pending second check");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<RefundRequestViewModel>> GetRefundsReadyForProcessingAsync()
+        {
+            try
+            {
+                var refundRequests = await _refundRepository.GetRefundsReadyForProcessingAsync();
+                return refundRequests.Select(MapToViewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting refunds ready for processing");
+                throw;
+            }
+        }
+
+        public async Task<object> GetCheckerMakerStatisticsAsync()
+        {
+            try
+            {
+                return await _refundRepository.GetCheckerMakerStatisticsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting checker-maker statistics");
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Checker-Maker Email Notifications
+
+        private async Task<bool> SendFirstCheckNotificationAsync(int refundRequestId)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(refundRequestId);
+                if (refundRequest == null) return false;
+
+                var subject = $"Refund Request Pending First Check - {refundRequest.RefundId}";
+                var body = $@"
+                    <h2>Refund Request Pending First Check</h2>
+                    <p>A refund request is pending your first check approval:</p>
+                    <ul>
+                        <li><strong>Refund ID:</strong> {refundRequest.RefundId}</li>
+                        <li><strong>Requested By:</strong> {refundRequest.RequestedBy}</li>
+                        <li><strong>Amount:</strong> {refundRequest.RequestedAmountDisplay}</li>
+                        <li><strong>Type:</strong> {refundRequest.TypeDisplayName}</li>
+                        <li><strong>Reason:</strong> {refundRequest.ReasonDisplayName}</li>
+                        <li><strong>Submitted At:</strong> {DateTime.UtcNow:dd MMM yyyy HH:mm}</li>
+                    </ul>
+                    <p>Please review and approve or reject this refund request.</p>";
+
+                return await _emailService.SendCustomEmailAsync("checker@biddingsystem.com", subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending first check notification for ID: {RefundRequestId}", refundRequestId);
+                return false;
+            }
+        }
+
+        private async Task<bool> SendFirstCheckApprovalNotificationAsync(int refundRequestId)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(refundRequestId);
+                if (refundRequest == null) return false;
+
+                var subject = $"Refund Request First Check Approved - {refundRequest.RefundId}";
+                var body = $@"
+                    <h2>Refund Request First Check Approved</h2>
+                    <p>The refund request has been approved in first check:</p>
+                    <ul>
+                        <li><strong>Refund ID:</strong> {refundRequest.RefundId}</li>
+                        <li><strong>Approved Amount:</strong> {refundRequest.ApprovedAmountDisplay}</li>
+                        <li><strong>First Checker:</strong> {refundRequest.FirstChecker?.FullName}</li>
+                        <li><strong>Approved At:</strong> {refundRequest.FirstCheckerApprovedAt:dd MMM yyyy HH:mm}</li>
+                    </ul>
+                    <p>The request is now ready for second check approval.</p>";
+
+                return await _emailService.SendCustomEmailAsync("checker@biddingsystem.com", subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending first check approval notification for ID: {RefundRequestId}", refundRequestId);
+                return false;
+            }
+        }
+
+        private async Task<bool> SendFirstCheckRejectionNotificationAsync(int refundRequestId, string? reason = null)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(refundRequestId);
+                if (refundRequest == null) return false;
+
+                var subject = $"Refund Request First Check Rejected - {refundRequest.RefundId}";
+                var body = $@"
+                    <h2>Refund Request First Check Rejected</h2>
+                    <p>The refund request has been rejected in first check:</p>
+                    <ul>
+                        <li><strong>Refund ID:</strong> {refundRequest.RefundId}</li>
+                        <li><strong>Requested Amount:</strong> {refundRequest.RequestedAmountDisplay}</li>
+                        <li><strong>First Checker:</strong> {refundRequest.FirstChecker?.FullName}</li>
+                        <li><strong>Rejected At:</strong> {refundRequest.FirstCheckerApprovedAt:dd MMM yyyy HH:mm}</li>
+                    </ul>
+                    {(string.IsNullOrEmpty(reason) ? "" : $"<p><strong>Reason:</strong> {reason}</p>")}
+                    <p>The refund request has been rejected and will not proceed further.</p>";
+
+                return await _emailService.SendCustomEmailAsync(refundRequest.RequestedBy, subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending first check rejection notification for ID: {RefundRequestId}", refundRequestId);
+                return false;
+            }
+        }
+
+        private async Task<bool> SendSecondCheckNotificationAsync(int refundRequestId)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(refundRequestId);
+                if (refundRequest == null) return false;
+
+                var subject = $"Refund Request Pending Second Check - {refundRequest.RefundId}";
+                var body = $@"
+                    <h2>Refund Request Pending Second Check</h2>
+                    <p>A refund request is pending your second check approval:</p>
+                    <ul>
+                        <li><strong>Refund ID:</strong> {refundRequest.RefundId}</li>
+                        <li><strong>Requested By:</strong> {refundRequest.RequestedBy}</li>
+                        <li><strong>Approved Amount:</strong> {refundRequest.ApprovedAmountDisplay}</li>
+                        <li><strong>First Checker:</strong> {refundRequest.FirstChecker?.FullName}</li>
+                        <li><strong>First Check Date:</strong> {refundRequest.FirstCheckerApprovedAt:dd MMM yyyy HH:mm}</li>
+                        <li><strong>Submitted At:</strong> {DateTime.UtcNow:dd MMM yyyy HH:mm}</li>
+                    </ul>
+                    <p>Please review and approve or reject this refund request.</p>";
+
+                return await _emailService.SendCustomEmailAsync("checker@biddingsystem.com", subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending second check notification for ID: {RefundRequestId}", refundRequestId);
+                return false;
+            }
+        }
+
+        private async Task<bool> SendSecondCheckApprovalNotificationAsync(int refundRequestId)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(refundRequestId);
+                if (refundRequest == null) return false;
+
+                var subject = $"Refund Request Second Check Approved - {refundRequest.RefundId}";
+                var body = $@"
+                    <h2>Refund Request Second Check Approved</h2>
+                    <p>The refund request has been approved in second check:</p>
+                    <ul>
+                        <li><strong>Refund ID:</strong> {refundRequest.RefundId}</li>
+                        <li><strong>Approved Amount:</strong> {refundRequest.ApprovedAmountDisplay}</li>
+                        <li><strong>Second Checker:</strong> {refundRequest.SecondChecker?.FullName}</li>
+                        <li><strong>Approved At:</strong> {refundRequest.SecondCheckerApprovedAt:dd MMM yyyy HH:mm}</li>
+                    </ul>
+                    <p>The request is now ready for processing.</p>";
+
+                return await _emailService.SendCustomEmailAsync("admin@biddingsystem.com", subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending second check approval notification for ID: {RefundRequestId}", refundRequestId);
+                return false;
+            }
+        }
+
+        private async Task<bool> SendSecondCheckRejectionNotificationAsync(int refundRequestId, string? reason = null)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(refundRequestId);
+                if (refundRequest == null) return false;
+
+                var subject = $"Refund Request Second Check Rejected - {refundRequest.RefundId}";
+                var body = $@"
+                    <h2>Refund Request Second Check Rejected</h2>
+                    <p>The refund request has been rejected in second check:</p>
+                    <ul>
+                        <li><strong>Refund ID:</strong> {refundRequest.RefundId}</li>
+                        <li><strong>Requested Amount:</strong> {refundRequest.RequestedAmountDisplay}</li>
+                        <li><strong>Second Checker:</strong> {refundRequest.SecondChecker?.FullName}</li>
+                        <li><strong>Rejected At:</strong> {refundRequest.SecondCheckerApprovedAt:dd MMM yyyy HH:mm}</li>
+                    </ul>
+                    {(string.IsNullOrEmpty(reason) ? "" : $"<p><strong>Reason:</strong> {reason}</p>")}
+                    <p>The refund request has been rejected and will not proceed further.</p>";
+
+                return await _emailService.SendCustomEmailAsync(refundRequest.RequestedBy, subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending second check rejection notification for ID: {RefundRequestId}", refundRequestId);
+                return false;
+            }
+        }
+
+        private async Task<bool> SendReadyForProcessingNotificationAsync(int refundRequestId)
+        {
+            try
+            {
+                var refundRequest = await _refundRepository.GetRefundRequestByIdAsync(refundRequestId);
+                if (refundRequest == null) return false;
+
+                var subject = $"Refund Request Ready for Processing - {refundRequest.RefundId}";
+                var body = $@"
+                    <h2>Refund Request Ready for Processing</h2>
+                    <p>The refund request has completed all approvals and is ready for processing:</p>
+                    <ul>
+                        <li><strong>Refund ID:</strong> {refundRequest.RefundId}</li>
+                        <li><strong>Approved Amount:</strong> {refundRequest.ApprovedAmountDisplay}</li>
+                        <li><strong>First Checker:</strong> {refundRequest.FirstChecker?.FullName}</li>
+                        <li><strong>Second Checker:</strong> {refundRequest.SecondChecker?.FullName}</li>
+                        <li><strong>Ready At:</strong> {DateTime.UtcNow:dd MMM yyyy HH:mm}</li>
+                    </ul>
+                    <p>Please process this refund request.</p>";
+
+                return await _emailService.SendCustomEmailAsync("admin@biddingsystem.com", subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending ready for processing notification for ID: {RefundRequestId}", refundRequestId);
+                return false;
+            }
         }
 
         #endregion

@@ -287,10 +287,10 @@ namespace BiddingSystem.Data
             using var connection = CreateConnection();
             const string sql = @"
                 INSERT INTO EMDSDDeposits 
-                (DepositId, TenderId, Amount, BidderName, CompanyName, TransactionDate, 
+                (DepositId, TenderId,TenderBidId, Amount, BidderName, CompanyName, TransactionDate, 
                  BankName, FSSAIBranchName, TransactionId, Status, Type, Remarks, CreatedAt)
                 VALUES 
-                (@DepositId, @TenderId, @Amount, @BidderName, @CompanyName, @TransactionDate, 
+                (@DepositId, @TenderId,@TenderBidId, @Amount, @BidderName, @CompanyName, @TransactionDate, 
                  @BankName, @FSSAIBranchName, @TransactionId, @Status, @Type, @Remarks, @CreatedAt);
                 SELECT CAST(SCOPE_IDENTITY() as int);";
 
@@ -602,6 +602,77 @@ namespace BiddingSystem.Data
             var nextNumber = count + 1;
             
             return $"{prefix}{nextNumber:D6}";
+        }
+
+        public async Task<EMDSDDeposit?> GetDepositByTenderBidAndPaymentLinkAsync(int tenderBidId, int paymentLinkId)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+                SELECT d.*, t.Id as Tender_Id, t.TenderId as Tender_TenderId, t.TenderTitle as Tender_TenderTitle, 
+                       t.Description as Tender_Description, t.Department as Tender_Department,
+                       t.PublishDate as Tender_PublishDate, t.EmdAmount as Tender_EmdAmount,
+                       t.SdAmount as Tender_SdAmount, t.ProcessingFee as Tender_ProcessingFee,
+                       t.EstimatedValue as Tender_EstimatedValue, t.LastDateEmd as Tender_LastDateEmd,
+                       t.TenderClosingDate as Tender_TenderClosingDate, t.TenderOpeningDate as Tender_TenderOpeningDate,
+                       t.Status as Tender_Status, t.CreatedBy as Tender_CreatedBy, t.CreatedAt as Tender_CreatedAt,
+                       t.UpdatedAt as Tender_UpdatedAt, t.PublishedAt as Tender_PublishedAt, t.IsActive as Tender_IsActive
+                FROM EMDSDDeposits d
+                LEFT JOIN Tenders t ON d.TenderId = t.Id
+                WHERE d.TenderBidId = @TenderBidId 
+                AND d.TransactionId IN (
+                    SELECT pl.TransactionId 
+                    FROM PaymentLinks pl 
+                    WHERE pl.Id = @PaymentLinkId AND pl.TransactionId IS NOT NULL
+                )
+                ORDER BY d.CreatedAt DESC";
+
+            var result = await connection.QueryFirstOrDefaultAsync<dynamic>(sql, new { TenderBidId = tenderBidId, PaymentLinkId = paymentLinkId });
+            
+            if (result == null) return null;
+
+            var deposit = new EMDSDDeposit
+            {
+                Id = result.Id,
+                DepositId = result.DepositId,
+                TenderId = result.TenderId,
+                TenderBidId = result.TenderBidId,
+                Amount = result.Amount,
+                BidderName = result.BidderName,
+                CompanyName = result.CompanyName,
+                TransactionDate = result.TransactionDate,
+                BankName = result.BankName,
+                FSSAIBranchName = result.FSSAIBranchName,
+                TransactionId = result.TransactionId,
+                Status = result.Status,
+                Type = result.Type,
+                CreatedAt = result.CreatedAt,
+                UpdatedAt = result.UpdatedAt,
+                Remarks = result.Remarks,
+                Tender = new Tender
+                {
+                    Id = result.Tender_Id,
+                    TenderId = result.Tender_TenderId,
+                    TenderTitle = result.Tender_TenderTitle,
+                    Description = result.Tender_Description,
+                    Department = result.Tender_Department,
+                    PublishDate = result.Tender_PublishDate,
+                    EmdAmount = result.Tender_EmdAmount,
+                    SdAmount = result.Tender_SdAmount,
+                    ProcessingFee = result.Tender_ProcessingFee,
+                    EstimatedValue = result.Tender_EstimatedValue,
+                    LastDateEmd = result.Tender_LastDateEmd,
+                    TenderClosingDate = result.Tender_TenderClosingDate,
+                    TenderOpeningDate = result.Tender_TenderOpeningDate,
+                    Status = result.Tender_Status,
+                    CreatedBy = result.Tender_CreatedBy,
+                    CreatedAt = result.Tender_CreatedAt,
+                    UpdatedAt = result.Tender_UpdatedAt,
+                    PublishedAt = result.Tender_PublishedAt,
+                    IsActive = result.Tender_IsActive
+                }
+            };
+
+            return deposit;
         }
     }
 }

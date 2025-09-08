@@ -19,6 +19,12 @@ namespace BiddingSystem.Models
         public virtual Tender Tender { get; set; } = null!;
 
         [Required]
+        public int TenderBidId { get; set; }
+
+        [ForeignKey("TenderBidId")]
+        public virtual TenderBid TenderBid { get; set; } = null!;
+
+        [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
 

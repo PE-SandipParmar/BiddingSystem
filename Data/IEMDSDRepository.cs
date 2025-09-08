@@ -16,6 +16,7 @@ namespace BiddingSystem.Data
         Task<IEnumerable<EMDSDDeposit>> GetDepositsByTypeAsync(string type);
         Task<(IEnumerable<EMDSDDeposit> deposits, int totalCount)> GetDepositsPagedAsync(int page, int pageSize, string? searchTerm = null, string? status = null, string? type = null);
         Task<string> GenerateUniqueDepositIdAsync();
+        Task<EMDSDDeposit?> GetDepositByTenderBidAndPaymentLinkAsync(int tenderBidId, int paymentLinkId);
         
         // Transaction methods
         Task<IEnumerable<EMDSDTransaction>> GetTransactionsByDepositIdAsync(int depositId);

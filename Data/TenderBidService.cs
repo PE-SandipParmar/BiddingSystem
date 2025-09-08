@@ -252,10 +252,12 @@ namespace BiddingSystem.Data
                 }
 
                 // Validate bid amount is reasonable (not more than 10x estimated value)
-                if (tender.EstimatedValue > 0 && bid.BidAmount > tender.EstimatedValue * 10)
-                {
-                    return false;
-                }
+                //if (tender.EstimatedValue > 0 && bid.BidAmount > tender.EstimatedValue * 10)
+                //{
+                //    return false;
+                //}
+
+
 
                 // Validate EMD amount is reasonable (typically 1-5% of bid amount)
                 //if (bid.EmdAmount > bid.BidAmount * 0.1m) // More than 10% of bid amount

@@ -19,6 +19,10 @@ namespace BiddingSystem.ViewModels
         public string TenderName { get; set; } = string.Empty;
 
         [Required]
+        [Display(Name = "Tender Bid")]
+        public int TenderBidId { get; set; }
+
+        [Required]
         [Display(Name = "Amount")]
         [DataType(DataType.Currency)]
         public decimal Amount { get; set; }
@@ -88,6 +92,10 @@ namespace BiddingSystem.ViewModels
         public int TenderId { get; set; }
 
         [Required]
+        [Display(Name = "Tender Bid")]
+        public int TenderBidId { get; set; }
+
+        [Required]
         [Display(Name = "Amount")]
         [DataType(DataType.Currency)]
         public decimal Amount { get; set; }
@@ -139,6 +147,10 @@ namespace BiddingSystem.ViewModels
         [Required]
         [Display(Name = "Tender")]
         public int TenderId { get; set; }
+
+        [Required]
+        [Display(Name = "Tender Bid")]
+        public int TenderBidId { get; set; }
 
         [Required]
         [Display(Name = "Amount")]

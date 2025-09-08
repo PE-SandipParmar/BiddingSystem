@@ -33,6 +33,7 @@ namespace BiddingSystem.Controllers
                         Id = d.Id,
                         DepositId = d.DepositId,
                         TenderId = d.TenderId,
+                        TenderBidId = d.TenderBidId,
                         TenderName = d.Tender?.TenderTitle ?? "N/A",
                         Amount = d.Amount,
                         BidderName = d.BidderName,
@@ -82,6 +83,7 @@ namespace BiddingSystem.Controllers
                     Id = deposit.Id,
                     DepositId = deposit.DepositId,
                     TenderId = deposit.TenderId,
+                    TenderBidId = deposit.TenderBidId,
                     TenderName = deposit.Tender?.TenderTitle ?? "N/A",
                     Amount = deposit.Amount,
                     BidderName = deposit.BidderName,
@@ -146,6 +148,7 @@ namespace BiddingSystem.Controllers
                 var deposit = new EMDSDDeposit
                 {
                     TenderId = model.TenderId,
+                    TenderBidId = model.TenderBidId,
                     Amount = model.Amount,
                     BidderName = model.BidderName,
                     CompanyName = model.CompanyName,
@@ -188,6 +191,7 @@ namespace BiddingSystem.Controllers
                     Id = deposit.Id,
                     DepositId = deposit.DepositId,
                     TenderId = deposit.TenderId,
+                    TenderBidId = deposit.TenderBidId,
                     Amount = deposit.Amount,
                     BidderName = deposit.BidderName,
                     CompanyName = deposit.CompanyName,
@@ -236,6 +240,7 @@ namespace BiddingSystem.Controllers
                 }
 
                 deposit.TenderId = model.TenderId;
+                deposit.TenderBidId = model.TenderBidId;
                 deposit.Amount = model.Amount;
                 deposit.BidderName = model.BidderName;
                 deposit.CompanyName = model.CompanyName;
@@ -276,6 +281,7 @@ namespace BiddingSystem.Controllers
                     Id = deposit.Id,
                     DepositId = deposit.DepositId,
                     TenderId = deposit.TenderId,
+                    TenderBidId = deposit.TenderBidId,
                     TenderName = deposit.Tender?.TenderTitle ?? "N/A",
                     Amount = deposit.Amount,
                     BidderName = deposit.BidderName,
@@ -377,6 +383,7 @@ namespace BiddingSystem.Controllers
                         Id = d.Id,
                         DepositId = d.DepositId,
                         TenderId = d.TenderId,
+                        TenderBidId = d.TenderBidId,
                         TenderName = d.Tender?.TenderTitle ?? "N/A",
                         Amount = d.Amount,
                         BidderName = d.BidderName,

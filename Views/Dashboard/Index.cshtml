@@ -94,7 +94,7 @@
                     <div>
                         <p class="text-gray-500 text-sm">Pending Refunds</p>
                         <h3 class="text-2xl font-bold text-gray-800 mt-1">@(Model.Statistics?.PendingRefunds ?? 0)</h3>
-                        <p class="text-xs text-gray-400 mt-1">EMDSDDeposits | Status: Pending</p>
+                        <p class="text-xs text-gray-400 mt-1"></p>
                     
                       @*   <p class="text-xs text-gray-400 mt-1">Status: Pending (1)</p> *@
                     </div>
@@ -116,7 +116,7 @@
                     <div>
                         <p class="text-gray-500 text-sm">Processed Refunds</p>
                         <h3 class="text-2xl font-bold text-gray-800 mt-1">@(Model.Statistics?.ProcessedRefunds ?? 0)</h3>
-                        <p class="text-xs text-gray-400 mt-1">EMDSDDeposits | Status: Refunded</p>
+                        <p class="text-xs text-gray-400 mt-1"></p>
                      
         @*                 <p class="text-xs text-gray-400 mt-1">Status: Completed (4)</p> *@
                     </div>
@@ -265,7 +265,7 @@
                         },
                         series: [{
                             name: 'EMD Collections',
-                            data: data.totalEMDSDAmounts ? data.totalEMDSDAmounts.map(amount => (amount / 1000000).toFixed(1)) : [0.8, 1.2, 1.7, 2.3, 2.8, 3.5, 4.2],
+                            data: data.totalCollectedEMDs ? data.totalCollectedEMDs.map(amount => (amount / 1000000).toFixed(1)) : [0.8, 1.2, 1.7, 2.3, 2.8, 3.5, 4.2],
                             type: 'line',
                             smooth: true,
                             symbol: 'none',

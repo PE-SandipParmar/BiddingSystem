@@ -133,7 +133,13 @@ namespace BiddingSystem.Controllers
                     CanEdit = CanEditRefund(refundRequest),
                     CanApprove = CanApproveRefund(refundRequest),
                     CanReject = CanRejectRefund(refundRequest),
-                    CanProcess = CanProcessRefund(refundRequest)
+                    CanProcess = CanProcessRefund(refundRequest),
+                    // Checker-Maker Workflow Permissions
+                    CanSubmitForFirstCheck = CanSubmitForFirstCheck(refundRequest),
+                    CanFirstCheck = CanFirstCheck(refundRequest),
+                    CanSubmitForSecondCheck = CanSubmitForSecondCheck(refundRequest),
+                    CanSecondCheck = CanSecondCheck(refundRequest),
+                    CanMarkReadyForProcessing = CanMarkReadyForProcessing(refundRequest)
                 };
 
                 return View(model);
@@ -283,7 +289,7 @@ namespace BiddingSystem.Controllers
         #region Create
 
         [HttpGet]
-        [Authorize(Roles = "Admin,Maker,Checker")]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Create(int? tenderBidId = null, int? paymentLinkId = null)
         {
             try
@@ -327,7 +333,7 @@ namespace BiddingSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,Maker,Checker")]
+        [Authorize(Roles = "Admin,Maker")]
         public async Task<IActionResult> Create(RefundRequestCreateViewModel model)
         {
             try
@@ -350,6 +356,8 @@ namespace BiddingSystem.Controllers
                 }
 
                 var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "";
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                
                 if (string.IsNullOrEmpty(userEmail))
                 {
                     ModelState.AddModelError("", "User email not found.");
@@ -358,10 +366,11 @@ namespace BiddingSystem.Controllers
                     return View(model);
                 }
 
+                // Set the CreatedBy field to track who created the refund request
+                model.CreatedBy = userId;
                 var refundRequest = await _refundService.CreateRefundRequestAsync(model, userEmail);
 
                 // Log the action
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 await _securityAudit.LogUserActionAsync(new UserAction
                 {
                     UserId = userId,
@@ -725,6 +734,318 @@ namespace BiddingSystem.Controllers
 
         #endregion
 
+        #region Checker-Maker Workflow Actions
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
+        public async Task<IActionResult> SubmitForFirstCheck(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var success = await _refundService.SubmitForFirstCheckAsync(id, userId);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Refund request has been submitted for first check.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to submit refund request for first check.";
+                }
+
+                return RedirectToAction("Details", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting refund for first check: {Id}", id);
+                TempData["ErrorMessage"] = "An error occurred while submitting the refund request.";
+                return RedirectToAction("Details", new { id });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Checker")]
+        public async Task<IActionResult> FirstCheckApprove(int id, decimal approvedAmount, string? remarks = null)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var success = await _refundService.FirstCheckApproveAsync(id, userId, approvedAmount, remarks);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Refund request has been approved in first check.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to approve refund request in first check.";
+                }
+
+                return RedirectToAction("Details", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving refund in first check: {Id}", id);
+                TempData["ErrorMessage"] = "An error occurred while approving the refund request.";
+                return RedirectToAction("Details", new { id });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Checker")]
+        public async Task<IActionResult> FirstCheckReject(int id, string? remarks = null)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var success = await _refundService.FirstCheckRejectAsync(id, userId, remarks);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Refund request has been rejected in first check.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to reject refund request in first check.";
+                }
+
+                return RedirectToAction("Details", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting refund in first check: {Id}", id);
+                TempData["ErrorMessage"] = "An error occurred while rejecting the refund request.";
+                return RedirectToAction("Details", new { id });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
+        public async Task<IActionResult> SubmitForSecondCheck(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var success = await _refundService.SubmitForSecondCheckAsync(id, userId);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Refund request has been submitted for second check.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to submit refund request for second check.";
+                }
+
+                return RedirectToAction("Details", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting refund for second check: {Id}", id);
+                TempData["ErrorMessage"] = "An error occurred while submitting the refund request.";
+                return RedirectToAction("Details", new { id });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Checker")]
+        public async Task<IActionResult> SecondCheckApprove(int id, string? remarks = null)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var success = await _refundService.SecondCheckApproveAsync(id, userId, remarks);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Refund request has been approved in second check.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to approve refund request in second check.";
+                }
+
+                return RedirectToAction("Details", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error approving refund in second check: {Id}", id);
+                TempData["ErrorMessage"] = "An error occurred while approving the refund request.";
+                return RedirectToAction("Details", new { id });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Checker")]
+        public async Task<IActionResult> SecondCheckReject(int id, string? remarks = null)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var success = await _refundService.SecondCheckRejectAsync(id, userId, remarks);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Refund request has been rejected in second check.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to reject refund request in second check.";
+                }
+
+                return RedirectToAction("Details", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rejecting refund in second check: {Id}", id);
+                TempData["ErrorMessage"] = "An error occurred while rejecting the refund request.";
+                return RedirectToAction("Details", new { id });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> MarkReadyForProcessing(int id)
+        {
+            try
+            {
+                var success = await _refundService.MarkReadyForProcessingAsync(id);
+
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Refund request has been marked ready for processing.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to mark refund request ready for processing.";
+                }
+
+                return RedirectToAction("Details", new { id });
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction("Details", new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking refund ready for processing: {Id}", id);
+                TempData["ErrorMessage"] = "An error occurred while marking the refund request ready.";
+                return RedirectToAction("Details", new { id });
+            }
+        }
+
+        #endregion
+
+        #region Checker-Maker Views
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Checker")]
+        public async Task<IActionResult> PendingFirstCheck()
+        {
+            try
+            {
+                var refunds = await _refundService.GetRefundsPendingFirstCheckAsync();
+                return View(refunds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading refunds pending first check");
+                TempData["ErrorMessage"] = "An error occurred while loading refunds pending first check.";
+                return View(new List<RefundRequestViewModel>());
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Checker")]
+        public async Task<IActionResult> PendingSecondCheck()
+        {
+            try
+            {
+                var refunds = await _refundService.GetRefundsPendingSecondCheckAsync();
+                return View(refunds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading refunds pending second check");
+                TempData["ErrorMessage"] = "An error occurred while loading refunds pending second check.";
+                return View(new List<RefundRequestViewModel>());
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ReadyForProcessing()
+        {
+            try
+            {
+                var refunds = await _refundService.GetRefundsReadyForProcessingAsync();
+                return View(refunds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading refunds ready for processing");
+                TempData["ErrorMessage"] = "An error occurred while loading refunds ready for processing.";
+                return View(new List<RefundRequestViewModel>());
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CheckerMakerStatistics()
+        {
+            try
+            {
+                var statistics = await _refundService.GetCheckerMakerStatisticsAsync();
+                return Json(statistics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting checker-maker statistics");
+                return Json(new { error = "Failed to retrieve statistics" });
+            }
+        }
+
+        #endregion
+
         #region Helper Methods
 
         private bool CanEditRefund(RefundRequestViewModel refundRequest)
@@ -759,6 +1080,41 @@ namespace BiddingSystem.Controllers
         {
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
             return (userRole == "Admin" || userRole == "Checker") && refundRequest.Status == RefundStatus.Approved;
+        }
+
+        // Checker-Maker Workflow Helper Methods
+        private bool CanSubmitForFirstCheck(RefundRequestViewModel refundRequest)
+        {
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            return (userRole == "Admin" || userRole == "Maker") && 
+                   refundRequest.WorkflowStatus == RefundWorkflowStatus.Draft;
+        }
+
+        private bool CanFirstCheck(RefundRequestViewModel refundRequest)
+        {
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            return (userRole == "Admin" || userRole == "Checker") && 
+                   refundRequest.WorkflowStatus == RefundWorkflowStatus.SubmittedForFirstCheck;
+        }
+
+        private bool CanSubmitForSecondCheck(RefundRequestViewModel refundRequest)
+        {
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            return (userRole == "Admin" || userRole == "Maker") && 
+                   refundRequest.WorkflowStatus == RefundWorkflowStatus.FirstCheckApproved;
+        }
+
+        private bool CanSecondCheck(RefundRequestViewModel refundRequest)
+        {
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            return (userRole == "Admin" || userRole == "Checker") && 
+                   refundRequest.WorkflowStatus == RefundWorkflowStatus.SubmittedForSecondCheck;
+        }
+
+        private bool CanMarkReadyForProcessing(RefundRequestViewModel refundRequest)
+        {
+            // This is now automatic after second check approval, so always return false
+            return false;
         }
 
         #endregion

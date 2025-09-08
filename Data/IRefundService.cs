@@ -70,6 +70,21 @@ namespace BiddingSystem.Data
         // Audit and logging
         Task LogRefundActionAsync(int refundRequestId, string action, int userId, string? details = null);
         Task<IEnumerable<object>> GetRefundAuditLogAsync(int refundRequestId);
+        
+        // Checker-Maker Workflow Operations
+        Task<bool> SubmitForFirstCheckAsync(int id, int submittedBy);
+        Task<bool> FirstCheckApproveAsync(int id, int checkerId, decimal approvedAmount, string? remarks = null);
+        Task<bool> FirstCheckRejectAsync(int id, int checkerId, string? remarks = null);
+        Task<bool> SubmitForSecondCheckAsync(int id, int submittedBy);
+        Task<bool> SecondCheckApproveAsync(int id, int checkerId, string? remarks = null);
+        Task<bool> SecondCheckRejectAsync(int id, int checkerId, string? remarks = null);
+        Task<bool> MarkReadyForProcessingAsync(int id);
+        
+        // Checker-Maker Query Operations
+        Task<IEnumerable<RefundRequestViewModel>> GetRefundsPendingFirstCheckAsync();
+        Task<IEnumerable<RefundRequestViewModel>> GetRefundsPendingSecondCheckAsync();
+        Task<IEnumerable<RefundRequestViewModel>> GetRefundsReadyForProcessingAsync();
+        Task<object> GetCheckerMakerStatisticsAsync();
     }
 
     public class RefundValidationResult

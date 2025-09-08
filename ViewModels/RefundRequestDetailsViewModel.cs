@@ -15,5 +15,12 @@ namespace BiddingSystem.ViewModels
         public bool CanComplete { get; set; }
         public bool CanFail { get; set; }
         public bool CanDelete { get; set; }
+        
+        // Checker-Maker Workflow Permission flags
+        public bool CanSubmitForFirstCheck { get; set; }
+        public bool CanFirstCheck { get; set; }
+        public bool CanSubmitForSecondCheck { get; set; }
+        public bool CanSecondCheck { get; set; }
+        public bool CanMarkReadyForProcessing { get; set; }
     }
 }
