@@ -55,5 +55,11 @@ namespace BiddingSystem.Data
         Task<Dictionary<string, object>> GetDashboardStatisticsAsync();
         Task<List<Tender>> GetExpiringTendersAsync(int days = 7);
         Task<List<Tender>> GetUpcomingTendersAsync(int days = 7);
+
+
+        // Tender Assignment Operations
+        Task<bool> AssignTenderToBidderAsync(int tenderId, int bidId);
+        Task<bool> RejectAllOtherBidsAsync(int tenderId, int acceptedBidId);
+        Task<TenderBid?> GetAcceptedBidForTenderAsync(int tenderId);
     }
 }
