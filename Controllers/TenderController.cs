@@ -811,5 +811,100 @@ namespace BiddingSystem.Controllers
         #region Tender Allocation
         // Allocation feature removed
         #endregion
+
+        // Add these action methods to your existing TenderController class
+
+        #region Tender Assignment
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Maker")]
+        public async Task<IActionResult> AssignTender(int tenderId, int bidId)
+        {
+            try
+            {
+                var tender = await _tenderRepository.GetByIdAsync(tenderId);
+                if (tender == null)
+                {
+                    TempData["ErrorMessage"] = "Tender not found.";
+                    return RedirectToAction("Index");
+                }
+
+                // Check if tender is in a valid state for assignment
+                if (tender.Status != TenderStatus.Published)
+                {
+                    TempData["ErrorMessage"] = "Only published tenders can be assigned to bidders.";
+                    return RedirectToAction("Details", new { id = tenderId });
+                }
+
+                // Check if the bid exists and belongs to this tender
+                var bid = await _tenderRepository.GetTenderBidByIdAsync(bidId);
+                if (bid == null || bid.TenderId != tenderId)
+                {
+                    TempData["ErrorMessage"] = "Invalid bid selection.";
+                    return RedirectToAction("Details", new { id = tenderId });
+                }
+
+                // Check if bid payment is completed
+                if (bid.PaymentStatus != "Paid")
+                {
+                    TempData["ErrorMessage"] = "Cannot assign tender to a bidder who hasn't completed payment.";
+                    return RedirectToAction("Details", new { id = tenderId });
+                }
+
+                // Assign the tender to the selected bidder
+                var success = await _tenderRepository.AssignTenderToBidderAsync(tenderId, bidId);
+                if (success)
+                {
+                    _logger.LogInformation($"Tender {tender.TenderId} assigned to bidder {bid.BidderName} (Bid ID: {bidId}) by user {GetCurrentUserId()}");
+                    TempData["SuccessMessage"] = $"Tender {tender.TenderId} has been successfully assigned to {bid.BidderName}.";
+
+                    // Send notification emails to all bidders (optional)
+                    // await SendBidResultNotifications(tenderId, bidId);
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to assign the tender. Please try again.";
+                }
+
+                return RedirectToAction("Details", new { id = tenderId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error assigning tender");
+                TempData["ErrorMessage"] = "An error occurred while assigning the tender.";
+                return RedirectToAction("Details", new { id = tenderId });
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Maker")]
+        public async Task<IActionResult> AssignmentModal(int tenderId)
+        {
+            try
+            {
+                var tender = await _tenderRepository.GetByIdAsync(tenderId);
+                if (tender == null)
+                {
+                    return NotFound();
+                }
+
+                // Get all eligible bids (paid bids)
+                var bids = await _tenderRepository.GetTenderBidsAsync(tenderId);
+                var eligibleBids = bids.Where(b => b.PaymentStatus == "Paid" && b.Status == "Submitted").ToList();
+
+                ViewBag.Tender = tender;
+                ViewBag.EligibleBids = eligibleBids;
+
+                return PartialView("_AssignTenderModal", new { TenderId = tenderId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading assignment modal");
+                return BadRequest("Error loading bidders list.");
+            }
+        }
+
+        #endregion
     }
 }

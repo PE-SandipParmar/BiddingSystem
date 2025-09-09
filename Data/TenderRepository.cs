@@ -601,5 +601,135 @@ namespace BiddingSystem.Data
         }
 
         #endregion
+
+        // Add these methods to your existing TenderRepository class
+
+        #region Tender Assignment Operations
+
+        public async Task<bool> AssignTenderToBidderAsync(int tenderId, int bidId)
+        {
+            using IDbConnection connection = new SqlConnection(_connectionString);
+
+            if (connection.State == ConnectionState.Closed)
+                connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // Update the selected bid to Accepted
+                const string acceptBidSql = @"
+            UPDATE TenderBids 
+            SET Status = @Status, 
+                UpdatedAt = @UpdatedAt,
+                Remarks = @Remarks
+            WHERE Id = @Id AND TenderId = @TenderId";
+
+                var acceptResult = await connection.ExecuteAsync(acceptBidSql, new
+                {
+                    Id = bidId,
+                    TenderId = tenderId,
+                    Status = "Accepted",
+                    UpdatedAt = DateTime.UtcNow,
+                    Remarks = "Tender awarded to this bidder"
+                }, transaction);
+
+                if (acceptResult > 0)
+                {
+                    // Reject all other bids for this tender
+                    const string rejectOthersSql = @"
+                UPDATE TenderBids 
+                SET Status = @Status, 
+                    UpdatedAt = @UpdatedAt,
+                    Remarks = @Remarks
+                WHERE TenderId = @TenderId 
+                    AND Id != @AcceptedBidId 
+                    AND IsActive = 1";
+
+                    await connection.ExecuteAsync(rejectOthersSql, new
+                    {
+                        TenderId = tenderId,
+                        AcceptedBidId = bidId,
+                        Status = "Rejected",
+                        UpdatedAt = DateTime.UtcNow,
+                        Remarks = "Tender awarded to another bidder"
+                    }, transaction);
+
+                    // Update tender status to Closed/Awarded
+                    const string updateTenderSql = @"
+                UPDATE Tenders 
+                SET Status = @Status, 
+                    UpdatedAt = @UpdatedAt
+                WHERE Id = @Id";
+
+                    await connection.ExecuteAsync(updateTenderSql, new
+                    {
+                        Id = tenderId,
+                        Status = TenderStatus.Closed,
+                        UpdatedAt = DateTime.UtcNow
+                    }, transaction);
+
+                    transaction.Commit();
+                    return true;
+                }
+
+                transaction.Rollback();
+                return false;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                if (connection.State == ConnectionState.Open)
+                    connection.Close();
+            }
+        }
+
+        public async Task<bool> RejectAllOtherBidsAsync(int tenderId, int acceptedBidId)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+        UPDATE TenderBids 
+        SET Status = @Status, 
+            UpdatedAt = @UpdatedAt,
+            Remarks = @Remarks
+        WHERE TenderId = @TenderId 
+            AND Id != @AcceptedBidId 
+            AND IsActive = 1";
+
+            var rowsAffected = await connection.ExecuteAsync(sql, new
+            {
+                TenderId = tenderId,
+                AcceptedBidId = acceptedBidId,
+                Status = "Rejected",
+                UpdatedAt = DateTime.UtcNow,
+                Remarks = "Tender awarded to another bidder"
+            });
+
+            return rowsAffected > 0;
+        }
+
+        public async Task<TenderBid?> GetAcceptedBidForTenderAsync(int tenderId)
+        {
+            using var connection = CreateConnection();
+            const string sql = @"
+        SELECT * FROM TenderBids 
+        WHERE TenderId = @TenderId 
+            AND Status = @Status 
+            AND IsActive = 1";
+
+            var bid = await connection.QueryFirstOrDefaultAsync<TenderBid>(sql, new
+            {
+                TenderId = tenderId,
+                Status = "Accepted"
+            });
+
+            return bid;
+        }
+
+        #endregion
     }
 }

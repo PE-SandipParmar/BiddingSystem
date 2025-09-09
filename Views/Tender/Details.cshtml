@@ -2,6 +2,7 @@
 @using BiddingSystem.Models
 @{
     ViewData["Title"] = $"Tender Details - {Model.TenderId}";
+    var acceptedBid = Model.Bids.FirstOrDefault(b => b.Status == "Accepted");
 }
 
 <div class="flex justify-between items-center mb-6">
@@ -14,7 +15,7 @@
             <i class="ri-arrow-left-line mr-2"></i>
             Back to List
         </a>
-        
+
         @if (Model.IsEditable)
         {
             <a asp-action="Edit" asp-route-id="@Model.Id" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center">
@@ -22,10 +23,10 @@
                 Edit
             </a>
         }
-        
+
         @if (Model.Status == TenderStatus.Draft)
         {
-            <form asp-action="Publish" asp-route-id="@Model.Id" method="post" class="inline" 
+            <form asp-action="Publish" asp-route-id="@Model.Id" method="post" class="inline"
                   onsubmit="return confirm('Are you sure you want to publish this tender? This action cannot be undone.')">
                 <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center">
                     <i class="ri-send-plane-line mr-2"></i>
@@ -33,10 +34,18 @@
                 </button>
             </form>
         }
-        
-        @if (Model.Status == TenderStatus.Published)
+
+        @if (Model.Status == TenderStatus.Published && Model.Bids.Any(b => b.PaymentStatus == "Paid") && acceptedBid == null)
         {
-            <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="inline" 
+            <button onclick="openAssignModal()" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors flex items-center">
+                <i class="ri-user-star-line mr-2"></i>
+                Assign Tender
+            </button>
+        }
+
+        @if (Model.Status == TenderStatus.Published && acceptedBid == null)
+        {
+            <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="inline"
                   onsubmit="return confirm('Are you sure you want to close this tender? This action cannot be undone.')">
                 <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center">
                     <i class="ri-close-circle-line mr-2"></i>
@@ -45,11 +54,9 @@
             </form>
         }
         
-        
-        
         @if (Model.Status != TenderStatus.Closed)
         {
-            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="inline" 
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="inline"
                   onsubmit="return confirm('Are you sure you want to cancel this tender? This action cannot be undone.')">
                 <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center">
                     <i class="ri-close-line mr-2"></i>
@@ -59,6 +66,21 @@
         }
     </div>
 </div>
+
+<!-- Tender Assignment Status (if assigned) -->
+@if (acceptedBid != null)
+{
+    <div class="bg-green-50 border-2 border-l-4  border-green-400 p-4 mb-6">
+        <div class="flex items-center">
+            <i class="ri-trophy-line text-green-600 text-2xl mr-3"></i>
+            <div>
+                <h3 class="text-lg font-medium text-green-800">Tender Awarded</h3>
+                <p class="text-green-700">This tender has been awarded to <strong>@acceptedBid.BidderName</strong> (@acceptedBid.CompanyName)</p>
+                <p class="text-sm text-green-600 mt-1">Bid Amount: ₹@acceptedBid.BidAmount.ToString("N0")</p>
+            </div>
+        </div>
+    </div>
+}
 
 <!-- Status Banner -->
 <div class="bg-white rounded-lg shadow p-6 mb-6">
@@ -81,6 +103,8 @@
     </div>
 </div>
 
+
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Main Content -->
     <div class="lg:col-span-2 space-y-6">
@@ -90,33 +114,33 @@
                 <i class="ri-file-info-line mr-2 text-primary"></i>
                 Tender Information
             </h2>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tender ID</label>
                     <p class="text-sm text-gray-900 font-mono">@Model.TenderId</p>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
                     <p class="text-sm text-gray-900">@Model.Department</p>
                 </div>
-                
+
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <p class="text-sm text-gray-900">@Model.Description</p>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Publish Date</label>
                     <p class="text-sm text-gray-900">@Model.PublishDate.ToString("dd MMM yyyy")</p>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Last Date to Pay EMD</label>
                     <p class="text-sm text-gray-900">@Model.LastDateEmd.ToString("dd MMM yyyy")</p>
                 </div>
-                
+
                 @if (Model.TenderClosingDate.HasValue)
                 {
                     <div>
@@ -124,7 +148,7 @@
                         <p class="text-sm text-gray-900">@Model.TenderClosingDate.Value.ToString("dd MMM yyyy")</p>
                     </div>
                 }
-                
+
                 @if (Model.TenderOpeningDate.HasValue)
                 {
                     <div>
@@ -135,83 +159,36 @@
             </div>
         </div>
         
-        <!-- Allocation Status -->
-        @if (Model.IsAllocated)
-        {
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <i class="ri-award-line mr-2 text-primary"></i>
-                    Allocation Status
-                </h2>
-                
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div class="flex items-center">
-                        <i class="ri-check-circle-line text-green-600 text-2xl mr-3"></i>
-                        <div>
-                            <h3 class="text-lg font-medium text-green-800">Tender Allocated</h3>
-                            <p class="text-green-700">This tender has been successfully allocated to a bid.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Allocated To</label>
-                            <p class="text-sm text-gray-900">@Model.AllocatedBid?.BidderName</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Company</label>
-                            <p class="text-sm text-gray-900">@Model.AllocatedBid?.CompanyName</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Bid Amount</label>
-                            <p class="text-sm text-gray-900">₹@Model.AllocatedBid?.BidAmount.ToString("N0")</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Allocated At</label>
-                            <p class="text-sm text-gray-900">@Model.AllocatedAt?.ToString("dd MMM yyyy HH:mm")</p>
-                        </div>
-                        @if (!string.IsNullOrEmpty(Model.AllocationRemarks))
-                        {
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Allocation Remarks</label>
-                                <p class="text-sm text-gray-900">@Model.AllocationRemarks</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-        }
-
         <!-- Financial Details -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <i class="ri-money-dollar-circle-line mr-2 text-primary"></i>
                 Financial Details
             </h2>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Estimated Value</label>
                     <p class="text-lg font-semibold text-gray-900">₹@Model.EstimatedValue.ToString("N0")</p>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">EMD Amount</label>
                     <p class="text-lg font-semibold text-gray-900">₹@Model.EmdAmount.ToString("N0")</p>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">SD Amount</label>
                     <p class="text-lg font-semibold text-gray-900">₹@Model.SdAmount.ToString("N0")</p>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Processing Fee</label>
                     <p class="text-lg font-semibold text-gray-900">₹@Model.ProcessingFee.ToString("N0")</p>
                 </div>
             </div>
         </div>
-        
+
         <!-- Documents -->
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center justify-between mb-4">
@@ -223,7 +200,7 @@
                     Manage Documents
                 </a>
             </div>
-            
+
             @if (Model.Documents.Any())
             {
                 <div class="space-y-3">
@@ -239,13 +216,13 @@
                                     <p class="text-xs text-gray-500">@document.FileSizeDisplay • @document.DocumentTypeDisplayName</p>
                                 </div>
                             </div>
-                            <a href="/uploads/tenders/@Model.TenderId/@document.FileName" target="_blank" 
+                            <a href="/uploads/tenders/@Model.TenderId/@document.FileName" target="_blank"
                                class="text-primary hover:text-primary/80">
                                 <i class="ri-download-line"></i>
                             </a>
                         </div>
                     }
-                    
+
                     @if (Model.Documents.Count > 5)
                     {
                         <div class="text-center">
@@ -267,7 +244,7 @@
                 </div>
             }
         </div>
-        
+
         <!-- Bids -->
         <div class="bg-white rounded-lg shadow p-6">
             <div class="flex items-center justify-between mb-4">
@@ -282,16 +259,16 @@
                     </a>
                 }
             </div>
-            
+
             @if (Model.Bids.Any())
             {
                 <div class="space-y-3">
                     @foreach (var bid in Model.Bids.Take(5))
                     {
-                        <a href="/TenderBid/Details/@bid.Id" class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                        <a href="/TenderBid/Details/@bid.Id" class="flex items-center justify-between p-3 border border-gray-200 rounded-lg @(bid.Status == "Accepted" ? "bg-green-50 border-green-300" : "")">
                             <div class="flex items-center">
-                                <div class="w-8 h-8 flex items-center justify-center rounded bg-blue-100 mr-3">
-                                    <i class="ri-user-line text-blue-600"></i>
+                                <div class="w-8 h-8 flex items-center justify-center rounded @(bid.Status == "Accepted" ? "bg-green-100" : "bg-blue-100") mr-3">
+                                    <i class="ri-user-line @(bid.Status == "Accepted" ? "text-green-600" : "text-blue-600")"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-800">@bid.BidderName</p>
@@ -320,16 +297,16 @@
                                 };
                             }
                             <div class="flex items-center space-x-2">
-                               @*  Bid Status:   <br />  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @statusClass">
-                                 @bid.Status
-                                </span> *@
-                                Payment Status:    <span class="ml-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @paymentStatusClass">
-                                 @bid.PaymentStatus
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @statusClass">
+                                    @bid.Status
+                                </span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium @paymentStatusClass">
+                                    @bid.PaymentStatus
                                 </span>
                             </div>
                         </a>
                     }
-                    
+
                     @if (Model.Bids.Count > 5)
                     {
                         <div class="text-center">
@@ -353,24 +330,29 @@
             }
         </div>
     </div>
-    
+
     <!-- Sidebar -->
     <div class="space-y-6">
         <!-- Quick Stats -->
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Stats</h3>
-            
+
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-600">Total Bids</span>
                     <span class="text-sm font-medium text-gray-900">@Model.BidCount</span>
                 </div>
-                
+
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Paid Bids</span>
+                    <span class="text-sm font-medium text-gray-900">@Model.Bids.Count(b => b.PaymentStatus == "Paid")</span>
+                </div>
+
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-600">Documents</span>
                     <span class="text-sm font-medium text-gray-900">@Model.DocumentCount</span>
                 </div>
-                
+
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-600">Days to EMD Deadline</span>
                     <span class="text-sm font-medium @(Model.LastDateEmd < DateTime.Now ? "text-red-600" : Model.LastDateEmd < DateTime.Now.AddDays(7) ? "text-yellow-600" : "text-green-600")">
@@ -379,48 +361,57 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Actions -->
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-            
+
             <div class="space-y-3">
-                <a asp-action="Documents" asp-route-id="@Model.Id" 
+                <a asp-action="Documents" asp-route-id="@Model.Id"
                    class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                     <i class="ri-file-upload-line mr-2"></i>
                     Manage Documents
                 </a>
-                
+
                 @if (Model.IsPublished)
                 {
-                    <a asp-controller="TenderBid" asp-action="Index" asp-route-tenderId="@Model.Id" 
+                    <a asp-controller="TenderBid" asp-action="Index" asp-route-tenderId="@Model.Id"
                        class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                         <i class="ri-auction-line mr-2"></i>
                         View Bids
                     </a>
                 }
-                
+
+                @if (Model.Status == TenderStatus.Published && Model.Bids.Any(b => b.PaymentStatus == "Paid") && acceptedBid == null)
+                {
+                    <button onclick="openAssignModal()"
+                            class="w-full flex items-center justify-center px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600">
+                        <i class="ri-user-star-line mr-2"></i>
+                        Assign Tender to Bidder
+                    </button>
+                }
+
                 @if (Model.IsEditable)
                 {
-                    <a asp-action="Edit" asp-route-id="@Model.Id" 
+                    <a asp-action="Edit" asp-route-id="@Model.Id"
                        class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                         <i class="ri-edit-line mr-2"></i>
                         Edit Tender
                     </a>
                 }
-                
-                <button onclick="window.print()" 
+
+                <button onclick="window.print()"
                         class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                     <i class="ri-printer-line mr-2"></i>
                     Print Details
                 </button>
             </div>
         </div>
-        
+
         <!-- Timeline -->
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Timeline</h3>
-            
+
             <div class="space-y-4">
                 <div class="flex items-start">
                     <div class="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3"></div>
@@ -429,7 +420,7 @@
                         <p class="text-xs text-gray-500">@Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</p>
                     </div>
                 </div>
-                
+
                 @if (Model.PublishedAt.HasValue)
                 {
                     <div class="flex items-start">
@@ -440,7 +431,7 @@
                         </div>
                     </div>
                 }
-                
+
                 <div class="flex items-start">
                     <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3"></div>
                     <div>
@@ -448,7 +439,7 @@
                         <p class="text-xs text-gray-500">@Model.LastDateEmd.ToString("dd MMM yyyy HH:mm")</p>
                     </div>
                 </div>
-                
+
                 @if (Model.TenderClosingDate.HasValue)
                 {
                     <div class="flex items-start">
@@ -459,7 +450,102 @@
                         </div>
                     </div>
                 }
+
+                @if (acceptedBid != null)
+                {
+                    <div class="flex items-start">
+                        <div class="w-2 h-2 bg-purple-500 rounded-full mt-2 mr-3"></div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Tender Awarded</p>
+                            <p class="text-xs text-gray-500">To: @acceptedBid.BidderName</p>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
 </div>
+
+<!-- Assign Tender Modal -->
+<div id="assignModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                <i class="ri-user-star-line mr-2"></i>Assign Tender to Bidder
+            </h3>
+            <form id="assignForm" asp-action="AssignTender" method="post">
+                <input type="hidden" name="tenderId" value="@Model.Id" />
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Winning Bidder</label>
+                    <select name="bidId" id="bidSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">-- Select Bidder --</option>
+                        @foreach (var bid in Model.Bids.Where(b => b.PaymentStatus == "Paid" && b.Status == "Submitted"))
+                        {
+                            <option value="@bid.Id">
+                                @bid.BidderName (@bid.CompanyName) - ₹@bid.BidAmount.ToString("N0")
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="ri-alert-line text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                <strong>Warning:</strong> This action will automatically reject all other bids for this tender.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeAssignModal()"
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600">
+                        Assign Tender
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAssignModal() {
+            document.getElementById('assignModal').classList.remove('hidden');
+        }
+
+        function closeAssignModal() {
+            document.getElementById('assignModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            var modal = document.getElementById('assignModal');
+            if (event.target == modal) {
+                closeAssignModal();
+            }
+        }
+
+        // Form submission confirmation
+        document.getElementById('assignForm').addEventListener('submit', function (e) {
+            var selectedOption = document.getElementById('bidSelect').selectedOptions[0];
+            if (!selectedOption || !selectedOption.value) {
+                e.preventDefault();
+                alert('Please select a bidder');
+                return false;
+            }
+
+            var bidderName = selectedOption.text.split(' - ')[0];
+            if (!confirm(`Are you sure you want to assign this tender to ${bidderName}? This action cannot be undone and will reject all other bids.`)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
+}
