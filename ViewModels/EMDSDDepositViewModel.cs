@@ -194,6 +194,7 @@ namespace BiddingSystem.ViewModels
         public string? Remarks { get; set; }
 
         public List<Tender> AvailableTenders { get; set; } = new List<Tender>();
+        public List<TenderBid> AvailableTendersBid { get; set; } = new List<TenderBid>();
         public List<string> StatusOptions { get; set; } = new List<string> { "Pending", "Paid", "Failed", "Refunded" };
         public List<string> TypeOptions { get; set; } = new List<string> { "EMD", "SD" };
     }

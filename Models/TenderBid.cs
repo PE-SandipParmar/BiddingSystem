@@ -94,6 +94,17 @@ namespace BiddingSystem.Models
         [Display(Name = "Remarks")]
         public string? Remarks { get; set; }
 
+        // Allocation properties
+        [Display(Name = "Is Allocated")]
+        public bool IsAllocated { get; set; } = false;
+
+        [Display(Name = "Allocation Date")]
+        public DateTime? AllocationDate { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Allocation Remarks")]
+        public string? AllocationRemarks { get; set; }
+
         // Navigation properties
         public virtual ICollection<TenderBidDocument> Documents { get; set; } = new List<TenderBidDocument>();
     }

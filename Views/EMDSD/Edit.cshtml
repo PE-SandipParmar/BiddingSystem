@@ -53,7 +53,7 @@
 
                         <div>
                             <label asp-for="TenderId" class="block text-sm font-medium text-gray-700"></label>
-                            <select asp-for="TenderId" asp-items="@(new SelectList(Model.AvailableTenders, "Id", "TenderTitle"))" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+                            <select asp-for="TenderId" asp-items="@(new SelectList(Model.AvailableTenders, "Id", "TenderTitle"))" id="tenderSelect" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
                                 <option value="">Select Tender</option>
                             </select>
                             <span asp-validation-for="TenderId" class="text-red-600 text-sm"></span>
@@ -62,8 +62,24 @@
 
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div>
+                            <label asp-for="TenderBidId" class="block text-sm font-medium text-gray-700"></label>
+                            <select asp-for="TenderBidId" id="tenderBidSelect" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+                                <option value="">Select Tender First</option>
+                            </select>
+                    <input type="text" value="@Model.TenderBidId" id="hdnTenderBidId" disabled style="display:none !important" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50 sm:text-sm">
+
+                            <span asp-validation-for="TenderBidId" class="text-red-600 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <!-- Empty div for grid layout -->
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
                             <label asp-for="Type" class="block text-sm font-medium text-gray-700"></label>
-                            <select asp-for="Type" asp-items="@(new SelectList(Model.TypeOptions))" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+                            <select asp-for="Type" asp-items="@(new SelectList(Model.TypeOptions))" id="typeSelect" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
                                 <option value="">Select Type</option>
                             </select>
                             <span asp-validation-for="Type" class="text-red-600 text-sm"></span>
@@ -84,7 +100,7 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">₹</span>
                             </div>
-                            <input asp-for="Amount" type="number" step="0.01" min="0" class="focus:ring-primary focus:border-primary block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md" placeholder="0.00">
+                            <input asp-for="Amount" type="number" step="0.01" min="0" id="amountInput" class="focus:ring-primary focus:border-primary block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md" placeholder="0.00">
                         </div>
                         <span asp-validation-for="Amount" class="text-red-600 text-sm"></span>
                     </div>
@@ -92,13 +108,13 @@
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div>
                             <label asp-for="BidderName" class="block text-sm font-medium text-gray-700"></label>
-                            <input asp-for="BidderName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter bidder name">
+                            <input asp-for="BidderName" id="bidderNameInput" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter bidder name">
                             <span asp-validation-for="BidderName" class="text-red-600 text-sm"></span>
                         </div>
 
                         <div>
                             <label asp-for="CompanyName" class="block text-sm font-medium text-gray-700"></label>
-                            <input asp-for="CompanyName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter company name">
+                            <input asp-for="CompanyName" id="companyNameInput" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter company name">
                             <span asp-validation-for="CompanyName" class="text-red-600 text-sm"></span>
                         </div>
                     </div>
@@ -150,4 +166,324 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Edit form JavaScript loaded');
+            
+            const tenderSelect = document.getElementById('tenderSelect');
+            const tenderBidSelect = document.getElementById('tenderBidSelect');
+            const typeSelect = document.getElementById('typeSelect');
+            const amountInput = document.getElementById('amountInput');
+            const bidderNameInput = document.getElementById('bidderNameInput');
+            const companyNameInput = document.getElementById('companyNameInput');
+            
+            console.log('Form elements found:', {
+                tenderSelect: !!tenderSelect,
+                tenderBidSelect: !!tenderBidSelect,
+                typeSelect: !!typeSelect,
+                amountInput: !!amountInput,
+                bidderNameInput: !!bidderNameInput,
+                companyNameInput: !!companyNameInput
+            });
+            
+            console.log('Initial values:', {
+                tenderId: tenderSelect?.value,
+                tenderBidId: tenderBidSelect?.value,
+                type: typeSelect?.value,
+                amount: amountInput?.value,
+                bidderName: bidderNameInput?.value,
+                companyName: companyNameInput?.value
+            });
+            
+            // Store tender data for amount calculation
+            let tenderData = {};
+            let tenderBidsData = {};
+            
+            // Function to auto-fill amount based on tender and type
+            function autoFillAmount() {
+                const tenderId = tenderSelect.value;
+                const type = typeSelect.value;
+                
+                console.log('autoFillAmount called:', { tenderId, type, tenderData: tenderData[tenderId] });
+                
+                if (tenderId && type && tenderData[tenderId]) {
+                    const tender = tenderData[tenderId];
+                    let amount = 0;
+                    
+                    if (type === 'EMD') {
+                        amount = tender.emdAmount || 0;
+                    } else if (type === 'SD') {
+                        amount = tender.sdAmount || 0;
+                    }
+                    
+                    console.log('Calculated amount:', amount);
+                    
+                    if (amount > 0) {
+                        amountInput.value = amount;
+                        console.log('Amount set to:', amountInput.value);
+                    }
+                }
+            }
+            
+            // Function to auto-fill bidder information based on selected tender bid
+            function autoFillBidderInfo() {
+                const tenderBidId = tenderBidSelect.value;
+                
+                console.log('autoFillBidderInfo called:', { tenderBidId, tenderBidsData: tenderBidsData[tenderBidId] });
+                
+                if (tenderBidId && tenderBidsData[tenderBidId]) {
+                    const tenderBid = tenderBidsData[tenderBidId];
+                    bidderNameInput.value = tenderBid.bidderName || '';
+                    companyNameInput.value = tenderBid.companyName || '';
+                    console.log('Bidder info set:', { bidderName: tenderBid.bidderName, companyName: tenderBid.companyName });
+                } else {
+                    // Clear bidder info if no tender bid selected
+                    bidderNameInput.value = '';
+                    companyNameInput.value = '';
+                    console.log('Bidder info cleared');
+                }
+            }
+            
+            // Load tender bids when tender is selected
+            function loadTenderBids(tenderId, selectedTenderBidId = null) {
+                console.log('loadTenderBids called:', { tenderId, selectedTenderBidId });
+                
+                if (tenderId) {
+                    // Fetch tender details for amount calculation
+                    console.log('Fetching tender details for tenderId:', tenderId);
+                    fetch(`/EMDSD/GetTenderDetails?tenderId=${tenderId}`)
+                        .then(response => {
+                            console.log('Tender details response:', response.status);
+                            return response.json();
+                        })
+                        .then(tender => {
+                            console.log('Tender details loaded:', tender);
+                            tenderData[tenderId] = tender;
+                            // Auto-fill amount after tender data is loaded
+                            setTimeout(() => {
+                                console.log('Auto-filling amount after tender data loaded');
+                                autoFillAmount();
+                            }, 100);
+                        })
+                        .catch(error => {
+                            console.error('Error loading tender details:', error);
+                        });
+                    
+                    console.log('Fetching tender bids for tenderId:', tenderId);
+                    fetch(`/EMDSD/GetTenderBids?tenderId=${tenderId}`)
+                        .then(response => {
+                            console.log('Tender bids response:', response.status);
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Tender bids loaded:', data);
+                            tenderBidSelect.innerHTML = '<option value="">Select Tender Bid</option>';
+                            
+                            if (data && data.length > 0) {
+                                data.forEach(bid => {
+                                    // Store bid data for auto-fill
+                                    tenderBidsData[bid.id] = bid;
+                                    
+                                    const option = document.createElement('option');
+                                    option.value = bid.id;
+                                    option.textContent = `${bid.bidderName} - ${bid.companyName} (₹${bid.bidAmount})`;
+                                    tenderBidSelect.appendChild(option);
+                                });
+                                // Set the selected value if provided (for edit mode)
+                               // document.getElementById('TenderBidId').value = document.getElementById('hdnTenderBidId').value;
+                                selectedTenderBidId=document.getElementById('hdnTenderBidId').value
+                                if (selectedTenderBidId) {
+                                    console.log('Setting selected tender bid:', selectedTenderBidId);
+                                    tenderBidSelect.value = selectedTenderBidId;
+                                    // Auto-fill bidder info for the selected bid
+                                    setTimeout(() => {
+                                        console.log('Auto-filling bidder info for selected bid');
+                                        autoFillBidderInfo();
+                                    }, 100);
+                                }
+                                
+                                tenderBidSelect.disabled = false;
+                                console.log('Tender bid select enabled');
+                            } else {
+                                tenderBidSelect.innerHTML = '<option value="">No bids found for this tender</option>';
+                                console.log('No tender bids found');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading tender bids:', error);
+                            tenderBidSelect.innerHTML = '<option value="">Error loading bids</option>';
+                        });
+                } else {
+                    tenderBidSelect.innerHTML = '<option value="">Select Tender First</option>';
+                    tenderBidSelect.disabled = true;
+                }
+            }
+            
+            // Initialize form on page load
+            function initializeForm() {
+                console.log('Initializing form on page load...');
+                
+                if (tenderSelect && tenderSelect.value) {
+                    const tenderId = tenderSelect.value;
+                    const tenderBidId = tenderBidSelect?.value;
+                    
+                    console.log('Page load: Tender already selected', {
+                        tenderId: tenderId,
+                        tenderBidId: tenderBidId
+                    });
+                    
+                    // Load tender bids and set selection
+                    loadTenderBidsForEdit(tenderId, tenderBidId);
+                    
+                    // Auto-fill amount on page load
+                    setTimeout(() => {
+                        console.log('Page load: Auto-filling amount...');
+                        autoFillAmount();
+                    }, 500);
+                } else {
+                    console.log('Page load: No tender selected initially');
+                }
+            }
+            
+            // Special function for edit mode initialization
+            function loadTenderBidsForEdit(tenderId, selectedTenderBidId) {
+                console.log('loadTenderBidsForEdit called:', { tenderId, selectedTenderBidId });
+                
+                if (!tenderId) {
+                    console.log('No tender ID provided');
+                    return;
+                }
+                
+                // Show loading state
+                tenderBidSelect.innerHTML = '<option value="">Loading bids...</option>';
+                tenderBidSelect.disabled = true;
+                
+                // Fetch tender details first
+                fetch(`/EMDSD/GetTenderDetails?tenderId=${tenderId}`)
+                    .then(response => response.json())
+                    .then(tender => {
+                        console.log('Tender details loaded for edit:', tender);
+                        tenderData[tenderId] = tender;
+                    })
+                    .catch(error => {
+                        console.error('Error loading tender details:', error);
+                    });
+                
+                // Fetch tender bids
+                fetch(`/EMDSD/GetTenderBids?tenderId=${tenderId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Tender bids loaded for edit:', data);
+                        
+                        // Clear and populate dropdown
+                        tenderBidSelect.innerHTML = '<option value="">Select Tender Bid</option>';
+                        
+                        if (data && data.length > 0) {
+                            data.forEach(bid => {
+                                // Store bid data for auto-fill
+                                tenderBidsData[bid.id] = bid;
+                                
+                                const option = document.createElement('option');
+                                option.value = bid.id;
+                                option.textContent = `${bid.bidderName} - ${bid.companyName} (₹${bid.bidAmount})`;
+                                tenderBidSelect.appendChild(option);
+                            });
+                            
+                            // Set the selected value if provided
+                            selectedTenderBidId = document.getElementById('hdnTenderBidId').value
+                            if (selectedTenderBidId) {
+                                console.log('Setting selected tender bid for edit:', selectedTenderBidId);
+                                tenderBidSelect.value = selectedTenderBidId;
+                                
+                                // Auto-fill bidder info
+                                setTimeout(() => {
+                                    console.log('Auto-filling bidder info for edit mode');
+                                    autoFillBidderInfo();
+                                }, 100);
+                            }
+                            
+                            tenderBidSelect.disabled = false;
+                            console.log('Tender bid select enabled for edit');
+                        } else {
+                            tenderBidSelect.innerHTML = '<option value="">No bids found for this tender</option>';
+                            console.log('No tender bids found for edit');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading tender bids for edit:', error);
+                        tenderBidSelect.innerHTML = '<option value="">Error loading bids</option>';
+                    });
+            }
+            
+            // Initialize form on page load with delay to ensure DOM is ready
+            setTimeout(() => {
+                console.log('Delayed initialization starting...');
+                initializeForm();
+            }, 100);
+            
+            // Fallback initialization after longer delay
+            setTimeout(() => {
+                console.log('Fallback initialization starting...');
+                if (tenderSelect && tenderSelect.value && (!tenderBidSelect.value || tenderBidSelect.value === '')) {
+                    console.log('Fallback: Re-initializing form...');
+                    initializeForm();
+                }
+            }, 1000);
+            
+            // Load tender bids when tender selection changes
+            tenderSelect.addEventListener('change', function() {
+                // Clear bidder info when tender changes
+                bidderNameInput.value = '';
+                companyNameInput.value = '';
+                loadTenderBids(this.value);
+            });
+            
+            // Auto-fill amount when type changes
+            typeSelect.addEventListener('change', function() {
+                autoFillAmount();
+            });
+            
+            // Auto-fill bidder info when tender bid changes
+            tenderBidSelect.addEventListener('change', function() {
+                console.log('Tender bid changed to:', this.value);
+                autoFillBidderInfo();
+            });
+            
+            // Add a test button for debugging
+            const testButton = document.createElement('button');
+            testButton.textContent = 'Test Auto-Fill';
+            testButton.type = 'button';
+            testButton.style.cssText = 'margin: 10px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 3px;';
+            testButton.onclick = function() {
+                console.log('Manual test button clicked');
+                console.log('Current form state:', {
+                    tenderId: tenderSelect?.value,
+                    tenderBidId: tenderBidSelect?.value,
+                    type: typeSelect?.value,
+                    amount: amountInput?.value,
+                    bidderName: bidderNameInput?.value,
+                    companyName: companyNameInput?.value,
+                    tenderData: tenderData,
+                    tenderBidsData: tenderBidsData
+                });
+                
+                if (tenderSelect?.value) {
+                    console.log('Manually calling loadTenderBidsForEdit...');
+                    loadTenderBidsForEdit(tenderSelect.value, tenderBidSelect?.value);
+                }
+                
+                setTimeout(() => {
+                    console.log('Manually calling autoFillAmount...');
+                    autoFillAmount();
+                }, 500);
+            };
+            
+            // Add test button to the form
+            const form = document.querySelector('form');
+            if (form) {
+                form.appendChild(testButton);
+            }
+        });
+    </script>
 }

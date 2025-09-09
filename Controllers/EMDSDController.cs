@@ -12,11 +12,15 @@ namespace BiddingSystem.Controllers
     {
         private readonly IEMDSDService _emdsdService;
         private readonly ITenderRepository _tenderRepository;
+        private readonly ITenderBidRepository _tenderBidRepository;
+        private readonly ILogger<EMDSDController> _logger;
 
-        public EMDSDController(IEMDSDService emdsdService, ITenderRepository tenderRepository)
+        public EMDSDController(IEMDSDService emdsdService, ITenderRepository tenderRepository, ITenderBidRepository tenderBidRepository, ILogger<EMDSDController> logger)
         {
             _emdsdService = emdsdService;
             _tenderRepository = tenderRepository;
+            _tenderBidRepository = tenderBidRepository;
+            _logger = logger;
         }
 
         // GET: EMDSD
@@ -64,6 +68,106 @@ namespace BiddingSystem.Controllers
             {
                 TempData["ErrorMessage"] = "An error occurred while loading deposits: " + ex.Message;
                 return View(new EMDSDDepositListViewModel());
+            }
+        }
+
+        // GET: EMDSD/GetTenderBids
+        [HttpGet]
+        public async Task<IActionResult> GetTenderBids(int tenderId)
+        {
+            try
+            {
+                var bids = await _tenderBidRepository.GetBidsByTenderIdAsync(tenderId);
+                var result = bids.Select(bid => new
+                {
+                    id = bid.Id,
+                    bidderName = bid.BidderName,
+                    companyName = bid.CompanyName,
+                    bidAmount = bid.BidAmount,
+                    paymentStatus = bid.PaymentStatus
+                }).ToList();
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tender bids for tender: {TenderId}", tenderId);
+                return Json(new List<object>());
+            }
+        }
+
+        // GET: EMDSD/GetTenderDetails
+        [HttpGet]
+        public async Task<IActionResult> GetTenderDetails(int tenderId)
+        {
+            try
+            {
+                var tender = await _tenderRepository.GetByIdAsync(tenderId);
+                if (tender == null)
+                {
+                    return Json(new { error = "Tender not found" });
+                }
+
+                var result = new
+                {
+                    id = tender.Id,
+                    tenderId = tender.TenderId,
+                    tenderTitle = tender.TenderTitle,
+                    emdAmount = tender.EmdAmount,
+                    sdAmount = tender.SdAmount,
+                    processingFee = tender.ProcessingFee,
+                    estimatedValue = tender.EstimatedValue
+                };
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tender details for tender: {TenderId}", tenderId);
+                return Json(new { error = "Error loading tender details" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> TestCreateDeposit()
+        {
+            try
+            {
+                // Create a test deposit with TenderBidId
+                var testDeposit = new EMDSDDeposit
+                {
+                    TenderId = 1, // Assuming tender with ID 1 exists
+                    TenderBidId = 1, // Assuming tender bid with ID 1 exists
+                    Amount = 1000.00m,
+                    BidderName = "Test Bidder",
+                    CompanyName = "Test Company",
+                    TransactionDate = DateTime.Today,
+                    BankName = "Test Bank",
+                    FSSAIBranchName = "Test Branch",
+                    TransactionId = "TEST-" + DateTime.Now.Ticks,
+                    Type = "EMD",
+                    Remarks = "Test deposit for TenderBidId validation",
+                    Status = "Pending"
+                };
+
+                var createdDeposit = await _emdsdService.CreateDepositAsync(testDeposit);
+                
+                return Json(new { 
+                    success = true, 
+                    message = "Test deposit created successfully",
+                    depositId = createdDeposit.Id,
+                    tenderBidId = createdDeposit.TenderBidId,
+                    tenderId = createdDeposit.TenderId
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating test deposit");
+                return Json(new { 
+                    success = false, 
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message
+                });
             }
         }
 

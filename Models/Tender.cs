@@ -80,8 +80,24 @@ namespace BiddingSystem.Models
         [Display(Name = "Is Active")]
         public bool IsActive { get; set; } = true;
 
+        // Allocation properties
+        [Display(Name = "Allocated Bid ID")]
+        public int? AllocatedBidId { get; set; }
+
+        [Display(Name = "Allocated At")]
+        public DateTime? AllocatedAt { get; set; }
+
+        [Display(Name = "Allocated By")]
+        public int? AllocatedBy { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Allocation Remarks")]
+        public string? AllocationRemarks { get; set; }
+
         // Navigation properties
         public virtual User CreatedByUser { get; set; } = null!;
+        public virtual User? AllocatedByUser { get; set; }
+        public virtual TenderBid? AllocatedBid { get; set; }
         public virtual ICollection<TenderDocument> TenderDocuments { get; set; } = new List<TenderDocument>();
         public virtual ICollection<TenderBid> TenderBids { get; set; } = new List<TenderBid>();
 
@@ -107,6 +123,12 @@ namespace BiddingSystem.Models
 
         [NotMapped]
         public bool IsClosed => Status == TenderStatus.Closed;
+
+        [NotMapped]
+        public bool IsAllocated => AllocatedBidId.HasValue;
+
+        [NotMapped]
+        public bool CanBeAllocated => Status == TenderStatus.Published && !IsAllocated && TenderBids.Count >= 5;
     }
 
     public enum TenderStatus

@@ -78,9 +78,19 @@ namespace BiddingSystem.Controllers
                 var departments = await GetDepartmentsAsync();
                 var statusCounts = await _tenderRepository.GetTenderCountByStatusAsync();
 
+                // Load bids and documents for each tender to get accurate counts
+                var tenderViewModels = new List<TenderViewModel>();
+                foreach (var tender in tenders)
+                {
+                    var tenderViewModel = MapToViewModel(tender);
+                    tenderViewModel.Bids = await _tenderRepository.GetTenderBidsAsync(tender.Id);
+                    tenderViewModel.Documents = await _tenderRepository.GetTenderDocumentsAsync(tender.Id);
+                    tenderViewModels.Add(tenderViewModel);
+                }
+
                 var viewModel = new TenderListViewModel
                 {
-                    Tenders = tenders.Select(MapToViewModel).ToList(),
+                    Tenders = tenderViewModels,
                     TotalCount = totalCount,
                     Page = page,
                     PageSize = pageSize,
@@ -222,6 +232,13 @@ namespace BiddingSystem.Controllers
                 var viewModel = MapToViewModel(tender);
                 viewModel.Documents = documents;
                 viewModel.Bids = bids;
+
+                // Load allocation data if tender is allocated
+                if (tender.IsAllocated && tender.AllocatedBidId.HasValue)
+                {
+                    var allocatedBid = await _tenderRepository.GetTenderBidByIdAsync(tender.AllocatedBidId.Value);
+                    viewModel.AllocatedBid = allocatedBid;
+                }
 
                 return View(viewModel);
             }
@@ -675,6 +692,11 @@ namespace BiddingSystem.Controllers
                 CreatedByUserName = tender.CreatedByUser?.FullName ?? "Unknown",
                 CreatedAt = tender.CreatedAt,
                 UpdatedAt = tender.UpdatedAt,
+                // Allocation properties
+                AllocatedBidId = tender.AllocatedBidId,
+                AllocatedAt = tender.AllocatedAt,
+                AllocatedBy = tender.AllocatedBy,
+                AllocationRemarks = tender.AllocationRemarks,
                 PublishedAt = tender.PublishedAt
             };
         }
@@ -784,6 +806,10 @@ namespace BiddingSystem.Controllers
             return fileName;
         }
 
+        #endregion
+
+        #region Tender Allocation
+        // Allocation feature removed
         #endregion
 
         // Add these action methods to your existing TenderController class
