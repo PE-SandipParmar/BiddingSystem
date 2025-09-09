@@ -111,6 +111,7 @@ namespace BiddingSystem.Data
                 Id = result.Id,
                 DepositId = result.DepositId,
                 TenderId = result.TenderId,
+                TenderBidId = result.TenderBidId,
                 Amount = result.Amount,
                 BidderName = result.BidderName,
                 CompanyName = result.CompanyName,
@@ -304,7 +305,7 @@ namespace BiddingSystem.Data
             using var connection = CreateConnection();
             const string sql = @"
                 UPDATE EMDSDDeposits 
-                SET TenderId = @TenderId, Amount = @Amount, BidderName = @BidderName, 
+                SET TenderId = @TenderId, TenderBidId = @TenderBidId, Amount = @Amount, BidderName = @BidderName, 
                     CompanyName = @CompanyName, TransactionDate = @TransactionDate, 
                     BankName = @BankName, FSSAIBranchName = @FSSAIBranchName, 
                     TransactionId = @TransactionId, Status = @Status, Type = @Type, 

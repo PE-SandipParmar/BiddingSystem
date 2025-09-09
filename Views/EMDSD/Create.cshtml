@@ -4,19 +4,15 @@
 }
 
 <!-- Header -->
-<div class="bg-white shadow rounded-lg mb-6">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Create New EMD/SD Deposit</h1>
-                <p class="text-sm text-gray-600">Add a new earnest money deposit or security deposit</p>
-            </div>
-            <a href="@Url.Action("Index")" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                <i class="ri-arrow-left-line mr-2"></i>
-                Back to List
-            </a>
-        </div>
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Create New EMD/SD Deposit</h1>
+        <p class="text-gray-600 mt-1">Add a new earnest money deposit or security deposit</p>
     </div>
+    <a href="@Url.Action("Index")" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center">
+        <i class="ri-arrow-left-line mr-2"></i>
+        Back to List
+    </a>
 </div>
 
         <!-- Success/Error Messages -->
@@ -34,28 +30,50 @@
         }
 
         <!-- Form -->
-        <div class="bg-white shadow rounded-lg">
+        <div class="bg-white rounded shadow">
             <form asp-action="Create" method="post" class="space-y-6">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-medium text-gray-900">Deposit Information</h2>
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-800">Deposit Information</h2>
+                    <p class="text-sm text-gray-600 mt-1">Create a new EMD/SD deposit record</p>
                 </div>
                 
-                <div class="px-6 py-4 space-y-6">
+                <div class="p-6 space-y-6">
+                    <!-- Basic Information -->
+                    <div class="space-y-4">
+                        <h3 class="text-md font-medium text-gray-800 border-b border-gray-200 pb-2">Basic Information</h3>
+                        
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div>
+                                <label asp-for="TenderId" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                                <select asp-for="TenderId" asp-items="@(new SelectList(Model.AvailableTenders, "Id", "TenderTitle"))" id="tenderSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                    <option value="">Select Tender</option>
+                                </select>
+                                <span asp-validation-for="TenderId" class="text-red-600 text-sm"></span>
+                                <p class="mt-1 text-xs text-gray-500">Select a tender to load available bids and auto-fill amounts</p>
+                            </div>
+
+                            <div>
+                                <label asp-for="TenderBidId" class="block text-sm font-medium text-gray-700 mb-1"></label>
+                                <select asp-for="TenderBidId" id="tenderBidSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" disabled>
+                                    <option value="">Select Tender First</option>
+                                </select>
+                                <span asp-validation-for="TenderBidId" class="text-red-600 text-sm"></span>
+                                <p class="mt-1 text-xs text-gray-500">Select a tender first to load available bids</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div>
-                            <label asp-for="TenderId" class="block text-sm font-medium text-gray-700"></label>
-                            <select asp-for="TenderId" asp-items="@(new SelectList(Model.AvailableTenders, "Id", "TenderTitle"))" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
-                                <option value="">Select Tender</option>
-                            </select>
-                            <span asp-validation-for="TenderId" class="text-red-600 text-sm"></span>
-                        </div>
-
-                        <div>
                             <label asp-for="Type" class="block text-sm font-medium text-gray-700"></label>
-                            <select asp-for="Type" asp-items="@(new SelectList(Model.TypeOptions))" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
+                            <select asp-for="Type" asp-items="@(new SelectList(Model.TypeOptions))" id="typeSelect" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
                                 <option value="">Select Type</option>
                             </select>
                             <span asp-validation-for="Type" class="text-red-600 text-sm"></span>
+                        </div>
+
+                        <div>
+                            <!-- Empty div for grid layout -->
                         </div>
                     </div>
 
@@ -65,7 +83,7 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">₹</span>
                             </div>
-                            <input asp-for="Amount" type="number" step="0.01" min="0" class="focus:ring-primary focus:border-primary block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md" placeholder="0.00">
+                            <input asp-for="Amount" type="number" step="0.01" min="0" id="amountInput" class="focus:ring-primary focus:border-primary block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md" placeholder="0.00">
                         </div>
                         <span asp-validation-for="Amount" class="text-red-600 text-sm"></span>
                     </div>
@@ -73,13 +91,13 @@
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div>
                             <label asp-for="BidderName" class="block text-sm font-medium text-gray-700"></label>
-                            <input asp-for="BidderName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter bidder name">
+                            <input asp-for="BidderName" id="bidderNameInput" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter bidder name">
                             <span asp-validation-for="BidderName" class="text-red-600 text-sm"></span>
                         </div>
 
                         <div>
                             <label asp-for="CompanyName" class="block text-sm font-medium text-gray-700"></label>
-                            <input asp-for="CompanyName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter company name">
+                            <input asp-for="CompanyName" id="companyNameInput" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter company name">
                             <span asp-validation-for="CompanyName" class="text-red-600 text-sm"></span>
                         </div>
                     </div>
@@ -131,4 +149,119 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tenderSelect = document.getElementById('tenderSelect');
+            const tenderBidSelect = document.getElementById('tenderBidSelect');
+            const typeSelect = document.getElementById('typeSelect');
+            const amountInput = document.getElementById('amountInput');
+            const bidderNameInput = document.getElementById('bidderNameInput');
+            const companyNameInput = document.getElementById('companyNameInput');
+            
+            // Store tender data for amount calculation
+            let tenderData = {};
+            let tenderBidsData = {};
+            
+            // Function to auto-fill amount based on tender and type
+            function autoFillAmount() {
+                const tenderId = tenderSelect.value;
+                const type = typeSelect.value;
+                
+                if (tenderId && type && tenderData[tenderId]) {
+                    const tender = tenderData[tenderId];
+                    let amount = 0;
+                    
+                    if (type === 'EMD') {
+                        amount = tender.emdAmount || 0;
+                    } else if (type === 'SD') {
+                        amount = tender.sdAmount || 0;
+                    }
+                    
+                    if (amount > 0) {
+                        amountInput.value = amount;
+                    }
+                }
+            }
+            
+            // Function to auto-fill bidder information based on selected tender bid
+            function autoFillBidderInfo() {
+                const tenderBidId = tenderBidSelect.value;
+                
+                if (tenderBidId && tenderBidsData[tenderBidId]) {
+                    const tenderBid = tenderBidsData[tenderBidId];
+                    bidderNameInput.value = tenderBid.bidderName || '';
+                    companyNameInput.value = tenderBid.companyName || '';
+                } else {
+                    // Clear bidder info if no tender bid selected
+                    bidderNameInput.value = '';
+                    companyNameInput.value = '';
+                }
+            }
+            
+            tenderSelect.addEventListener('change', function() {
+                const tenderId = this.value;
+                
+                // Clear and disable tender bid select
+                tenderBidSelect.innerHTML = '<option value="">Loading...</option>';
+                tenderBidSelect.disabled = true;
+                
+                // Clear amount and bidder info
+                amountInput.value = '';
+                bidderNameInput.value = '';
+                companyNameInput.value = '';
+                
+                if (tenderId) {
+                    // Fetch tender details for amount calculation
+                    fetch(`/EMDSD/GetTenderDetails?tenderId=${tenderId}`)
+                        .then(response => response.json())
+                        .then(tender => {
+                            tenderData[tenderId] = tender;
+                            autoFillAmount(); // Auto-fill amount if type is already selected
+                        })
+                        .catch(error => {
+                            console.error('Error loading tender details:', error);
+                        });
+                    
+                    // Fetch tender bids for selected tender
+                    fetch(`/EMDSD/GetTenderBids?tenderId=${tenderId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            tenderBidSelect.innerHTML = '<option value="">Select Tender Bid</option>';
+                            
+                            if (data && data.length > 0) {
+                                data.forEach(bid => {
+                                    // Store bid data for auto-fill
+                                    tenderBidsData[bid.id] = bid;
+                                    
+                                    const option = document.createElement('option');
+                                    option.value = bid.id;
+                                    option.textContent = `${bid.bidderName} - ${bid.companyName} (₹${bid.bidAmount})`;
+                                    tenderBidSelect.appendChild(option);
+                                });
+                                tenderBidSelect.disabled = false;
+                            } else {
+                                tenderBidSelect.innerHTML = '<option value="">No bids found for this tender</option>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading tender bids:', error);
+                            tenderBidSelect.innerHTML = '<option value="">Error loading bids</option>';
+                        });
+                } else {
+                    tenderBidSelect.innerHTML = '<option value="">Select Tender First</option>';
+                }
+            });
+            
+            // Auto-fill amount when type changes
+            typeSelect.addEventListener('change', function() {
+                autoFillAmount();
+            });
+            
+            // Auto-fill bidder info when tender bid changes
+            tenderBidSelect.addEventListener('change', function() {
+                autoFillBidderInfo();
+            });
+        });
+    </script>
 }

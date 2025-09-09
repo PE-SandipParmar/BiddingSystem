@@ -118,6 +118,8 @@ namespace BiddingSystem.Data
         public async Task<bool> ValidateDepositAsync(EMDSDDeposit deposit)
         {
             if (deposit == null) return false;
+            if (deposit.TenderId <= 0) return false;
+            if (deposit.TenderBidId <= 0) return false;
             if (deposit.Amount <= 0) return false;
             if (string.IsNullOrEmpty(deposit.BidderName)) return false;
             if (string.IsNullOrEmpty(deposit.CompanyName)) return false;

@@ -95,6 +95,17 @@ namespace BiddingSystem.ViewModels
         public bool IsEditable => Status == TenderStatus.Draft;
         public bool IsPublished => Status == TenderStatus.Published;
         public bool IsClosed => Status == TenderStatus.Closed;
+
+        // Allocation properties
+        public int? AllocatedBidId { get; set; }
+        public DateTime? AllocatedAt { get; set; }
+        public int? AllocatedBy { get; set; }
+        public string? AllocationRemarks { get; set; }
+        public TenderBid? AllocatedBid { get; set; }
+
+        public bool IsAllocated => AllocatedBidId.HasValue;
+
+        public bool CanBeAllocated => Status == TenderStatus.Published && !IsAllocated && Bids.Count >= 1;
     }
 
     public class TenderListViewModel
