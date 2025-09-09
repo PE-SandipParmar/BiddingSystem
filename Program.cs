@@ -22,7 +22,6 @@ builder.Services.AddScoped<IRefundRepository, RefundRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEMDSDService, EMDSDService>();
 builder.Services.AddScoped<ITenderBidService, TenderBidService>();
-builder.Services.AddScoped<IRefundService, RefundService>();
 
 // Configure options
 builder.Services.Configure<PasswordOptions>(
