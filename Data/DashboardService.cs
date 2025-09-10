@@ -23,7 +23,7 @@ namespace BiddingSystem.Data
                 var statistics = await GetStatisticsAsync(userId, userRole, year);
                 var recentTenders = await GetRecentTendersAsync(userId, userRole, 5);
                 var recentBids = await GetRecentBidsAsync(userId, userRole, 5);
-                var pendingRefunds = await GetPendingRefundsAsync(userId, userRole, 5);
+                //var pendingRefunds = await GetPendingRefundsAsync(userId, userRole, 5);
                 var activeTenders = await GetActiveTendersAsync(userId, userRole, 5);
                 var expiringTenders = await GetExpiringTendersAsync(userId, userRole, 5);
 
@@ -32,7 +32,7 @@ namespace BiddingSystem.Data
                     Statistics = statistics,
                     RecentTenders = recentTenders,
                     RecentBids = recentBids,
-                    PendingRefunds = pendingRefunds,
+                    //PendingRefunds = pendingRefunds,
                     ActiveTenders = activeTenders,
                     ExpiringTenders = expiringTenders
                 };

@@ -26,15 +26,15 @@ namespace BiddingSystem.Data
             using var connection = CreateConnection();
             
             // First, let's check if RefundRequests table exists and has data
-            var debugSql = @"
-                SELECT 
-                    (SELECT COUNT(*) FROM RefundRequests) as TotalRefundRequests,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE Status = 1) as AllPendingRefunds,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE Status = 4) as AllProcessedRefunds,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE YEAR(RequestedAt) = @Year) as YearRefundRequests,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE YEAR(CreatedAt) = @Year) as YearCreatedRefunds";
+            //var debugSql = @"
+            //    SELECT 
+            //        (SELECT COUNT(*) FROM RefundRequests) as TotalRefundRequests,
+            //        (SELECT COUNT(*) FROM RefundRequests WHERE Status = 1) as AllPendingRefunds,
+            //        (SELECT COUNT(*) FROM RefundRequests WHERE Status = 4) as AllProcessedRefunds,
+            //        (SELECT COUNT(*) FROM RefundRequests WHERE YEAR(RequestedAt) = @Year) as YearRefundRequests,
+            //        (SELECT COUNT(*) FROM RefundRequests WHERE YEAR(CreatedAt) = @Year) as YearCreatedRefunds";
             
-            var debugResult = await connection.QueryFirstOrDefaultAsync<dynamic>(debugSql, new { Year = year });
+            //var debugResult = await connection.QueryFirstOrDefaultAsync<dynamic>(debugSql, new { Year = year });
             
             var sql = @"
                 SELECT 
@@ -47,7 +47,7 @@ namespace BiddingSystem.Data
                     (SELECT ISNULL(SUM(EmdAmount), 0) FROM TenderBids WHERE YEAR(CreatedAt) = @Year AND PaymentStatus = 'Paid') as TotalEMDSDAmount,
                     (SELECT ISNULL(SUM(SdAmount), 0) FROM Tenders WHERE YEAR(CreatedAt) = @Year) as TotalSDAmount,
                     (SELECT COUNT(*) FROM EMDSDDeposits WHERE Status = 'Refunded') as ProcessedRefunds,
-                    (SELECT ISNULL(SUM(RequestedAmount), 0) FROM RefundRequests WHERE Status = 2 AND YEAR(RequestedAt) = @Year) as TotalRefundAmount";
+                    (SELECT ISNULL(SUM(RefundAmount), 0) FROM RefundPayments WHERE RefundStatus = 'Approved' AND YEAR(InitiatedAt) = @Year) as TotalRefundAmount";
 
             var result = await connection.QueryFirstOrDefaultAsync<DashboardStatistics>(sql, new { Year = year });
             

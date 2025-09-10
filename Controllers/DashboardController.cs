@@ -11,11 +11,15 @@ namespace BiddingSystem.Controllers
     public class DashboardController : Controller
     {
         private readonly IDashboardService _dashboardService;
+        private readonly IRefundRepository _refundRepository;
         private readonly ILogger<DashboardController> _logger;
 
-        public DashboardController(IDashboardService dashboardService, ILogger<DashboardController> logger)
+        public DashboardController(IDashboardService dashboardService,
+            IRefundRepository refundRepository,
+            ILogger<DashboardController> logger)
         {
             _dashboardService = dashboardService;
+            _refundRepository = refundRepository;
             _logger = logger;
         }
 
@@ -30,7 +34,7 @@ namespace BiddingSystem.Controllers
                 var userRole = User.FindFirstValue(ClaimTypes.Role);
 
                 var dashboardData = await _dashboardService.GetDashboardDataAsync(userId, userRole, currentYear);
-                
+                var refundData = await _refundRepository.GetRefundStatisticsAsync();
                 var viewModel = new DashboardViewModel
                 {
                     Statistics = dashboardData.Statistics,
@@ -40,7 +44,8 @@ namespace BiddingSystem.Controllers
                     ActiveTenders = dashboardData.ActiveTenders,
                     ExpiringTenders = dashboardData.ExpiringTenders,
                     SelectedYear = currentYear,
-                    AvailableYears = await _dashboardService.GetAvailableYearsAsync()
+                    AvailableYears = await _dashboardService.GetAvailableYearsAsync(),
+                    RefundStatistics = refundData
                 };
 
                 return View(viewModel);

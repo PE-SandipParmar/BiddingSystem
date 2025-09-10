@@ -12,5 +12,6 @@ namespace BiddingSystem.ViewModels
         public List<Tender> ExpiringTenders { get; set; } = new();
         public int SelectedYear { get; set; }
         public List<int> AvailableYears { get; set; } = new();
+        public RefundStatistics RefundStatistics { get; set; }
     }
 }
