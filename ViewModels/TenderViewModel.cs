@@ -29,22 +29,22 @@ namespace BiddingSystem.ViewModels
         public DateTime PublishDate { get; set; } = DateTime.Now;
 
         [Required(ErrorMessage = "EMD amount is required")]
-        [Range(0, double.MaxValue, ErrorMessage = "EMD amount must be positive")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "EMD amount must be greater than 0")]
         [Display(Name = "EMD Amount")]
         public decimal EmdAmount { get; set; }
 
         [Required(ErrorMessage = "SD amount is required")]
-        [Range(0, double.MaxValue, ErrorMessage = "SD amount must be positive")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "SD amount must be greater than 0")]
         [Display(Name = "SD Amount")]
         public decimal SdAmount { get; set; }
 
         [Required(ErrorMessage = "Processing fee is required")]
-        [Range(0, double.MaxValue, ErrorMessage = "Processing fee must be positive")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Processing fee must be greater than 0")]
         [Display(Name = "Processing Fee")]
         public decimal ProcessingFee { get; set; }
 
         [Required(ErrorMessage = "Estimated value is required")]
-        [Range(0, double.MaxValue, ErrorMessage = "Estimated value must be positive")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Estimated value must be greater than 0")]
         [Display(Name = "Estimated Value")]
         public decimal EstimatedValue { get; set; }
 

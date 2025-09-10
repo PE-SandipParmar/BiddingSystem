@@ -160,5 +160,42 @@ namespace BiddingSystem.Controllers
                 return Json(new { error = "Failed to load refund debug info" });
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRefundStatistics()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userRole = User.FindFirstValue(ClaimTypes.Role);
+                var currentYear = DateTime.Now.Year;
+                
+                var statistics = await _dashboardService.GetStatisticsAsync(userId, userRole, currentYear);
+                var pendingRefunds = await _dashboardService.GetPendingRefundsAsync(userId, userRole, 10);
+                
+                return Json(new {
+                    Statistics = statistics,
+                    PendingRefundsCount = pendingRefunds.Count,
+                    PendingRefunds = pendingRefunds.Select(r => new {
+                        r.Id,
+                        r.RefundId,
+                        r.RequestedAmount,
+                        r.Reason,
+                        r.Status,
+                        r.RequestedBy,
+                        r.RequestedAt,
+                        TenderBid = r.TenderBid != null ? new {
+                            r.TenderBid.BidderName,
+                            r.TenderBid.CompanyName
+                        } : null
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading refund statistics");
+                return Json(new { error = "Failed to load refund statistics" });
+            }
+        }
     }
 }

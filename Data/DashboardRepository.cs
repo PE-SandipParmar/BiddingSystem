@@ -25,39 +25,30 @@ namespace BiddingSystem.Data
         {
             using var connection = CreateConnection();
             
-            // First, let's check if RefundRequests table exists and has data
-            var debugSql = @"
-                SELECT 
-                    (SELECT COUNT(*) FROM RefundRequests) as TotalRefundRequests,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE Status = 1) as AllPendingRefunds,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE Status = 4) as AllProcessedRefunds,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE YEAR(RequestedAt) = @Year) as YearRefundRequests,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE YEAR(CreatedAt) = @Year) as YearCreatedRefunds";
-            
-            var debugResult = await connection.QueryFirstOrDefaultAsync<dynamic>(debugSql, new { Year = year });
-            
-            var sql = @"
-                SELECT 
-                    (SELECT COUNT(*) FROM Tenders WHERE YEAR(CreatedAt) = @Year) as TotalTenders,
-                    (SELECT COUNT(*) FROM TenderBids WHERE YEAR(CreatedAt) = @Year) as TotalBids,
-                    (SELECT COUNT(*) FROM Tenders WHERE Status = 2 AND YEAR(CreatedAt) = @Year) as ActiveTenders,
-                    (SELECT COUNT(*) FROM TenderBids WHERE Status = 'Submitted' AND YEAR(CreatedAt) = @Year) as SubmittedBids,
-                    (SELECT COUNT(*) FROM EMDSDDeposits WHERE Status = 'Pending') as PendingRefunds,
-                    (SELECT ISNULL(SUM(BidAmount), 0) FROM TenderBids WHERE YEAR(CreatedAt) = @Year) as TotalBidAmount,
-                    (SELECT ISNULL(SUM(EmdAmount), 0) FROM TenderBids WHERE YEAR(CreatedAt) = @Year AND PaymentStatus = 'Paid') as TotalEMDSDAmount,
-                    (SELECT ISNULL(SUM(SdAmount), 0) FROM Tenders WHERE YEAR(CreatedAt) = @Year) as TotalSDAmount,
-                    (SELECT COUNT(*) FROM EMDSDDeposits WHERE Status = 'Refunded') as ProcessedRefunds,
-                    (SELECT ISNULL(SUM(RequestedAmount), 0) FROM RefundRequests WHERE Status = 2 AND YEAR(RequestedAt) = @Year) as TotalRefundAmount";
-
-            var result = await connection.QueryFirstOrDefaultAsync<DashboardStatistics>(sql, new { Year = year });
-            
-            // Add debug information to the result
-            if (result != null)
+            try
             {
-                // We'll add debug info to the view instead
+                var sql = @"
+                    SELECT 
+                        (SELECT COUNT(*) FROM Tenders WHERE YEAR(CreatedAt) = @Year) as TotalTenders,
+                        (SELECT COUNT(*) FROM TenderBids WHERE YEAR(CreatedAt) = @Year) as TotalBids,
+                        (SELECT COUNT(*) FROM Tenders WHERE Status = 2 AND YEAR(CreatedAt) = @Year) as ActiveTenders,
+                        (SELECT COUNT(*) FROM TenderBids WHERE Status = 'Submitted' AND YEAR(CreatedAt) = @Year) as SubmittedBids,
+                        (SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Pending' AND YEAR(InitiatedAt) = @Year) as PendingRefunds,
+                        (SELECT ISNULL(SUM(BidAmount), 0) FROM TenderBids WHERE YEAR(CreatedAt) = @Year) as TotalBidAmount,
+                        (SELECT ISNULL(SUM(EmdAmount), 0) FROM TenderBids WHERE YEAR(CreatedAt) = @Year AND PaymentStatus = 'Paid') as TotalEMDSDAmount,
+                        (SELECT ISNULL(SUM(SdAmount), 0) FROM Tenders WHERE YEAR(CreatedAt) = @Year) as TotalSDAmount,
+                        (SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Completed' AND YEAR(InitiatedAt) = @Year) as ProcessedRefunds,
+                        (SELECT ISNULL(SUM(RefundAmount), 0) FROM RefundPayments WHERE RefundStatus = 'Completed' AND YEAR(InitiatedAt) = @Year) as TotalRefundAmount";
+
+                var result = await connection.QueryFirstOrDefaultAsync<DashboardStatistics>(sql, new { Year = year });
+                
+                return result ?? new DashboardStatistics();
             }
-            
-            return result ?? new DashboardStatistics();
+            catch (Exception ex)
+            {
+                // Log the error and return empty statistics
+                return new DashboardStatistics();
+            }
         }
 
         public async Task<List<Tender>> GetRecentTendersAsync(string userId, string userRole, int count)
@@ -92,21 +83,112 @@ namespace BiddingSystem.Data
             return result.ToList();
         }
 
-        public async Task<List<RefundRequest>> GetPendingRefundsAsync(string userId, string userRole, int count)
+        public async Task<List<RefundPayment>> GetPendingRefundsAsync(string userId, string userRole, int count)
         {
             using var connection = CreateConnection();
             
-            var sql = @"
-                SELECT TOP (@Count) 
-                    Id, RefundId, TenderBidId, PaymentLinkId, Type, RequestedAmount, ApprovedAmount,
-                    Reason, Status, RequestedBy, ProcessedBy, RequestedAt, ProcessedAt, 
-                    Remarks, BankDetails, RefundReference, CreatedAt, UpdatedAt
-                FROM RefundRequests 
-                WHERE Status = 1
-                ORDER BY RequestedAt DESC";
+            var sql = $@"
+                SELECT TOP {count} 
+                    rp.Id,
+                    rp.TenderBidId,
+                    rp.TenderId,
+                    rp.RefundAmount as RequestedAmount,
+                    rp.ReasonForRefund as Reason,
+                    rp.RefundStatus as Status,
+                    rp.InitiatedBy as RequestedBy,
+                    rp.InitiatedAt as RequestedAt,
+                    rp.ApprovedBy as ProcessedBy,
+                    rp.ApprovedAt as ProcessedAt,
+                    rp.CheckerRemarks as Remarks,
+                    rp.CreatedAt,
+                    tb.*,
+                    t.*,
+                    u.*
+                FROM RefundPayments rp
+                LEFT JOIN TenderBids tb ON rp.TenderBidId = tb.Id
+                LEFT JOIN Tenders t ON rp.TenderId = t.Id
+                LEFT JOIN Users u ON rp.ApprovedBy = u.Id
+                WHERE rp.RefundStatus = 'Pending'
+                ORDER BY rp.InitiatedAt DESC";
 
-            var result = await connection.QueryAsync<RefundRequest>(sql, new { Count = count });
-            return result.ToList();
+            var result = await connection.QueryAsync<dynamic>(sql);
+            
+            var refunds = new List<RefundPayment>();
+            //foreach (var row in result)
+            //{
+            //    var refund = new RefundPayment
+            //    {
+            //        Id = row.Id,
+                   
+            //        TenderBidId = row.TenderBidId,
+            //        RefundAmount = row.RequestedAmount,
+            //        CheckerRemarks = row.Remarks,
+            //        CreatedAt = row.CreatedAt,
+            //        ReasonForRefund = row.Reason,
+            //        RefundStatus = row.Status
+            //    };
+                
+            //    //// Add related data if available
+            //    //if (row.TenderBidId != null)
+            //    //{
+            //    //    refund.TenderBid = new TenderBid
+            //    //    {
+            //    //        Id = row.TenderBidId,
+            //    //        TenderId = row.TenderId,
+            //    //        BidderName = row.BidderName,
+            //    //        BidderEmail = row.BidderEmail,
+            //    //        BidderPhone = row.BidderPhone,
+            //    //        CompanyName = row.CompanyName,
+            //    //        CompanyAddress = row.CompanyAddress,
+            //    //        BidAmount = row.BidAmount,
+            //    //        EmdAmount = row.EmdAmount,
+            //    //        ProcessingFee = row.ProcessingFee,
+            //    //        TotalAmount = row.TotalAmount,
+            //    //        Status = row.Status,
+            //    //        PaymentStatus = row.PaymentStatus,
+            //    //        PaymentReference = row.PaymentReference,
+            //    //        PaymentDate = row.PaymentDate,
+            //    //        SubmittedAt = row.SubmittedAt,
+            //    //        IsActive = row.IsActive,
+            //    //        CreatedAt = row.CreatedAt,
+            //    //        UpdatedAt = row.UpdatedAt,
+            //    //        Remarks = row.Remarks
+            //    //    };
+            //    //}
+                
+            //    refunds.Add(refund);
+            //}
+
+            return refunds;
+        }
+
+        private RefundReason MapStringToRefundReason(string reasonText)
+        {
+            return reasonText?.ToLower() switch
+            {
+                "bid rejected" or "bidrejected" => RefundReason.BidRejected,
+                "bid withdrawn" or "bidwithdrawn" => RefundReason.BidWithdrawn,
+                "tender cancelled" or "tendercancelled" => RefundReason.TenderCancelled,
+                "payment error" or "paymenterror" => RefundReason.PaymentError,
+                "duplicate payment" or "duplicatepayment" => RefundReason.DuplicatePayment,
+                "technical issue" or "technicalissue" => RefundReason.TechnicalIssue,
+                "tender awarded to another bidder" or "other" => RefundReason.Other,
+                _ => RefundReason.Other
+            };
+        }
+
+        private RefundStatus MapStringToRefundStatus(string statusText)
+        {
+            return statusText?.ToLower() switch
+            {
+                "pending" => RefundStatus.Pending,
+                "approved" => RefundStatus.Approved,
+                "processing" => RefundStatus.Processing,
+                "completed" => RefundStatus.Completed,
+                "rejected" => RefundStatus.Rejected,
+                "failed" => RefundStatus.Failed,
+                _ => RefundStatus.Pending
+            };
         }
 
         public async Task<List<Tender>> GetActiveTendersAsync(string userId, string userRole, int count)
@@ -180,14 +262,13 @@ namespace BiddingSystem.Data
                 SELECT TOP 10
                     'Bid' as ActivityType,
                     'Bid submitted for tender: ' + t.TenderTitle as Description,
-                    u.Username as UserName,
+                    tb.BidderName as UserName,
                     tb.CreatedAt as Timestamp,
                     'TenderBid' as EntityType,
                     tb.Id as EntityId,
                     tb.Status
                 FROM TenderBids tb
                 INNER JOIN Tenders t ON tb.TenderId = t.Id
-                INNER JOIN Users u ON tb.UserId = u.Id
                 WHERE tb.CreatedAt >= DATEADD(DAY, -30, GETDATE())
                 
                 ORDER BY Timestamp DESC";
@@ -291,12 +372,15 @@ namespace BiddingSystem.Data
             
             var sql = @"
                 SELECT 
-                    -- RefundRequests table
-                    (SELECT COUNT(*) FROM RefundRequests) as TotalRefundRequests,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE Status = 1) as RefundRequestsPending,
-                    (SELECT COUNT(*) FROM RefundRequests WHERE Status = 4) as RefundRequestsCompleted,
+                    -- RefundPayments table
+                    (SELECT COUNT(*) FROM RefundPayments) as TotalRefundPayments,
+                    (SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Pending') as RefundPaymentsPending,
+                    (SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Approved') as RefundPaymentsApproved,
+                    (SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Completed') as RefundPaymentsCompleted,
+                    (SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Rejected') as RefundPaymentsRejected,
+                    (SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Failed') as RefundPaymentsFailed,
                     
-                    -- EMDSDDeposits table
+                    -- EMDSDDeposits table (if exists)
                     (SELECT COUNT(*) FROM EMDSDDeposits) as TotalEMDSDDeposits,
                     (SELECT COUNT(*) FROM EMDSDDeposits WHERE Status = 'Pending') as EMDSDPending,
                     (SELECT COUNT(*) FROM EMDSDDeposits WHERE Status = 'Paid') as EMDSDPaid,
@@ -304,6 +388,8 @@ namespace BiddingSystem.Data
                     (SELECT COUNT(*) FROM EMDSDDeposits WHERE Status = 'Failed') as EMDSDFailed,
                     
                     -- Sample data
+                    (SELECT TOP 1 RefundStatus FROM RefundPayments) as SampleRefundStatus,
+                    (SELECT TOP 1 ReasonForRefund FROM RefundPayments) as SampleRefundReason,
                     (SELECT TOP 1 Status FROM EMDSDDeposits) as SampleEMDSDStatus,
                     (SELECT TOP 1 Type FROM EMDSDDeposits) as SampleEMDSDType";
 

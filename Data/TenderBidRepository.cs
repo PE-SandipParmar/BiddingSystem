@@ -54,7 +54,14 @@ namespace BiddingSystem.Data
                 return bid;
             }, new { Id = id }, splitOn: "Id");
 
-            return result.FirstOrDefault();
+            var bid = result.FirstOrDefault();
+            if (bid != null)
+            {
+                // Load documents for this bid
+                bid.Documents = (await GetBidDocumentsAsync(id)).ToList();
+            }
+
+            return bid;
         }
 
         public async Task<TenderBid?> GetBidByPaymentReferenceAsync(string paymentReference)

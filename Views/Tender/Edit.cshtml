@@ -188,6 +188,128 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         // Character counter for description
+        document.getElementById('Description').addEventListener('input', function () {
+            const count = this.value.length;
+            document.getElementById('descriptionCount').textContent = count;
+
+            if (count > 1000) {
+                this.value = this.value.substring(0, 1000);
+                document.getElementById('descriptionCount').textContent = 1000;
+            }
+        });
+
+        // Set minimum date for LastDateEmd based on PublishDate
+        document.getElementById('PublishDate').addEventListener('change', function () {
+            const publishDate = new Date(this.value);
+            const lastDateEmd = document.getElementById('LastDateEmd');
+
+            if (publishDate) {
+                const minDate = new Date(publishDate);
+                minDate.setDate(minDate.getDate() + 1);
+                lastDateEmd.min = minDate.toISOString().split('T')[0];
+
+                // If LastDateEmd is before the new minimum, update it
+                if (lastDateEmd.value && new Date(lastDateEmd.value) <= publishDate) {
+                    lastDateEmd.value = minDate.toISOString().split('T')[0];
+                }
+            }
+        });
+
+        // Set minimum date for TenderClosingDate based on LastDateEmd
+        document.getElementById('LastDateEmd').addEventListener('change', function () {
+            const lastDateEmd = new Date(this.value);
+            const tenderClosingDate = document.getElementById('TenderClosingDate');
+
+            if (lastDateEmd) {
+                const minDate = new Date(lastDateEmd);
+                minDate.setDate(minDate.getDate() + 1);
+                tenderClosingDate.min = minDate.toISOString().split('T')[0];
+
+                // If TenderClosingDate is before the new minimum, update it
+                if (tenderClosingDate.value && new Date(tenderClosingDate.value) <= lastDateEmd) {
+                    tenderClosingDate.value = minDate.toISOString().split('T')[0];
+                }
+            }
+        });
+
+        // Set minimum date for TenderOpeningDate based on TenderClosingDate
+        document.getElementById('TenderClosingDate').addEventListener('change', function () {
+            const tenderClosingDate = new Date(this.value);
+            const tenderOpeningDate = document.getElementById('TenderOpeningDate');
+
+            if (tenderClosingDate) {
+                const minDate = new Date(tenderClosingDate);
+                minDate.setDate(minDate.getDate() + 1);
+                tenderOpeningDate.min = minDate.toISOString().split('T')[0];
+
+                // If TenderOpeningDate is before the new minimum, update it
+                if (tenderOpeningDate.value && new Date(tenderOpeningDate.value) <= tenderClosingDate) {
+                    tenderOpeningDate.value = minDate.toISOString().split('T')[0];
+                }
+            }
+        });
+
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const publishDate = new Date(document.getElementById('PublishDate').value);
+            const lastDateEmd = new Date(document.getElementById('LastDateEmd').value);
+            const tenderClosingDate = document.getElementById('TenderClosingDate').value ? new Date(document.getElementById('TenderClosingDate').value) : null;
+            const tenderOpeningDate = document.getElementById('TenderOpeningDate').value ? new Date(document.getElementById('TenderOpeningDate').value) : null;
+            const emdAmount = parseFloat(document.getElementById('EmdAmount').value);
+            const estimatedValue = parseFloat(document.getElementById('EstimatedValue').value);
+
+            if (lastDateEmd <= publishDate) {
+                e.preventDefault();
+                alert('Last date to pay EMD must be after the publish date.');
+                return false;
+            }
+
+            if (tenderClosingDate && tenderClosingDate <= lastDateEmd) {
+                e.preventDefault();
+                alert('Tender closing date must be after EMD last date.');
+                return false;
+            }
+
+            if (tenderOpeningDate && tenderClosingDate && tenderOpeningDate <= tenderClosingDate) {
+                e.preventDefault();
+                alert('Tender opening date must be after closing date.');
+                return false;
+            }
+
+            if (emdAmount >= estimatedValue) {
+                e.preventDefault();
+                alert('EMD amount must be less than estimated value.');
+                return false;
+            }
+        });
+
+        // Initialize date constraints on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const publishDate = document.getElementById('PublishDate').value;
+            const lastDateEmd = document.getElementById('LastDateEmd').value;
+            const tenderClosingDate = document.getElementById('TenderClosingDate').value;
+
+            if (publishDate) {
+                const minDate = new Date(publishDate);
+                minDate.setDate(minDate.getDate() + 1);
+                document.getElementById('LastDateEmd').min = minDate.toISOString().split('T')[0];
+            }
+
+            if (lastDateEmd) {
+                const minDate = new Date(lastDateEmd);
+                minDate.setDate(minDate.getDate() + 1);
+                document.getElementById('TenderClosingDate').min = minDate.toISOString().split('T')[0];
+            }
+
+            if (tenderClosingDate) {
+                const minDate = new Date(tenderClosingDate);
+                minDate.setDate(minDate.getDate() + 1);
+                document.getElementById('TenderOpeningDate').min = minDate.toISOString().split('T')[0];
+            }
+        });
+    </script>
+    @* <script>
+        // Character counter for description
         document.getElementById('Description').addEventListener('input', function() {
             const count = this.value.length;
             document.getElementById('descriptionCount').textContent = count;
@@ -307,5 +429,5 @@
                 document.getElementById('TenderOpeningDate').min = minDate.toISOString().split('T')[0];
             }
         });
-    </script>
+    </script> *@
 }

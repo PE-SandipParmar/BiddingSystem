@@ -64,6 +64,7 @@ namespace BiddingSystem.Controllers
 
                 _logger.LogInformation($"Refunds retrieved: {refunds?.Items?.Count ?? 0} items");
 
+                
                 return Json(new
                 {
                     success = true,
