@@ -26,10 +26,11 @@
             </div>
         </div>
         
-        <div asp-validation-summary="ModelOnly" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert"></div>
-        
+       
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
+@* 
+            <div asp-validation-summary="All" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert"></div>
+          *@   <div>
                 <label asp-for="TenderId" class="block text-sm font-medium text-gray-700 mb-2">
                     Tender ID <span class="text-red-500">*</span>
                 </label>
@@ -77,7 +78,7 @@
                 <label asp-for="PublishDate" class="block text-sm font-medium text-gray-700 mb-2">
                     Tender Publish Date <span class="text-red-500">*</span>
                 </label>
-                <input asp-for="PublishDate" type="date" 
+                <input asp-for="PublishDate" type="date" required
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
                 <span asp-validation-for="PublishDate" class="text-red-500 text-sm"></span>
             </div>
@@ -86,7 +87,7 @@
                 <label asp-for="EmdAmount" class="block text-sm font-medium text-gray-700 mb-2">
                     EMD Amount <span class="text-red-500">*</span>
                 </label>
-                <input asp-for="EmdAmount" type="number" step="0.01" min="0" 
+                <input asp-for="EmdAmount" type="number" step="0.01" min="0.01" required
                        placeholder="Enter EMD amount" 
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
                 <span asp-validation-for="EmdAmount" class="text-red-500 text-sm"></span>
@@ -96,7 +97,7 @@
                 <label asp-for="SdAmount" class="block text-sm font-medium text-gray-700 mb-2">
                     SD Amount <span class="text-red-500">*</span>
                 </label>
-                <input asp-for="SdAmount" type="number" step="0.01" min="0" 
+                <input asp-for="SdAmount" type="number" step="0.01" min="0.01" required
                        placeholder="Enter SD amount" 
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
                 <span asp-validation-for="SdAmount" class="text-red-500 text-sm"></span>
@@ -106,7 +107,7 @@
                 <label asp-for="ProcessingFee" class="block text-sm font-medium text-gray-700 mb-2">
                     Processing Fee <span class="text-red-500">*</span>
                 </label>
-                <input asp-for="ProcessingFee" type="number" step="0.01" min="0" 
+                <input asp-for="ProcessingFee" type="number" step="0.01" min="0.01" required
                        placeholder="Enter processing fee" 
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
                 <span asp-validation-for="ProcessingFee" class="text-red-500 text-sm"></span>
@@ -116,7 +117,7 @@
                 <label asp-for="EstimatedValue" class="block text-sm font-medium text-gray-700 mb-2">
                     Estimated Value <span class="text-red-500">*</span>
                 </label>
-                <input asp-for="EstimatedValue" type="number" step="0.01" min="0" 
+                <input asp-for="EstimatedValue" type="number" step="0.01" min="0.01" required
                        placeholder="Enter estimated value" 
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
                 <span asp-validation-for="EstimatedValue" class="text-red-500 text-sm"></span>
@@ -126,7 +127,7 @@
                 <label asp-for="LastDateEmd" class="block text-sm font-medium text-gray-700 mb-2">
                     Last Date to Pay EMD <span class="text-red-500">*</span>
                 </label>
-                <input asp-for="LastDateEmd" type="date" 
+                <input asp-for="LastDateEmd" type="date" required
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
                 <span asp-validation-for="LastDateEmd" class="text-red-500 text-sm"></span>
             </div>
@@ -154,7 +155,7 @@
             <a asp-action="Index" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
                 Cancel
             </a>
-            <button type="submit" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+            <button type="submit" id="saveButton" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
                 <i class="ri-save-line mr-2"></i>Save Tender
             </button>
         </div>
@@ -181,8 +182,850 @@
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+   @*  <partial name="_ValidationScriptsPartial" /> *@
+
+    
+    
+    <!-- Enhanced Validation Styles -->
+    <style>
+        .field-validation-error {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.875rem;
+            color: #dc2626;
+        }
+        
+        .border-red-500 {
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
+        .border-gray-300 {
+            border-color: #d1d5db;
+        }
+        
+        .validation-summary-errors,
+        .form-validation-error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .validation-summary-errors ul,
+        .form-validation-error ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .validation-summary-errors li,
+        .form-validation-error li {
+            margin-bottom: 4px;
+        }
+        
+        /* Loading animation */
+        @@keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Button transitions */
+        button {
+            transition: all 0.3s ease;
+        }
+        
+        /* Success state */
+        .bg-green-500 {
+            background-color: #10b981;
+        }
+        
+        .hover\:bg-green-600:hover {
+            background-color: #059669;
+        }
+        
+        /* Field focus improvements */
+        .border-red-500:focus {
+            outline: none;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+    </style>
+    
     <script>
+        // Enhanced Save Tender Validation Script
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configuration
+            const requiredFields = [
+                'TenderId', 'TenderTitle', 'Description', 'Department', 
+                'PublishDate', 'EmdAmount', 'SdAmount', 'ProcessingFee', 
+                'EstimatedValue', 'LastDateEmd'
+            ];
+            
+            const saveButton = document.getElementById('saveButton');
+            const form = document.querySelector('form');
+            
+            // Enhanced Save Button Click Handler
+            if (saveButton) {
+                saveButton.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent default form submission
+                    
+                    // Clear any existing form-level errors
+                    clearFormErrors();
+                    
+                    // Show loading state
+                    showLoadingState();
+                    
+                    // Small delay for better UX
+                    setTimeout(() => {
+                        // Perform comprehensive validation
+                        const validationResult = performComprehensiveValidation();
+                        
+                        if (validationResult.isValid) {
+                            // All validation passed - submit the form
+                            showSuccessState();
+                            setTimeout(() => {
+                                form.submit();
+                            }, 500);
+                        } else {
+                            // Validation failed - show errors
+                            showErrorState(validationResult.errors);
+                            focusFirstErrorField();
+                        }
+                    }, 300);
+                });
+            }
+            
+            // Comprehensive Validation Function
+            function performComprehensiveValidation() {
+                let isValid = true;
+                let errors = [];
+                let firstErrorField = null;
+                
+                // 1. Required Field Validation
+                requiredFields.forEach(function(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        const fieldResult = validateRequiredField(field);
+                        if (!fieldResult.isValid) {
+                            isValid = false;
+                            errors.push(fieldResult.error);
+                            if (!firstErrorField) {
+                                firstErrorField = field;
+                            }
+                        }
+                    }
+                });
+                
+                // 2. Business Logic Validation
+                const businessValidation = validateBusinessRules();
+                if (!businessValidation.isValid) {
+                    isValid = false;
+                    errors = errors.concat(businessValidation.errors);
+                }
+                
+                // 3. Data Type Validation
+                const dataValidation = validateDataTypes();
+                if (!dataValidation.isValid) {
+                    isValid = false;
+                    errors = errors.concat(dataValidation.errors);
+                }
+                
+                return {
+                    isValid: isValid,
+                    errors: errors,
+                    firstErrorField: firstErrorField
+                };
+            }
+            
+            // Required Field Validation
+            function validateRequiredField(field) {
+                const value = field.value.trim();
+                const fieldName = getFieldDisplayName(field.getAttribute('name'));
+                
+                if (!value) {
+                    showFieldError(field, `${fieldName} is required`);
+                    return {
+                        isValid: false,
+                        error: `${fieldName} is required`
+                    };
+                } else {
+                    clearFieldError(field);
+                    return {
+                        isValid: true,
+                        error: null
+                    };
+                }
+            }
+            
+            // Business Rules Validation
+            function validateBusinessRules() {
+                let errors = [];
+                
+                // Date validation: Last Date EMD must be after Publish Date
+                const publishDate = document.getElementById('PublishDate').value;
+                const lastDateEmd = document.getElementById('LastDateEmd').value;
+                
+                if (publishDate && lastDateEmd) {
+                    const pubDate = new Date(publishDate);
+                    const emdDate = new Date(lastDateEmd);
+                    
+                    if (emdDate <= pubDate) {
+                        errors.push('Last date to pay EMD must be after the publish date');
+                        showFieldError(document.getElementById('LastDateEmd'), 'Must be after publish date');
+                    }
+                }
+                
+                // Tender Closing Date validation (if provided)
+                const tenderClosingDate = document.getElementById('TenderClosingDate').value;
+                if (tenderClosingDate && lastDateEmd) {
+                    const closingDate = new Date(tenderClosingDate);
+                    const emdDate = new Date(lastDateEmd);
+                    
+                    if (closingDate <= emdDate) {
+                        errors.push('Tender closing date should be after EMD payment deadline');
+                        showFieldError(document.getElementById('TenderClosingDate'), 'Should be after EMD deadline');
+                    }
+                }
+                
+                // Tender Opening Date validation (if provided)
+                const tenderOpeningDate = document.getElementById('TenderOpeningDate').value;
+                if (tenderOpeningDate && tenderClosingDate) {
+                    const openingDate = new Date(tenderOpeningDate);
+                    const closingDate = new Date(tenderClosingDate);
+                    
+                    if (openingDate <= closingDate) {
+                        errors.push('Tender opening date should be after closing date');
+                        showFieldError(document.getElementById('TenderOpeningDate'), 'Should be after closing date');
+                    }
+                }
+                
+                return {
+                    isValid: errors.length === 0,
+                    errors: errors
+                };
+            }
+            
+            // Data Types Validation
+            function validateDataTypes() {
+                let errors = [];
+                
+                // Number field validation
+                const numberFields = ['EmdAmount', 'SdAmount', 'ProcessingFee', 'EstimatedValue'];
+                
+                numberFields.forEach(function(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (field && field.value.trim()) {
+                        const value = parseFloat(field.value);
+                        const fieldName = getFieldDisplayName(fieldId);
+                        
+                        if (isNaN(value) || value <= 0) {
+                            errors.push(`${fieldName} must be a valid number greater than 0`);
+                            showFieldError(field, 'Must be greater than 0');
+                        } else {
+                            clearFieldError(field);
+                        }
+                    }
+                });
+                
+                // Description length validation
+                const description = document.getElementById('Description');
+                if (description && description.value.length > 1000) {
+                    errors.push('Description cannot exceed 1000 characters');
+                    showFieldError(description, 'Maximum 1000 characters allowed');
+                }
+                
+                return {
+                    isValid: errors.length === 0,
+                    errors: errors
+                };
+            }
+            
+            // Helper Functions
+            function getFieldDisplayName(fieldName) {
+                const displayNames = {
+                    'TenderId': 'Tender ID',
+                    'TenderTitle': 'Tender Title',
+                    'Description': 'Description',
+                    'Department': 'Department',
+                    'PublishDate': 'Publish Date',
+                    'EmdAmount': 'EMD Amount',
+                    'SdAmount': 'SD Amount',
+                    'ProcessingFee': 'Processing Fee',
+                    'EstimatedValue': 'Estimated Value',
+                    'LastDateEmd': 'Last Date to Pay EMD',
+                    'TenderClosingDate': 'Tender Closing Date',
+                    'TenderOpeningDate': 'Tender Opening Date'
+                };
+                return displayNames[fieldName] || fieldName;
+            }
+            
+            function showFieldError(field, message) {
+                // Remove existing error
+                clearFieldError(field);
+                
+                // Add error styling
+                field.classList.remove('border-gray-300');
+                field.classList.add('border-red-500');
+                
+                // Create error message
+                const errorSpan = document.createElement('span');
+                errorSpan.className = 'field-validation-error text-red-500 text-sm mt-1 block';
+                errorSpan.textContent = message;
+                
+                // Insert after the field
+                field.parentNode.insertBefore(errorSpan, field.nextSibling);
+            }
+            
+            function clearFieldError(field) {
+                // Remove error styling
+                field.classList.remove('border-red-500');
+                field.classList.add('border-gray-300');
+                
+                // Remove error message
+                const errorSpan = field.parentNode.querySelector('.field-validation-error');
+                if (errorSpan) {
+                    errorSpan.remove();
+                }
+            }
+            
+            function clearFormErrors() {
+                // Clear all field errors
+                requiredFields.forEach(function(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        clearFieldError(field);
+                    }
+                });
+                
+                // Clear additional fields
+                const additionalFields = ['TenderClosingDate', 'TenderOpeningDate'];
+                additionalFields.forEach(function(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        clearFieldError(field);
+                    }
+                });
+                
+                // Remove form-level error
+                const formError = document.querySelector('.form-validation-error');
+                if (formError) {
+                    formError.remove();
+                }
+            }
+            
+            function showFormError(errors) {
+                // Create form-level error display
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'form-validation-error bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6';
+                
+                const errorTitle = document.createElement('h4');
+                errorTitle.className = 'font-medium mb-2';
+                errorTitle.textContent = 'Please fix the following errors:';
+               // errorDiv.appendChild(errorTitle);
+                
+                const errorList = document.createElement('ul');
+                errorList.className = 'list-disc list-inside space-y-1';
+                
+                // errors.forEach(function(error) {
+                //     const listItem = document.createElement('li');
+                //     listItem.textContent = error;
+                //     errorList.appendChild(listItem);
+                // });
+                
+                // errorDiv.appendChild(errorList);
+                
+                // Insert at the top of the form
+                form.insertBefore(errorDiv, form.firstChild);
+                
+                // Scroll to show error
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            function focusFirstErrorField() {
+                const firstErrorField = document.querySelector('.border-red-500');
+                if (firstErrorField) {
+                    firstErrorField.focus();
+                    firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+            
+            // Button State Management
+            function showLoadingState() {
+                saveButton.disabled = true;
+                saveButton.innerHTML = '<i class="ri-loader-line mr-2 animate-spin"></i>Validating...';
+                saveButton.classList.add('opacity-75');
+            }
+            
+            function showSuccessState() {
+                saveButton.innerHTML = '<i class="ri-check-line mr-2"></i>Saving...';
+                saveButton.classList.remove('bg-primary', 'hover:bg-primary/90');
+                saveButton.classList.add('bg-green-500', 'hover:bg-green-600');
+            }
+            
+            function showErrorState(errors) {
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="ri-error-warning-line mr-2"></i>Fix Errors';
+                saveButton.classList.remove('bg-primary', 'hover:bg-primary/90', 'opacity-75');
+                saveButton.classList.add('bg-red-500', 'hover:bg-red-600');
+                
+                // Show form errors
+                showFormError(errors);
+                
+                // Reset button after 3 seconds
+                setTimeout(function() {
+                    resetButtonState();
+                }, 3000);
+            }
+            
+            function resetButtonState() {
+                saveButton.disabled = false;
+                saveButton.innerHTML = '<i class="ri-save-line mr-2"></i>Save Tender';
+                saveButton.classList.remove('bg-red-500', 'hover:bg-red-600', 'bg-green-500', 'hover:bg-green-600', 'opacity-75');
+                saveButton.classList.add('bg-primary', 'hover:bg-primary/90');
+            }
+            
+            // Real-time validation for number fields
+            const numberFields = ['EmdAmount', 'SdAmount', 'ProcessingFee', 'EstimatedValue'];
+            numberFields.forEach(function(fieldId) {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', function() {
+                        const value = parseFloat(this.value);
+                        if (this.value && (isNaN(value) || value <= 0)) {
+                            showFieldError(this, 'Must be greater than 0');
+                        } else {
+                            clearFieldError(this);
+                        }
+                    });
+                }
+            });
+            
+            // Character counter for description
+            const descriptionField = document.getElementById('Description');
+            if (descriptionField) {
+                descriptionField.addEventListener('input', function() {
+                    const count = this.value.length;
+                    const counter = document.getElementById('descriptionCount');
+                    if (counter) {
+                        counter.textContent = count;
+                        
+                        if (count > 1000) {
+                            this.value = this.value.substring(0, 1000);
+                            counter.textContent = 1000;
+                            showFieldError(this, 'Maximum 1000 characters allowed');
+                        } else if (count < 1000) {
+                            clearFieldError(this);
+                        }
+                    }
+                });
+            }
+            
+            // Date validation helpers
+            const publishDateField = document.getElementById('PublishDate');
+            if (publishDateField) {
+                publishDateField.addEventListener('change', function() {
+                    const publishDate = new Date(this.value);
+                    const lastDateEmdField = document.getElementById('LastDateEmd');
+                    
+                    if (publishDate && lastDateEmdField) {
+                        const minDate = new Date(publishDate);
+                        minDate.setDate(minDate.getDate() + 1);
+                        lastDateEmdField.min = minDate.toISOString().split('T')[0];
+                        
+                        // Clear any existing date if it's now invalid
+                        if (lastDateEmdField.value && new Date(lastDateEmdField.value) <= publishDate) {
+                            lastDateEmdField.value = '';
+                            showFieldError(lastDateEmdField, 'Must be after publish date');
+                        }
+                    }
+                });
+            }
+            
+            // Additional real-time validations
+            const lastDateEmdField = document.getElementById('LastDateEmd');
+            if (lastDateEmdField) {
+                lastDateEmdField.addEventListener('change', function() {
+                    const publishDate = document.getElementById('PublishDate').value;
+                    if (publishDate && this.value) {
+                        const pubDate = new Date(publishDate);
+                        const emdDate = new Date(this.value);
+                        
+                        if (emdDate <= pubDate) {
+                            showFieldError(this, 'Must be after publish date');
+                        } else {
+                            clearFieldError(this);
+                        }
+                    }
+                });
+            }
+            
+            // Tender ID uniqueness check (if you have an API endpoint)
+            const tenderIdField = document.getElementById('TenderId');
+            if (tenderIdField) {
+                let timeoutId;
+                tenderIdField.addEventListener('input', function() {
+                    const value = this.value.trim();
+                    
+                    // Clear previous timeout
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+                    
+                    // Debounce the uniqueness check
+                    if (value.length > 0) {
+                        timeoutId = setTimeout(() => {
+                            // You can implement API call here to check uniqueness
+                            // checkTenderIdUniqueness(value);
+                        }, 500);
+                    }
+                });
+            }
+            
+            // Form reset functionality
+            function resetForm() {
+                form.reset();
+                clearFormErrors();
+                resetButtonState();
+                
+                // Reset character counter
+                const counter = document.getElementById('descriptionCount');
+                if (counter) {
+                    counter.textContent = '0';
+                }
+            }
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+S to save
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    if (saveButton && !saveButton.disabled) {
+                        saveButton.click();
+                    }
+                }
+                
+                // Escape to cancel/reset errors
+                if (e.key === 'Escape') {
+                    const formError = document.querySelector('.form-validation-error');
+                    if (formError) {
+                        formError.remove();
+                        resetButtonState();
+                    }
+                }
+            });
+            
+            // Debug function for testing
+            window.testTenderValidation = function() {
+                console.log('Testing tender validation...');
+                const result = performComprehensiveValidation();
+                console.log('Validation result:', result);
+                
+                // Test each field
+                requiredFields.forEach(function(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        console.log(`${fieldId}: "${field.value}" (${field.value ? 'filled' : 'empty'})`);
+                    }
+                });
+                
+                return result;
+            };
+            
+            // Auto-save draft functionality (optional)
+            let autoSaveTimeoutId;
+            function autoSaveDraft() {
+                // Clear previous timeout
+                if (autoSaveTimeoutId) {
+                    clearTimeout(autoSaveTimeoutId);
+                }
+                
+                // Set new timeout for auto-save
+                autoSaveTimeoutId = setTimeout(() => {
+                    // Check if form has meaningful data
+                    const hasData = requiredFields.some(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        return field && field.value.trim();
+                    });
+                    
+                    if (hasData) {
+                        console.log('Auto-saving draft...');
+                        // You can implement auto-save API call here
+                        // saveDraft();
+                    }
+                }, 30000); // Auto-save after 30 seconds of inactivity
+            }
+            
+            // Listen for input changes for auto-save
+            requiredFields.forEach(function(fieldId) {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', autoSaveDraft);
+                    field.addEventListener('change', autoSaveDraft);
+                }
+            });
+            
+            // Initialize form state
+            function initializeForm() {
+                // Set today as minimum date for publish date
+                const today = new Date().toISOString().split('T')[0];
+                const publishDateField = document.getElementById('PublishDate');
+                if (publishDateField && !publishDateField.value) {
+                    publishDateField.min = today;
+                }
+                
+                // Focus on first field
+                const firstField = document.getElementById('TenderId');
+                if (firstField) {
+                    firstField.focus();
+                }
+            }
+            
+            // Call initialization
+            initializeForm();
+            
+            console.log('Enhanced tender validation system loaded successfully');
+        });
+    </script>
+
+  @*   <style>
+        .field-validation-error {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.875rem;
+            color: #dc2626;
+        }
+        
+        .border-red-500 {
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
+        .border-gray-300 {
+            border-color: #d1d5db;
+        }
+        
+        .validation-summary-errors {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .validation-summary-errors ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .validation-summary-errors li {
+            margin-bottom: 4px;
+        }
+    </style>
+    <script>
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Required fields configuration
+            const requiredFields = [
+                'TenderId', 'TenderTitle', 'Description', 'Department', 
+                'PublishDate', 'EmdAmount', 'SdAmount', 'ProcessingFee', 
+                'EstimatedValue', 'LastDateEmd'
+            ];
+            
+            // Initialize validation for all required fields
+            requiredFields.forEach(function(fieldId) {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    // Validate on blur (when user leaves field)
+                    field.addEventListener('blur', function() {
+                        validateField(this);
+                    });
+                    
+                    // Validate on input for number fields (real-time)
+                    if (field.type === 'number') {
+                        field.addEventListener('input', function() {
+                            validateField(this);
+                        });
+                    }
+                    
+                    // Clear validation on focus (better UX)
+                    field.addEventListener('focus', function() {
+                        clearValidationMessage(this);
+                    });
+                }
+            });
+            
+            // Form submission validation
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    let isFormValid = true;
+                    
+                    // Validate all required fields
+                    requiredFields.forEach(function(fieldId) {
+                        const field = document.getElementById(fieldId);
+                        if (field) {
+                            const fieldValid = validateField(field);
+                            if (!fieldValid) {
+                                isFormValid = false;
+                            }
+                        }
+                    });
+                    
+                    // Additional date validation
+                    const publishDate = new Date(document.getElementById('PublishDate').value);
+                    const lastDateEmd = new Date(document.getElementById('LastDateEmd').value);
+                    
+                    if (lastDateEmd <= publishDate) {
+                        showFormError('Last date to pay EMD must be after the publish date.');
+                        isFormValid = false;
+                    }
+                    
+                    // Prevent form submission if validation fails
+                    if (!isFormValid) {
+                        e.preventDefault();
+                        showFormError('Please fix the validation errors before submitting.');
+                        
+                        // Add visual feedback to save button
+                        const saveButton = document.getElementById('saveButton');
+                        if (saveButton) {
+                            saveButton.classList.add('bg-red-500', 'hover:bg-red-600');
+                            saveButton.classList.remove('bg-primary', 'hover:bg-primary/90');
+                            saveButton.innerHTML = '<i class="ri-error-warning-line mr-2"></i>Fix Errors First';
+                            
+                            // Reset button after 3 seconds
+                            setTimeout(function() {
+                                saveButton.classList.remove('bg-red-500', 'hover:bg-red-600');
+                                saveButton.classList.add('bg-primary', 'hover:bg-primary/90');
+                                saveButton.innerHTML = '<i class="ri-save-line mr-2"></i>Save Tender';
+                            }, 3000);
+                        }
+                        
+                        return false;
+                    }
+                });
+            }
+            
+            function validateField(field) {
+                const value = field.value.trim();
+                const fieldName = field.getAttribute('name');
+                let isValid = true;
+                let errorMessage = '';
+                
+                // Check if field is empty
+                if (!value) {
+                    isValid = false;
+                    errorMessage = getRequiredMessage(fieldName);
+                } else {
+                    // Additional validation for number fields
+                    if (field.type === 'number') {
+                        const numValue = parseFloat(value);
+                        if (isNaN(numValue) || numValue <= 0) {
+                            isValid = false;
+                            errorMessage = getNumberMessage(fieldName);
+                        }
+                    }
+                    
+                    // Date validation
+                    if (field.type === 'date') {
+                        const dateValue = new Date(value);
+                        if (isNaN(dateValue.getTime())) {
+                            isValid = false;
+                            errorMessage = 'Please enter a valid date.';
+                        }
+                    }
+                }
+                
+                // Show/hide validation message
+                showValidationMessage(field, isValid, errorMessage);
+                return isValid;
+            }
+            
+            function getRequiredMessage(fieldName) {
+                const messages = {
+                    'TenderId': 'Tender ID is required',
+                    'TenderTitle': 'Tender title is required',
+                    'Description': 'Description is required',
+                    'Department': 'Department is required',
+                    'PublishDate': 'Publish date is required',
+                    'EmdAmount': 'EMD amount is required',
+                    'SdAmount': 'SD amount is required',
+                    'ProcessingFee': 'Processing fee is required',
+                    'EstimatedValue': 'Estimated value is required',
+                    'LastDateEmd': 'Last date to pay EMD is required'
+                };
+                return messages[fieldName] || 'This field is required';
+            }
+            
+            function getNumberMessage(fieldName) {
+                const messages = {
+                    'EmdAmount': 'EMD amount must be greater than 0',
+                    'SdAmount': 'SD amount must be greater than 0',
+                    'ProcessingFee': 'Processing fee must be greater than 0',
+                    'EstimatedValue': 'Estimated value must be greater than 0'
+                };
+                return messages[fieldName] || 'Please enter a valid number greater than 0';
+            }
+            
+            function showValidationMessage(field, isValid, errorMessage) {
+                // Remove existing validation message
+                const existingError = field.parentNode.querySelector('.field-validation-error');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                // Remove error styling
+                field.classList.remove('border-red-500');
+                field.classList.add('border-gray-300');
+                
+                if (!isValid) {
+                    // Add error styling
+                    field.classList.remove('border-gray-300');
+                    field.classList.add('border-red-500');
+                    
+                    // Create and show error message
+                    const errorDiv = document.createElement('span');
+                    errorDiv.className = 'field-validation-error text-red-500 text-sm';
+                    errorDiv.textContent = errorMessage;
+                    field.parentNode.appendChild(errorDiv);
+                }
+            }
+            
+            function clearValidationMessage(field) {
+                // Remove existing validation message
+                const existingError = field.parentNode.querySelector('.field-validation-error');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                // Remove error styling
+                field.classList.remove('border-red-500');
+                field.classList.add('border-gray-300');
+            }
+            
+            function showFormError(message) {
+                // Create or update form-level error message
+                let errorDiv = document.querySelector('.form-validation-error');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.className = 'form-validation-error bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6';
+                    const form = document.querySelector('form');
+                    form.insertBefore(errorDiv, form.firstChild);
+                }
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                
+                // Scroll to top to show error
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+        
         // Character counter for description
         document.getElementById('Description').addEventListener('input', function() {
             const count = this.value.length;
@@ -211,16 +1054,35 @@
             }
         });
         
-        // Form validation
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const publishDate = new Date(document.getElementById('PublishDate').value);
-            const lastDateEmd = new Date(document.getElementById('LastDateEmd').value);
+        // Test validation function (for debugging)
+        function testValidation() {
+            console.log('Testing validation...');
+            const requiredFields = [
+                'TenderId', 'TenderTitle', 'Description', 'Department', 
+                'PublishDate', 'EmdAmount', 'SdAmount', 'ProcessingFee', 
+                'EstimatedValue', 'LastDateEmd'
+            ];
             
-            if (lastDateEmd <= publishDate) {
-                e.preventDefault();
-                alert('Last date to pay EMD must be after the publish date.');
-                return false;
+            let hasErrors = false;
+            requiredFields.forEach(function(fieldId) {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    const value = field.value.trim();
+                    if (!value) {
+                        console.log('Field ' + fieldId + ' is empty');
+                        hasErrors = true;
+                    }
+                }
+            });
+            
+            if (hasErrors) {
+                console.log('Validation failed - empty fields found');
+            } else {
+                console.log('All fields have values');
             }
-        });
-    </script>
+        }
+        
+        // Make test function available globally for debugging
+        window.testValidation = testValidation;
+    </script> *@
 }

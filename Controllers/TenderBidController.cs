@@ -407,6 +407,9 @@ namespace BiddingSystem.Controllers
         {
             try
             {
+                _logger.LogInformation("UploadDocument called with bidId: {BidId}, file: {FileName}, documentType: {DocumentType}", 
+                    bidId, file?.FileName, documentType);
+
                 if (file == null || file.Length == 0)
                 {
                     TempData["ErrorMessage"] = "Please select a file to upload.";
@@ -422,6 +425,9 @@ namespace BiddingSystem.Controllers
                 }
 
                 var document = await _tenderBidService.AddBidDocumentAsync(bidId, file, documentType);
+                
+                _logger.LogInformation("Document uploaded successfully. Document ID: {DocumentId}, FilePath: {FilePath}", 
+                    document.Id, document.FilePath);
                 
                 // Log file upload
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
