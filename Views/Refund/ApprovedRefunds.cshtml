@@ -253,8 +253,8 @@
         }
 
         function viewDetails(refundPaymentId) {
-            // You can implement a modal or redirect to a details page
-            alert('View details for refund ID: ' + refundPaymentId);
+            // Redirect to refund details page
+            window.location.href = '@Url.Action("Details", "Refund")' + '?id=' + refundPaymentId;
         }
     </script>
 }

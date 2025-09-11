@@ -347,5 +347,50 @@ namespace BiddingSystem.Data
                 throw;
             }
         }
+
+        public async Task<ApprovedRefundViewModel?> GetRefundDetailsAsync(int refundPaymentId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            try
+            {
+                var sql = @"
+                    SELECT 
+                        rp.Id as RefundPaymentId,
+                        tb.Id as TenderBidId,
+                        t.Id as TenderId,
+                        t.TenderId as TenderIdString,
+                        t.TenderTitle,
+                        tb.BidderName,
+                        tb.BidderEmail,
+                        tb.CompanyName,
+                        rp.RefundAmount,
+                        rp.ReasonForRefund,
+                        rp.RefundStatus,
+                        rp.InitiatedAt,
+                        rp.ApprovedAt,
+                        rp.CheckerRemarks,
+                        u.Username as ApprovedByName,
+                        CASE 
+                            WHEN tb.PaymentStatus = 'Refunded' THEN 1 
+                            ELSE 0 
+                        END as PaymentProcessed
+                    FROM RefundPayments rp
+                    INNER JOIN TenderBids tb ON rp.TenderBidId = tb.Id
+                    INNER JOIN Tenders t ON rp.TenderId = t.Id
+                    LEFT JOIN Users u ON rp.ApprovedBy = u.Id
+                    WHERE rp.Id = @RefundPaymentId";
+
+                var parameters = new { RefundPaymentId = refundPaymentId };
+                var result = await connection.QueryFirstOrDefaultAsync<ApprovedRefundViewModel>(sql, parameters);
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                // Log error if needed
+                return null;
+            }
+        }
     }
 }

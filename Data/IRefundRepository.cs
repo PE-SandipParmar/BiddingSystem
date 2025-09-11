@@ -10,5 +10,6 @@ namespace BiddingSystem.Data
         Task<bool> InitiateRefundsAsync(List<int> tenderBidIds, string reason, int userId);
         Task<bool> ProcessRefundsAsync(List<int> refundPaymentIds, string action, string remarks, int userId);
         Task<RefundStatistics> GetRefundStatisticsAsync(); // New method for Admin statistics
+        Task<ApprovedRefundViewModel?> GetRefundDetailsAsync(int refundPaymentId);
     }
 }

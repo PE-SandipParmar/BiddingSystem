@@ -125,7 +125,7 @@ namespace BiddingSystem.Controllers
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
 
             // Only Checker, Approver, and Admin can view approved refunds
-            if (userRole != "Checker" && userRole != "Admin" && userRole != "Approver")
+            if (userRole != "Checker" && userRole != "Maker" && userRole != "Admin" && userRole != "Approver")
             {
                 return RedirectToAction("Index");
             }
@@ -143,7 +143,7 @@ namespace BiddingSystem.Controllers
                 var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
 
                 // Check permission
-                if (userRole != "Checker" && userRole != "Admin" && userRole != "Approver")
+                if (userRole != "Checker" && userRole != "Maker" && userRole != "Admin" && userRole != "Approver")
                 {
                     return Json(new { success = false, message = "Unauthorized access" });
                 }
@@ -260,6 +260,38 @@ namespace BiddingSystem.Controllers
             {
                 _logger.LogError(ex, "Error in ProcessRefunds");
                 return Json(new { success = false, message = "An error occurred: " + ex.Message });
+            }
+        }
+
+        // GET: Refund/Details - View refund details
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            try
+            {
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+
+                // Check permission
+                if (userRole != "Checker" && userRole != "Maker" && userRole != "Admin" && userRole != "Approver")
+                {
+                    return RedirectToAction("Index");
+                }
+
+                var refundDetails = await _refundRepository.GetRefundDetailsAsync(id);
+                
+                if (refundDetails == null)
+                {
+                    TempData["ErrorMessage"] = "Refund not found.";
+                    return RedirectToAction("ApprovedRefunds");
+                }
+
+                return View(refundDetails);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in Refund Details for ID: {RefundId}", id);
+                TempData["ErrorMessage"] = "An error occurred while loading refund details.";
+                return RedirectToAction("ApprovedRefunds");
             }
         }
     }

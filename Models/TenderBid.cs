@@ -45,20 +45,20 @@ namespace BiddingSystem.Models
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Bid Amount")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Bid amount must be greater than 0")]
-        public decimal BidAmount { get; set; }
+        [Range(1, double.MaxValue, ErrorMessage = "Bid amount must be greater than 0")]
+        public decimal? BidAmount { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "EMD Amount")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "EMD amount must be greater than 0")]
-        public decimal EmdAmount { get; set; }
+        [Range(1, double.MaxValue, ErrorMessage = "EMD amount must be greater than 0")]
+        public decimal? EmdAmount { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Processing Fee")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Processing Fee must be greater than 0")]
-        public decimal ProcessingFee { get; set; }
+        [Range(1, double.MaxValue, ErrorMessage = "Processing Fee must be greater than 0")]
+        public decimal? ProcessingFee { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]

@@ -136,7 +136,260 @@
 </div>
 
 @section Scripts {
-    <script>
+    <script>// Auto-calculate total amount
+function calculateTotal() {
+    const bidAmount = parseFloat(document.getElementById('BidAmount').value) || 0;
+    const emdAmount = parseFloat(document.getElementById('EmdAmount').value) || 0;
+    const processingFee = parseFloat(document.getElementById('ProcessingFee').value) || 0;
+    const total = bidAmount + emdAmount + processingFee;
+    document.getElementById('totalAmount').value = total.toFixed(2);
+}
+
+// Validation functions
+function validateAlphabetsOnly(input) {
+    // Remove any non-alphabet characters (except spaces)
+    input.value = input.value.replace(/[^A-Za-z\s]/g, '');
+}
+
+function validatePhoneNumber(input) {
+    // Remove any non-numeric characters and limit to 10 digits
+    input.value = input.value.replace(/[^0-9]/g, '').substring(0, 10);
+}
+
+function showError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const existingError = field.parentNode.querySelector('.validation-error');
+
+    // Remove existing error if any
+    if (existingError) {
+        existingError.remove();
+    }
+
+    // Add new error message
+    const errorSpan = document.createElement('span');
+    errorSpan.className = 'text-red-600 text-sm validation-error';
+    errorSpan.textContent = message;
+    field.parentNode.appendChild(errorSpan);
+
+    // Add error styling to field
+    field.classList.add('border-red-500');
+}
+
+function clearError(fieldId) {
+    const field = document.getElementById(fieldId);
+    const existingError = field.parentNode.querySelector('.validation-error');
+
+    if (existingError) {
+        existingError.remove();
+    }
+
+    // Remove error styling
+    field.classList.remove('border-red-500');
+}
+
+function validateBidderName() {
+    const field = document.getElementById('BidderName');
+    const value = field.value.trim();
+
+    if (value === '') {
+        showError('BidderName', 'Bidder name is required.');
+        return false;
+    } else if (!/^[A-Za-z\s]+$/.test(value)) {
+        showError('BidderName', 'Bidder name should contain only alphabets and spaces.');
+        return false;
+    } else {
+        clearError('BidderName');
+        return true;
+    }
+}
+
+function validateBidderPhone() {
+    const field = document.getElementById('BidderPhone');
+    const value = field.value.trim();
+
+    if (value === '') {
+        showError('BidderPhone', 'Phone number is required.');
+        return false;
+    } else if (!/^\d{10}$/.test(value)) {
+        showError('BidderPhone', 'Phone number must be exactly 10 digits.');
+        return false;
+    } else {
+        clearError('BidderPhone');
+        return true;
+    }
+}
+
+function validateCompanyName() {
+    const field = document.getElementById('CompanyName');
+    const value = field.value.trim();
+
+    if (value === '') {
+        showError('CompanyName', 'Company name is required.');
+        return false;
+    } else if (!/^[A-Za-z\s]+$/.test(value)) {
+        showError('CompanyName', 'Company name should contain only alphabets and spaces.');
+        return false;
+    } else {
+        clearError('CompanyName');
+        return true;
+    }
+}
+
+// Add validation functions for financial fields
+function validateBidAmount() {
+    const field = document.getElementById('BidAmount');
+    const value = parseFloat(field.value);
+
+    if (!field.value.trim() || isNaN(value)) {
+        showError('BidAmount', 'Bid amount is required.');
+        return false;
+    } else if (value <= 0) {
+        showError('BidAmount', 'Bid amount must be greater than 0.');
+        return false;
+    } else {
+        clearError('BidAmount');
+        return true;
+    }
+}
+
+function validateEmdAmount() {
+    const field = document.getElementById('EmdAmount');
+    const value = parseFloat(field.value);
+
+    if (!field.value.trim() || isNaN(value)) {
+        showError('EmdAmount', 'EMD amount is required.');
+        return false;
+    } else if (value <= 0) {
+        showError('EmdAmount', 'EMD amount must be greater than 0.');
+        return false;
+    } else {
+        clearError('EmdAmount');
+        return true;
+    }
+}
+
+function validateProcessingFee() {
+    const field = document.getElementById('ProcessingFee');
+    const value = parseFloat(field.value);
+
+    if (!field.value.trim() || isNaN(value)) {
+        showError('ProcessingFee', 'Processing fee is required.');
+        return false;
+    } else if (value <= 0) {
+        showError('ProcessingFee', 'Processing fee must be greater than 0.');
+        return false;
+    } else {
+        clearError('ProcessingFee');
+        return true;
+    }
+}
+
+function validateTenderId() {
+    const field = document.getElementById('TenderId');
+    const value = field.value.trim();
+
+    if (value === '' || value === '0') {
+        showError('TenderId', 'Please select a tender.');
+        return false;
+    } else {
+        clearError('TenderId');
+        return true;
+    }
+}
+
+function validateBidderEmail() {
+    const field = document.getElementById('BidderEmail');
+    const value = field.value.trim();
+    const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+
+    if (value === '') {
+        showError('BidderEmail', 'Email is required.');
+        return false;
+    } else if (!emailRegex.test(value)) {
+        showError('BidderEmail', 'Please enter a valid email address.');
+        return false;
+    } else {
+        clearError('BidderEmail');
+        return true;
+    }
+}
+
+function validateCompanyAddress() {
+    const field = document.getElementById('CompanyAddress');
+    const value = field.value.trim();
+
+    if (value === '') {
+        showError('CompanyAddress', 'Company address is required.');
+        return false;
+    } else {
+        clearError('CompanyAddress');
+        return true;
+    }
+}
+
+// Form submission validation
+function validateForm() {
+    let isValid = true;
+
+    // Validate all required fields
+    isValid = validateTenderId() && isValid;
+    isValid = validateBidderName() && isValid;
+    isValid = validateBidderEmail() && isValid;
+    isValid = validateBidderPhone() && isValid;
+    isValid = validateCompanyName() && isValid;
+    isValid = validateCompanyAddress() && isValid;
+    isValid = validateBidAmount() && isValid;
+    isValid = validateEmdAmount() && isValid;
+    isValid = validateProcessingFee() && isValid;
+
+    return isValid;
+}
+
+// Add event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function () {
+    // Auto-calculation event listeners
+    document.getElementById('BidAmount').addEventListener('input', calculateTotal);
+    document.getElementById('EmdAmount').addEventListener('input', calculateTotal);
+    document.getElementById('ProcessingFee').addEventListener('input', calculateTotal);
+
+    // Real-time validation event listeners
+    document.getElementById('BidderName').addEventListener('input', function () {
+        validateAlphabetsOnly(this);
+    });
+    document.getElementById('BidderName').addEventListener('blur', validateBidderName);
+
+    document.getElementById('BidderPhone').addEventListener('input', function () {
+        validatePhoneNumber(this);
+    });
+    document.getElementById('BidderPhone').addEventListener('blur', validateBidderPhone);
+
+    document.getElementById('CompanyName').addEventListener('input', function () {
+        validateAlphabetsOnly(this);
+    });
+    document.getElementById('CompanyName').addEventListener('blur', validateCompanyName);
+
+    // Add validation for financial fields
+    document.getElementById('BidAmount').addEventListener('blur', validateBidAmount);
+    document.getElementById('EmdAmount').addEventListener('blur', validateEmdAmount);
+    document.getElementById('ProcessingFee').addEventListener('blur', validateProcessingFee);
+
+    // Add validation for other required fields
+    document.getElementById('TenderId').addEventListener('change', validateTenderId);
+    document.getElementById('BidderEmail').addEventListener('blur', validateBidderEmail);
+    document.getElementById('CompanyAddress').addEventListener('blur', validateCompanyAddress);
+
+    // Form submission validation
+    document.querySelector('form').addEventListener('submit', function (e) {
+        if (!validateForm()) {
+            e.preventDefault(); // Prevent form submission
+            alert('Please fix the validation errors before submitting.');
+        }
+    });
+
+    // Calculate total on page load
+    calculateTotal();
+});</script>
+    @* <script>
         // Auto-calculate total amount
         function calculateTotal() {
             const bidAmount = parseFloat(document.getElementById('BidAmount').value) || 0;
@@ -284,6 +537,6 @@
             // Calculate total on page load
             calculateTotal();
         });
-    </script>
+    </script> *@
 }
 

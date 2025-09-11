@@ -18,7 +18,7 @@ namespace BiddingSystem.Data
         Task<bool> UpdatePaymentStatusAsync(int id, string paymentStatus, string? paymentReference = null, DateTime? paymentDate = null);
         Task<string> GenerateUniquePaymentReferenceAsync();
         Task<bool> ValidateBidAsync(TenderBid bid);
-        Task<decimal> CalculateTotalAmountAsync(decimal bidAmount, decimal emdAmount, decimal processingFee);
+        Task<decimal> CalculateTotalAmountAsync(decimal? bidAmount, decimal? emdAmount, decimal? processingFee);
         Task<IEnumerable<TenderBidDocument>> GetBidDocumentsAsync(int bidId);
         Task<TenderBidDocument> AddBidDocumentAsync(int bidId, IFormFile file, BidDocumentType documentType);
         Task<bool> DeleteBidDocumentAsync(int documentId);

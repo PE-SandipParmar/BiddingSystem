@@ -52,15 +52,15 @@
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Bid Amount</label>
-                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.BidAmount.ToString("C")</p>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.BidAmount?.ToString("C")</p>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">EMD Amount</label>
-                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.EmdAmount.ToString("C")</p>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.EmdAmount?.ToString("C")</p>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Processing Fee</label>
-                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.ProcessingFee.ToString("C")</p>
+                                        <p class="mt-1 text-sm text-gray-900">@Model.TenderBid.ProcessingFee?.ToString("C")</p>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Total Amount</label>

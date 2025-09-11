@@ -84,7 +84,7 @@ namespace BiddingSystem.Data
                 }
 
                 // Calculate total amount
-                bid.TotalAmount = await CalculateTotalAmountAsync(bid.BidAmount, bid.EmdAmount, bid.ProcessingFee);
+                bid.TotalAmount = await CalculateTotalAmountAsync(Convert.ToDecimal(bid.BidAmount), Convert.ToDecimal(bid.EmdAmount), Convert.ToDecimal(bid.ProcessingFee));
 
                 // Generate payment reference if not provided
                 if (string.IsNullOrEmpty(bid.PaymentReference))
@@ -309,11 +309,11 @@ namespace BiddingSystem.Data
             }
         }
 
-        public async Task<decimal> CalculateTotalAmountAsync(decimal bidAmount, decimal emdAmount, decimal processingFee)
+        public async Task<decimal> CalculateTotalAmountAsync(decimal? bidAmount, decimal? emdAmount, decimal? processingFee)
         {
             try
             {
-                return bidAmount + emdAmount + processingFee;
+                return Convert.ToDecimal(bidAmount) + Convert.ToDecimal(emdAmount) + Convert.ToDecimal(processingFee);
             }
             catch (Exception ex)
             {
