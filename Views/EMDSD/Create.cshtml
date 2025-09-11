@@ -15,202 +15,328 @@
     </a>
 </div>
 
-        <!-- Success/Error Messages -->
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                @TempData["SuccessMessage"]
+
+
+<!-- Form -->
+<form asp-action="Create" method="post" class="space-y-8" id="createDepositForm" novalidate>
+    <div class="bg-white rounded-lg shadow p-8">
+        <div class="flex items-center mb-8">
+            <div class="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-primary mr-5">
+                <i class="ri-bank-line text-xl"></i>
             </div>
-        }
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                @TempData["ErrorMessage"]
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800">Deposit Information</h2>
+                <p class="text-sm text-gray-500 mt-1">Create a new EMD/SD deposit record</p>
             </div>
-        }
-
-        <!-- Form -->
-        <div class="bg-white rounded shadow">
-            <form asp-action="Create" method="post" class="space-y-6">
-                <div class="p-6 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-800">Deposit Information</h2>
-                    <p class="text-sm text-gray-600 mt-1">Create a new EMD/SD deposit record</p>
-                </div>
-                
-                <div class="p-6 space-y-6">
-                    <!-- Basic Information -->
-                    <div class="space-y-4">
-                        <h3 class="text-md font-medium text-gray-800 border-b border-gray-200 pb-2">Basic Information</h3>
-                        
-                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                            <div>
-                                <label asp-for="TenderId" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                                <select asp-for="TenderId" asp-items="@(new SelectList(Model.AvailableTenders, "Id", "TenderTitle"))" id="tenderSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                                    <option value="">Select Tender</option>
-                                </select>
-                                <span asp-validation-for="TenderId" class="text-red-600 text-sm"></span>
-                                <p class="mt-1 text-xs text-gray-500">Select a tender to load available bids and auto-fill amounts</p>
-                            </div>
-
-                            <div>
-                                <label asp-for="TenderBidId" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                                <select asp-for="TenderBidId" id="tenderBidSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" disabled>
-                                    <option value="">Select Tender First</option>
-                                </select>
-                                <span asp-validation-for="TenderBidId" class="text-red-600 text-sm"></span>
-                                <p class="mt-1 text-xs text-gray-500">Select a tender first to load available bids</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                        <div>
-                            <label asp-for="Type" class="block text-sm font-medium text-gray-700"></label>
-                            <select asp-for="Type" asp-items="@(new SelectList(Model.TypeOptions))" id="typeSelect" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
-                                <option value="">Select Type</option>
-                            </select>
-                            <span asp-validation-for="Type" class="text-red-600 text-sm"></span>
-                        </div>
-
-                        <div>
-                            <!-- Empty div for grid layout -->
-                        </div>
-                    </div>
-
-                    <div>
-                        <label asp-for="Amount" class="block text-sm font-medium text-gray-700"></label>
-                        <div class="mt-1 relative rounded-md shadow-sm">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-gray-500 sm:text-sm">₹</span>
-                            </div>
-                            <input asp-for="Amount" type="number" step="0.01" min="0" id="amountInput" class="focus:ring-primary focus:border-primary block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md" placeholder="0.00">
-                        </div>
-                        <span asp-validation-for="Amount" class="text-red-600 text-sm"></span>
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                        <div>
-                            <label asp-for="BidderName" class="block text-sm font-medium text-gray-700"></label>
-                            <input asp-for="BidderName" id="bidderNameInput" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter bidder name">
-                            <span asp-validation-for="BidderName" class="text-red-600 text-sm"></span>
-                        </div>
-
-                        <div>
-                            <label asp-for="CompanyName" class="block text-sm font-medium text-gray-700"></label>
-                            <input asp-for="CompanyName" id="companyNameInput" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter company name">
-                            <span asp-validation-for="CompanyName" class="text-red-600 text-sm"></span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label asp-for="TransactionDate" class="block text-sm font-medium text-gray-700"></label>
-                        <input asp-for="TransactionDate" type="date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm">
-                        <span asp-validation-for="TransactionDate" class="text-red-600 text-sm"></span>
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                        <div>
-                            <label asp-for="BankName" class="block text-sm font-medium text-gray-700"></label>
-                            <input asp-for="BankName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter bank name">
-                            <span asp-validation-for="BankName" class="text-red-600 text-sm"></span>
-                        </div>
-
-                        <div>
-                            <label asp-for="FSSAIBranchName" class="block text-sm font-medium text-gray-700"></label>
-                            <input asp-for="FSSAIBranchName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter FSSAI branch name">
-                            <span asp-validation-for="FSSAIBranchName" class="text-red-600 text-sm"></span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label asp-for="TransactionId" class="block text-sm font-medium text-gray-700"></label>
-                        <input asp-for="TransactionId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter transaction ID">
-                        <span asp-validation-for="TransactionId" class="text-red-600 text-sm"></span>
-                    </div>
-
-                    <div>
-                        <label asp-for="Remarks" class="block text-sm font-medium text-gray-700"></label>
-                        <textarea asp-for="Remarks" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm" placeholder="Enter any remarks (optional)"></textarea>
-                        <span asp-validation-for="Remarks" class="text-red-600 text-sm"></span>
-                    </div>
-                </div>
-
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
-                    <a href="@Url.Action("Index")" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                        Cancel
-                    </a>
-                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90">
-                        <i class="ri-save-line mr-2"></i>
-                        Create Deposit
-                    </button>
-                </div>
-            </form>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <label asp-for="TenderId" class="block text-sm font-medium text-gray-700 mb-2">Tender <span class="text-red-500">*</span></label>
+                <select asp-for="TenderId" asp-items="@(new SelectList(Model.AvailableTenders, "Id", "TenderTitle"))" id="tenderSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" required>
+                    <option value="">Select Tender</option>
+                </select>
+                <span asp-validation-for="TenderId" class="text-red-600 text-sm validation-message"></span>
+                <p class="mt-1 text-xs text-gray-500">Select a tender to load available bids and auto-fill amounts</p>
+            </div>
+
+            <div>
+                <label asp-for="TenderBidId" class="block text-sm font-medium text-gray-700 mb-2">Tender Bid <span class="text-red-500">*</span></label>
+                <select asp-for="TenderBidId" id="tenderBidSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" disabled required>
+                    <option value="">Select Tender First</option>
+                </select>
+                <span asp-validation-for="TenderBidId" class="text-red-600 text-sm validation-message"></span>
+                <p class="mt-1 text-xs text-gray-500">Select a tender first to load available bids</p>
+            </div>
+   
+            <div>
+                <label asp-for="Type" class="block text-sm font-medium text-gray-700 mb-2">Type <span class="text-red-500">*</span></label>
+                <select asp-for="Type" asp-items="@(new SelectList(Model.TypeOptions))" id="typeSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" required>
+                    <option value="">Select Type</option>
+                </select>
+                <span asp-validation-for="Type" class="text-red-600 text-sm validation-message"></span>
+            </div>
+
+            <div>
+                <label asp-for="Amount" class="block text-sm font-medium text-gray-700 mb-2">Amount <span class="text-red-500">*</span></label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 sm:text-sm">₹</span>
+                    </div>
+                    <input asp-for="Amount" type="number" step="0.01" min="0" id="amountInput" class="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" placeholder="0.00" required>
+                </div>
+                <span asp-validation-for="Amount" class="text-red-600 text-sm validation-message"></span>
+            </div>
+
+            <div>
+                <label asp-for="BidderName" class="block text-sm font-medium text-gray-700 mb-2">Bidder Name <span class="text-red-500">*</span></label>
+                <input asp-for="BidderName" id="bidderNameInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" placeholder="Enter bidder name" required>
+                <span asp-validation-for="BidderName" class="text-red-600 text-sm validation-message"></span>
+            </div>
+
+            <div>
+                <label asp-for="CompanyName" class="block text-sm font-medium text-gray-700 mb-2">Company Name <span class="text-red-500">*</span></label>
+                <input asp-for="CompanyName" id="companyNameInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" placeholder="Enter company name" required>
+                <span asp-validation-for="CompanyName" class="text-red-600 text-sm validation-message"></span>
+            </div>
+
+            <div>
+                <label asp-for="TransactionDate" class="block text-sm font-medium text-gray-700 mb-2">Transaction Date <span class="text-red-500">*</span></label>
+                <input asp-for="TransactionDate" type="date" id="transactionDateInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" required>
+                <span asp-validation-for="TransactionDate" class="text-red-600 text-sm validation-message"></span>
+            </div>
+
+            <div>
+                <label asp-for="BankName" class="block text-sm font-medium text-gray-700 mb-2">Bank Name <span class="text-red-500">*</span></label>
+                <input asp-for="BankName" id="bankNameInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" placeholder="Enter bank name" required>
+                <span asp-validation-for="BankName" class="text-red-600 text-sm validation-message"></span>
+            </div>
+
+            <div>
+                <label asp-for="FSSAIBranchName" class="block text-sm font-medium text-gray-700 mb-2">FSSAI Branch Name <span class="text-red-500">*</span></label>
+                <input asp-for="FSSAIBranchName" id="fssaiBranchNameInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" placeholder="Enter FSSAI branch name" required>
+                <span asp-validation-for="FSSAIBranchName" class="text-red-600 text-sm validation-message"></span>
+            </div>
+
+            <div>
+                <label asp-for="TransactionId" class="block text-sm font-medium text-gray-700 mb-2">Transaction ID <span class="text-red-500">*</span></label>
+                <input asp-for="TransactionId" id="transactionIdInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" placeholder="Enter transaction ID" required>
+                <span asp-validation-for="TransactionId" class="text-red-600 text-sm validation-message"></span>
+            </div>
+
+            <div class="md:col-span-2">
+                <label asp-for="Remarks" class="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
+                <textarea asp-for="Remarks" id="remarksInput" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base" placeholder="Enter any remarks (optional)"></textarea>
+                <span asp-validation-for="Remarks" class="text-red-600 text-sm validation-message"></span>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
+            <a asp-action="Index" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                Cancel
+            </a>
+            <button type="submit" id="submitBtn" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                <i class="ri-save-line mr-2"></i>
+                Create Deposit
+            </button>
+        </div>
+    </div>
+</form>
+
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('createDepositForm');
             const tenderSelect = document.getElementById('tenderSelect');
             const tenderBidSelect = document.getElementById('tenderBidSelect');
             const typeSelect = document.getElementById('typeSelect');
             const amountInput = document.getElementById('amountInput');
             const bidderNameInput = document.getElementById('bidderNameInput');
             const companyNameInput = document.getElementById('companyNameInput');
-            
+            const transactionDateInput = document.getElementById('transactionDateInput');
+            const bankNameInput = document.getElementById('bankNameInput');
+            const fssaiBranchNameInput = document.getElementById('fssaiBranchNameInput');
+            const transactionIdInput = document.getElementById('transactionIdInput');
+            const remarksInput = document.getElementById('remarksInput');
+            const submitBtn = document.getElementById('submitBtn');
+
             // Store tender data for amount calculation
             let tenderData = {};
             let tenderBidsData = {};
-            
+
+            // Validation functions
+            function showError(input, message) {
+                const errorElement = input.parentNode.querySelector('.validation-message') || 
+                                  input.parentNode.parentNode.querySelector('.validation-message');
+                if (errorElement) {
+                    errorElement.textContent = message;
+                    errorElement.style.display = 'block';
+                }
+                input.classList.add('border-red-500');
+                input.classList.remove('border-gray-300');
+            }
+
+            function clearError(input) {
+                const errorElement = input.parentNode.querySelector('.validation-message') || 
+                                  input.parentNode.parentNode.querySelector('.validation-message');
+                if (errorElement) {
+                    errorElement.textContent = '';
+                    errorElement.style.display = 'none';
+                }
+                input.classList.remove('border-red-500');
+                input.classList.add('border-gray-300');
+            }
+
+            function validateField(input, fieldName, customValidator = null) {
+                const value = input.value.trim();
+                
+                if (!value) {
+                    showError(input, `${fieldName} is required.`);
+                    return false;
+                }
+
+                if (customValidator && !customValidator(value)) {
+                    return false;
+                }
+
+                clearError(input);
+                return true;
+            }
+
+            function validateAmount(value) {
+                const amount = parseFloat(value);
+                if (isNaN(amount) || amount <= 0) {
+                    showError(amountInput, 'Amount must be a positive number.');
+                    return false;
+                }
+                return true;
+            }
+
+            function validateTransactionDate(value) {
+                const selectedDate = new Date(value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (selectedDate > today) {
+                    showError(transactionDateInput, 'Transaction date cannot be in the future.');
+                    return false;
+                }
+                return true;
+            }
+
+            function validateForm() {
+                let isValid = true;
+
+                // Validate all required fields
+                if (!validateField(tenderSelect, 'Tender')) isValid = false;
+                if (!validateField(tenderBidSelect, 'Tender Bid')) isValid = false;
+                if (!validateField(typeSelect, 'Type')) isValid = false;
+                if (!validateField(amountInput, 'Amount', validateAmount)) isValid = false;
+                if (!validateField(bidderNameInput, 'Bidder Name')) isValid = false;
+                if (!validateField(companyNameInput, 'Company Name')) isValid = false;
+                if (!validateField(transactionDateInput, 'Transaction Date', validateTransactionDate)) isValid = false;
+                if (!validateField(bankNameInput, 'Bank Name')) isValid = false;
+                if (!validateField(fssaiBranchNameInput, 'FSSAI Branch Name')) isValid = false;
+                if (!validateField(transactionIdInput, 'Transaction ID')) isValid = false;
+
+                return isValid;
+            }
+
+            // Real-time validation on input change
+            function addRealTimeValidation(input, fieldName, customValidator = null) {
+                input.addEventListener('blur', function() {
+                    validateField(input, fieldName, customValidator);
+                });
+
+                input.addEventListener('input', function() {
+                    if (input.value.trim()) {
+                        clearError(input);
+                    }
+                });
+            }
+
+            // Add real-time validation to all fields
+            addRealTimeValidation(tenderSelect, 'Tender');
+            addRealTimeValidation(tenderBidSelect, 'Tender Bid');
+            addRealTimeValidation(typeSelect, 'Type');
+            addRealTimeValidation(amountInput, 'Amount', validateAmount);
+            addRealTimeValidation(bidderNameInput, 'Bidder Name');
+            addRealTimeValidation(companyNameInput, 'Company Name');
+            addRealTimeValidation(transactionDateInput, 'Transaction Date', validateTransactionDate);
+            addRealTimeValidation(bankNameInput, 'Bank Name');
+            addRealTimeValidation(fssaiBranchNameInput, 'FSSAI Branch Name');
+            addRealTimeValidation(transactionIdInput, 'Transaction ID');
+
+            // Form submission validation
+            form.addEventListener('submit', function (e) {
+                e.preventDefault(); // Always prevent default submission first
+                
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="ri-loader-4-line mr-2 animate-spin"></i>Validating...';
+
+                // Validate form
+                setTimeout(() => {
+                    if (validateForm()) {
+                        // If validation passes, submit the form
+                        submitBtn.innerHTML = '<i class="ri-loader-4-line mr-2 animate-spin"></i>Creating...';
+                        form.submit();
+                    } else {
+                        // Reset button state if validation fails
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="ri-save-line mr-2"></i>Create Deposit';
+                        
+                        // Scroll to first error field
+                        const firstErrorField = form.querySelector('.border-red-500');
+                        if (firstErrorField) {
+                            firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            firstErrorField.focus();
+                        }
+                    }
+                }, 100);
+            });
+
             // Function to auto-fill amount based on tender and type
             function autoFillAmount() {
                 const tenderId = tenderSelect.value;
                 const type = typeSelect.value;
-                
+
                 if (tenderId && type && tenderData[tenderId]) {
                     const tender = tenderData[tenderId];
                     let amount = 0;
-                    
+
                     if (type === 'EMD') {
                         amount = tender.emdAmount || 0;
                     } else if (type === 'SD') {
                         amount = tender.sdAmount || 0;
                     }
-                    
+
                     if (amount > 0) {
                         amountInput.value = amount;
+                        clearError(amountInput);
                     }
                 }
             }
-            
+
             // Function to auto-fill bidder information based on selected tender bid
             function autoFillBidderInfo() {
                 const tenderBidId = tenderBidSelect.value;
-                
+
                 if (tenderBidId && tenderBidsData[tenderBidId]) {
                     const tenderBid = tenderBidsData[tenderBidId];
                     bidderNameInput.value = tenderBid.bidderName || '';
                     companyNameInput.value = tenderBid.companyName || '';
+                    
+                    // Clear validation errors for auto-filled fields
+                    if (tenderBid.bidderName) clearError(bidderNameInput);
+                    if (tenderBid.companyName) clearError(companyNameInput);
                 } else {
                     // Clear bidder info if no tender bid selected
                     bidderNameInput.value = '';
                     companyNameInput.value = '';
                 }
             }
-            
-            tenderSelect.addEventListener('change', function() {
+
+            tenderSelect.addEventListener('change', function () {
                 const tenderId = this.value;
-                
+
+                // Clear validation error for tender select
+                if (tenderId) clearError(this);
+
                 // Clear and disable tender bid select
                 tenderBidSelect.innerHTML = '<option value="">Loading...</option>';
                 tenderBidSelect.disabled = true;
-                
+                clearError(tenderBidSelect);
+
                 // Clear amount and bidder info
                 amountInput.value = '';
                 bidderNameInput.value = '';
                 companyNameInput.value = '';
-                
+
                 if (tenderId) {
                     // Fetch tender details for amount calculation
                     fetch(`/EMDSD/GetTenderDetails?tenderId=${tenderId}`)
@@ -222,18 +348,18 @@
                         .catch(error => {
                             console.error('Error loading tender details:', error);
                         });
-                    
+
                     // Fetch tender bids for selected tender
                     fetch(`/EMDSD/GetTenderBids?tenderId=${tenderId}`)
                         .then(response => response.json())
                         .then(data => {
                             tenderBidSelect.innerHTML = '<option value="">Select Tender Bid</option>';
-                            
+
                             if (data && data.length > 0) {
                                 data.forEach(bid => {
                                     // Store bid data for auto-fill
                                     tenderBidsData[bid.id] = bid;
-                                    
+
                                     const option = document.createElement('option');
                                     option.value = bid.id;
                                     option.textContent = `${bid.bidderName} - ${bid.companyName} (₹${bid.bidAmount})`;
@@ -252,16 +378,34 @@
                     tenderBidSelect.innerHTML = '<option value="">Select Tender First</option>';
                 }
             });
-            
+
             // Auto-fill amount when type changes
-            typeSelect.addEventListener('change', function() {
+            typeSelect.addEventListener('change', function () {
+                if (this.value) clearError(this);
                 autoFillAmount();
             });
-            
+
             // Auto-fill bidder info when tender bid changes
-            tenderBidSelect.addEventListener('change', function() {
+            tenderBidSelect.addEventListener('change', function () {
+                if (this.value) clearError(this);
                 autoFillBidderInfo();
             });
         });
     </script>
+
+    <style>
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @@keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .validation-message {
+            display: block;
+            margin-top: 0.25rem;
+        }
+    </style>
 }

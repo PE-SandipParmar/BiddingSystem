@@ -234,6 +234,13 @@ namespace BiddingSystem.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                // Check if tender is published - bids can only be edited when tender status is Published
+                if (bid.Tender?.Status != TenderStatus.Published)
+                {
+                    TempData["ErrorMessage"] = "Tender bids can only be edited when the tender status is Published.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 var tenders = await _tenderRepository.GetAllAsync();
                 var viewModel = new TenderBidEditViewModel
                 {
@@ -284,6 +291,13 @@ namespace BiddingSystem.Controllers
                 if (existingBid == null)
                 {
                     TempData["ErrorMessage"] = "Tender bid not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Check if tender is published - bids can only be edited when tender status is Published
+                if (existingBid.Tender?.Status != TenderStatus.Published)
+                {
+                    TempData["ErrorMessage"] = "Tender bids can only be edited when the tender status is Published.";
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -495,6 +509,7 @@ namespace BiddingSystem.Controllers
                 Id = bid.Id,
                 TenderId = bid.TenderId,
                 TenderName = bid.Tender?.TenderTitle ?? "N/A",
+                TenderStatus = bid.Tender?.Status.ToString() ?? "N/A",
                 BidderName = bid.BidderName,
                 BidderEmail = bid.BidderEmail,
                 BidderPhone = bid.BidderPhone,

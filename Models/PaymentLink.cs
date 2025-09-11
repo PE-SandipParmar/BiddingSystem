@@ -18,6 +18,7 @@ namespace BiddingSystem.Models
         [Display(Name = "Tender ID")]
         public int TenderId { get; set; }
 
+        [Required]
         [Display(Name = "Tender Bid ID")]
         public int? TenderBidId { get; set; }
 

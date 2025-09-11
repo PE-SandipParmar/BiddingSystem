@@ -19,10 +19,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Tender Selection -->
             <div class="md:col-span-2">
-                <label asp-for="TenderId" class="block text-sm font-medium text-gray-700 mb-2"></label>
+                <label asp-for="TenderId" class="block text-sm font-medium text-gray-700 mb-2">Tender <span class="text-red-500">*</span></label>
                 <select asp-for="TenderId" asp-items="@(new SelectList(Model.AvailableTenders, "Id", "TenderTitle"))" 
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-                    <option value="0">-- Select Tender --</option>
+                    <option value="">-- Select Tender --</option>
                 </select>
                 <span asp-validation-for="TenderId" class="text-red-600 text-sm"></span>
             </div>
@@ -33,31 +33,31 @@
             </div>
 
             <div>
-                <label asp-for="BidderName" class="block text-sm font-medium text-gray-700 mb-2"></label>
-                <input asp-for="BidderName" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+                <label asp-for="BidderName" class="block text-sm font-medium text-gray-700 mb-2"> Bidder Name<span class="text-red-500">*</span></label>
+                <input asp-for="BidderName" pattern="[A-Za-z\s]+" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
                 <span asp-validation-for="BidderName" class="text-red-600 text-sm"></span>
             </div>
 
             <div>
-                <label asp-for="BidderEmail" class="block text-sm font-medium text-gray-700 mb-2"></label>
+                <label asp-for="BidderEmail" class="block text-sm font-medium text-gray-700 mb-2">Bidder Email <span class="text-red-500">*</span></label>
                 <input asp-for="BidderEmail" type="email" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
                 <span asp-validation-for="BidderEmail" class="text-red-600 text-sm"></span>
             </div>
 
             <div>
-                <label asp-for="BidderPhone" class="block text-sm font-medium text-gray-700 mb-2"></label>
-                <input asp-for="BidderPhone" type="tel" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+                <label asp-for="BidderPhone" class="block text-sm font-medium text-gray-700 mb-2">Bidder Phone <span class="text-red-500">*</span></label>
+                <input asp-for="BidderPhone" type="tel" pattern="[0-9]{10}" maxlength="10" minlength="10" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
                 <span asp-validation-for="BidderPhone" class="text-red-600 text-sm"></span>
             </div>
 
             <div>
-                <label asp-for="CompanyName" class="block text-sm font-medium text-gray-700 mb-2"></label>
-                <input asp-for="CompanyName" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
+                <label asp-for="CompanyName" class="block text-sm font-medium text-gray-700 mb-2"> Company Name<span class="text-red-500">*</span></label>
+                <input asp-for="CompanyName" pattern="[A-Za-z\s]+" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
                 <span asp-validation-for="CompanyName" class="text-red-600 text-sm"></span>
             </div>
 
             <div class="md:col-span-2">
-                <label asp-for="CompanyAddress" class="block text-sm font-medium text-gray-700 mb-2"></label>
+                <label asp-for="CompanyAddress" class="block text-sm font-medium text-gray-700 mb-2"> Company Address<span class="text-red-500">*</span></label>
                 <textarea asp-for="CompanyAddress" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"></textarea>
                 <span asp-validation-for="CompanyAddress" class="text-red-600 text-sm"></span>
             </div>
@@ -68,7 +68,7 @@
             </div>
 
             <div>
-                <label asp-for="BidAmount" class="block text-sm font-medium text-gray-700 mb-2"></label>
+                <label asp-for="BidAmount" class="block text-sm font-medium text-gray-700 mb-2"> Bid Amount<span class="text-red-500">*</span></label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <span class="text-gray-500 sm:text-sm">₹</span>
@@ -80,7 +80,7 @@
             </div>
 
             <div>
-                <label asp-for="EmdAmount" class="block text-sm font-medium text-gray-700 mb-2"></label>
+                <label asp-for="EmdAmount" class="block text-sm font-medium text-gray-700 mb-2"> Emd Amount<span class="text-red-500">*</span></label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <span class="text-gray-500 sm:text-sm">₹</span>
@@ -92,7 +92,7 @@
             </div>
 
             <div>
-                <label asp-for="ProcessingFee" class="block text-sm font-medium text-gray-700 mb-2"></label>
+                <label asp-for="ProcessingFee" class="block text-sm font-medium text-gray-700 mb-2"> Processing Fee<span class="text-red-500">*</span></label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <span class="text-gray-500 sm:text-sm">₹</span>
@@ -146,12 +146,144 @@
             document.getElementById('totalAmount').value = total.toFixed(2);
         }
 
-        // Add event listeners
-        document.getElementById('BidAmount').addEventListener('input', calculateTotal);
-        document.getElementById('EmdAmount').addEventListener('input', calculateTotal);
-        document.getElementById('ProcessingFee').addEventListener('input', calculateTotal);
+        // Validation functions
+        function validateAlphabetsOnly(input) {
+            // Remove any non-alphabet characters (except spaces)
+            input.value = input.value.replace(/[^A-Za-z\s]/g, '');
+        }
 
-        // Calculate on page load
-        calculateTotal();
+        function validatePhoneNumber(input) {
+            // Remove any non-numeric characters and limit to 10 digits
+            input.value = input.value.replace(/[^0-9]/g, '').substring(0, 10);
+        }
+
+        function showError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const existingError = field.parentNode.querySelector('.validation-error');
+
+            // Remove existing error if any
+            if (existingError) {
+                existingError.remove();
+            }
+
+            // Add new error message
+            const errorSpan = document.createElement('span');
+            errorSpan.className = 'text-red-600 text-sm validation-error';
+            errorSpan.textContent = message;
+            field.parentNode.appendChild(errorSpan);
+
+            // Add error styling to field
+            field.classList.add('border-red-500');
+        }
+
+        function clearError(fieldId) {
+            const field = document.getElementById(fieldId);
+            const existingError = field.parentNode.querySelector('.validation-error');
+
+            if (existingError) {
+                existingError.remove();
+            }
+
+            // Remove error styling
+            field.classList.remove('border-red-500');
+        }
+
+        function validateBidderName() {
+            const field = document.getElementById('BidderName');
+            const value = field.value.trim();
+
+            if (value === '') {
+                showError('BidderName', 'Bidder name is required.');
+                return false;
+            } else if (!/^[A-Za-z\s]+$/.test(value)) {
+                showError('BidderName', 'Bidder name should contain only alphabets and spaces.');
+                return false;
+            } else {
+                clearError('BidderName');
+                return true;
+            }
+        }
+
+        function validateBidderPhone() {
+            const field = document.getElementById('BidderPhone');
+            const value = field.value.trim();
+
+            if (value === '') {
+                showError('BidderPhone', 'Phone number is required.');
+                return false;
+            } else if (!/^\d{10}$/.test(value)) {
+                showError('BidderPhone', 'Phone number must be exactly 10 digits.');
+                return false;
+            } else {
+                clearError('BidderPhone');
+                return true;
+            }
+        }
+
+        function validateCompanyName() {
+            const field = document.getElementById('CompanyName');
+            const value = field.value.trim();
+
+            if (value === '') {
+                showError('CompanyName', 'Company name is required.');
+                return false;
+            } else if (!/^[A-Za-z\s]+$/.test(value)) {
+                showError('CompanyName', 'Company name should contain only alphabets and spaces.');
+                return false;
+            } else {
+                clearError('CompanyName');
+                return true;
+            }
+        }
+
+        // Form submission validation
+        function validateForm() {
+            let isValid = true;
+
+            isValid = validateBidderName() && isValid;
+            isValid = validateBidderPhone() && isValid;
+            isValid = validateCompanyName() && isValid;
+
+            return isValid;
+        }
+
+        // Add event listeners when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            // Auto-calculation event listeners
+            document.getElementById('BidAmount').addEventListener('input', calculateTotal);
+            document.getElementById('EmdAmount').addEventListener('input', calculateTotal);
+            document.getElementById('ProcessingFee').addEventListener('input', calculateTotal);
+
+            // Real-time validation event listeners
+            document.getElementById('BidderName').addEventListener('input', function () {
+                validateAlphabetsOnly(this);
+            });
+
+            document.getElementById('BidderName').addEventListener('blur', validateBidderName);
+
+            document.getElementById('BidderPhone').addEventListener('input', function () {
+                validatePhoneNumber(this);
+            });
+
+            document.getElementById('BidderPhone').addEventListener('blur', validateBidderPhone);
+
+            document.getElementById('CompanyName').addEventListener('input', function () {
+                validateAlphabetsOnly(this);
+            });
+
+            document.getElementById('CompanyName').addEventListener('blur', validateCompanyName);
+
+            // Form submission validation
+            document.querySelector('form').addEventListener('submit', function (e) {
+                if (!validateForm()) {
+                    e.preventDefault(); // Prevent form submission
+                    alert('Please fix the validation errors before submitting.');
+                }
+            });
+
+            // Calculate total on page load
+            calculateTotal();
+        });
     </script>
 }
+

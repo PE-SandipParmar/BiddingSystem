@@ -540,6 +540,8 @@ namespace BiddingSystem.Controllers
                     bidderName = bid.BidderName,
                     companyName = bid.CompanyName,
                     bidAmount = bid.BidAmount,
+                    processingFee = bid.ProcessingFee,
+                    emdAmount = bid.EmdAmount,
                     paymentStatus = bid.PaymentStatus
                 }).ToList();
 
@@ -549,6 +551,34 @@ namespace BiddingSystem.Controllers
             {
                 _logger.LogError(ex, "Error getting tender bids for tender: {TenderId}", tenderId);
                 return Json(new List<object>());
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Maker,Checker")]
+        public async Task<IActionResult> GetTenderDetails(int tenderId)
+        {
+            try
+            {
+                var tender = await _tenderRepository.GetByIdAsync(tenderId);
+                if (tender == null)
+                {
+                    return Json(new { error = "Tender not found" });
+                }
+
+                var result = new
+                {
+                    emdAmount = tender.EmdAmount,
+                    sdAmount = tender.SdAmount,
+                    processingFee = tender.ProcessingFee
+                };
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting tender details for tender: {TenderId}", tenderId);
+                return Json(new { error = "Error loading tender details" });
             }
         }
 

@@ -168,6 +168,7 @@
                 
                 @if (Model.Status == PaymentLinkStatus.Active && !Model.IsExpired)
                 {
+                    
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="w-full flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                         <i class="ri-edit-line mr-2"></i>Edit Link
                     </a>
@@ -258,8 +259,11 @@
 </div>
 
 <!-- Copy Success Tooltip -->
-<div id="copyTooltip" class="fixed z-50 bg-gray-800 text-white px-3 py-2 rounded-lg text-sm opacity-0 transition-opacity duration-300">
-    Payment URL copied to clipboard!
+<div id="copyTooltip" class="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-3 rounded-lg text-sm font-medium shadow-lg opacity-0 transition-all duration-300 transform translate-y-2">
+    <div class="flex items-center">
+        <i class="ri-check-line mr-2"></i>
+        Copied to clipboard!
+    </div>
 </div>
 
 <!-- Cancel Link Modal -->
@@ -315,10 +319,17 @@
 
         function showCopyTooltip() {
             const tooltip = document.getElementById('copyTooltip');
-            tooltip.style.opacity = '1';
-            setTimeout(() => {
-                tooltip.style.opacity = '0';
-            }, 2000);
+            if (tooltip) {
+                // Show tooltip with animation
+                tooltip.style.opacity = '1';
+                tooltip.style.transform = 'translateY(0)';
+                
+                // Hide tooltip after 3 seconds
+                setTimeout(() => {
+                    tooltip.style.opacity = '0';
+                    tooltip.style.transform = 'translateY(-8px)';
+                }, 3000);
+            }
         }
 
         // Cancel payment link functionality

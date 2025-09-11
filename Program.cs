@@ -79,8 +79,8 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Match authentication cookie
+    options.Cookie.SameSite = SameSiteMode.Lax; // Match authentication cookie
 });
 
 

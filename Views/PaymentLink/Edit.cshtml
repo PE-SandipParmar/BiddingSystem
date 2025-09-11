@@ -61,11 +61,11 @@
                 </label>
                 <select asp-for="TenderBidId" asp-items="@ViewBag.TenderBidOptions" 
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base"
-                        id="tenderBidSelect">
-                    <option value="">No bid linked</option>
+                        id="tenderBidSelect" required>
+                    <option value="">Select a tender bid</option>
                 </select>
                 <span asp-validation-for="TenderBidId" class="text-red-500 text-sm"></span>
-                <p class="text-xs text-gray-500 mt-1">Optional: Link payment to a specific bid</p>
+                <p class="text-xs text-gray-500 mt-1">Required: Select a bid to generate payment link</p>
             </div>
             
             <div>
@@ -145,6 +145,148 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        // Set minimum date for expiry date
+        document.addEventListener('DOMContentLoaded', function () {
+            const expiryDateInput = document.getElementById('ExpiryDate');
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            expiryDateInput.min = tomorrow.toISOString().split('T')[0];
+
+            // Set default expiry date to 30 days from now
+            const defaultExpiry = new Date(today);
+            defaultExpiry.setDate(defaultExpiry.getDate() + 30);
+            expiryDateInput.value = defaultExpiry.toISOString().split('T')[0];
+        });
+
+        // Store tender bids for amount auto-fill
+        let tenderBids = [];
+
+        // Handle tender selection change
+        document.getElementById('tenderSelect').addEventListener('change', function () {
+            const tenderId = this.value;
+            const tenderBidSelect = document.getElementById('tenderBidSelect');
+            const amountInput = document.getElementById('Amount');
+
+            if (tenderId) {
+                // Enable the tender bid dropdown
+                tenderBidSelect.disabled = false;
+                tenderBidSelect.innerHTML = '<option value="">Loading bids...</option>';
+
+                // Fetch tender bids
+                fetch(`/PaymentLink/GetTenderBids?tenderId=${tenderId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        tenderBids = data; // Store bids for amount auto-fill
+                        tenderBidSelect.innerHTML = '<option value="">Select a bid (optional)</option>';
+                        data.forEach(bid => {
+                            const option = document.createElement('option');
+                            option.value = bid.id;
+                            option.textContent = `${bid.bidderName} - ${bid.companyName}`;
+                            tenderBidSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error loading tender bids:', error);
+                        tenderBidSelect.innerHTML = '<option value="">Error loading bids</option>';
+                        tenderBids = [];
+                    });
+            } else {
+                // Disable and reset the tender bid dropdown
+                tenderBidSelect.disabled = true;
+                tenderBidSelect.innerHTML = '<option value="">Select a tender first</option>';
+                tenderBids = [];
+                // Clear amount when tender is deselected
+                amountInput.value = '';
+            }
+        });
+
+        // Handle tender bid selection change
+        document.getElementById('tenderBidSelect').addEventListener('change', function () {
+            updateAmountBasedOnSelections();
+        });
+
+        // Handle payment type change
+        document.getElementById('PaymentType').addEventListener('change', function () {
+            console.log('Payment type changed to:', this.value);
+            updateAmountBasedOnSelections();
+        });
+
+        // Main function to update amount based on both tender bid and payment type
+        function updateAmountBasedOnSelections() {
+            const tenderBidId = document.getElementById('tenderBidSelect').value;
+            const paymentType = document.getElementById('PaymentType').value;
+            const amountInput = document.getElementById('Amount');
+
+            console.log('updateAmountBasedOnSelections - BidId:', tenderBidId, 'PaymentType:', paymentType);
+
+            // If no bid is selected, clear the amount
+            if (!tenderBidId || tenderBids.length === 0) {
+                console.log('No bid selected, clearing amount');
+                amountInput.value = '';
+                return;
+            }
+
+            // Find the selected bid
+            const selectedBid = tenderBids.find(bid => bid.id == tenderBidId);
+            if (!selectedBid || selectedBid.bidAmount <= 0) {
+                console.log('No valid bid found or bid amount is 0');
+                amountInput.value = '';
+                return;
+            }
+
+            // Calculate amount based on payment type
+            let calculatedAmount = selectedBid.bidAmount;
+
+            // Apply payment type-specific calculations
+            switch (paymentType.toLowerCase()) {
+                case 'earnest_money_deposit':
+                case '1':
+                    calculatedAmount = selectedBid.emdAmount
+                    break;
+                case '2':
+                    calculatedAmount = selectedBid.bidAmount
+                    break;
+                case '3':
+                    calculatedAmount = selectedBid.processingFee;
+                    break;
+                default:
+                    calculatedAmount = '0';
+                    break;
+            }
+
+            console.log('Calculated amount:', calculatedAmount, 'for payment type:', paymentType);
+
+            // Set the calculated amount (rounded to 2 decimal places)
+            amountInput.value = calculatedAmount.toFixed(2);
+
+            // Trigger change event to validate
+            amountInput.dispatchEvent(new Event('change'));
+        }
+
+        // Legacy function - keeping for backward compatibility but redirecting to new function
+        function updateAmountFromSelectedBid() {
+            updateAmountBasedOnSelections();
+        }
+
+        // Legacy function - keeping for backward compatibility but redirecting to new function
+        function autoFillAmountFromBid() {
+            updateAmountBasedOnSelections();
+        }
+
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const expiryDate = new Date(document.getElementById('ExpiryDate').value);
+            const today = new Date();
+
+            if (expiryDate <= today) {
+                e.preventDefault();
+                alert('Expiry date must be in the future.');
+                return false;
+            }
+        });
+    </script>
+  @*   <script>
         // Set minimum date for expiry date and load tender bids
         document.addEventListener('DOMContentLoaded', function() {
             const expiryDateInput = document.getElementById('ExpiryDate');
@@ -172,7 +314,7 @@
                         data.forEach(bid => {
                             const option = document.createElement('option');
                             option.value = bid.id;
-                            option.textContent = `${bid.bidderName} - ${bid.companyName} (₹${bid.bidAmount})`;
+                            option.textContent = `${bid.bidderName} - ${bid.companyName}`;
                             if (currentBidId && bid.id == currentBidId) {
                                 option.selected = true;
                             }
@@ -197,5 +339,5 @@
                 return false;
             }
         });
-    </script>
+    </script> *@
 }

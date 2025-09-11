@@ -132,6 +132,8 @@ namespace BiddingSystem.Controllers
         {
             try
             {
+                _logger.LogInformation("Tender Create POST action started. User: {User}, ModelState.IsValid: {IsValid}", 
+                    User.Identity?.Name, ModelState.IsValid);
                 if (!ModelState.IsValid)
                 {
                     ViewBag.Departments = GetDepartmentOptions();

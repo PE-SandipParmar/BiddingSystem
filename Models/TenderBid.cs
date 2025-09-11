@@ -12,6 +12,7 @@ namespace BiddingSystem.Models
         public int TenderId { get; set; }
 
         [ForeignKey("TenderId")]
+        [Range(1, int.MaxValue, ErrorMessage = "Tender is required.")]
         public virtual Tender Tender { get; set; } = null!;
 
         [Required]
@@ -36,7 +37,7 @@ namespace BiddingSystem.Models
         [Display(Name = "Company Name")]
         public string CompanyName { get; set; } = string.Empty;
 
-        [Required]
+        
         [StringLength(500)]
         [Display(Name = "Company Address")]
         public string CompanyAddress { get; set; } = string.Empty;
@@ -44,16 +45,19 @@ namespace BiddingSystem.Models
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Bid Amount")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Bid amount must be greater than 0")]
         public decimal BidAmount { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "EMD Amount")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "EMD amount must be greater than 0")]
         public decimal EmdAmount { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Processing Fee")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Processing Fee must be greater than 0")]
         public decimal ProcessingFee { get; set; }
 
         [Required]

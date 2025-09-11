@@ -253,6 +253,9 @@ namespace BiddingSystem.ViewModels
         [Display(Name = "Tender Name")]
         public string TenderName { get; set; } = string.Empty;
 
+        [Display(Name = "Tender Status")]
+        public string TenderStatus { get; set; } = string.Empty;
+
         // File upload properties
         [Display(Name = "Bid Documents")]
         public List<IFormFile>? BidDocuments { get; set; }
