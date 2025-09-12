@@ -640,7 +640,7 @@ namespace BiddingSystem.Controllers
         private string GeneratePaymentUrl(string linkId, string securityToken)
         {
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            return $"{baseUrl}/Payment/Pay/linkId?token={securityToken}";
+            return $"{baseUrl}/Payment/Pay/{linkId}?token={securityToken}";
         }
 
         private async Task<List<SelectListItem>> GetTenderOptionsAsync()
