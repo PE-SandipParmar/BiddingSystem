@@ -279,7 +279,7 @@
                     `);
                 }
 
-                const isDisabled = item.hasPendingRefund && currentViewMode === 'maker';
+                const isDisabled = (item.hasPendingRefund && currentViewMode === 'maker') || item.refundStatus === 'Failed';
                 const checkboxId = currentViewMode === 'checker' ? item.refundPaymentId : item.tenderBidId;
 
                 let statusBadge = '';
@@ -292,7 +292,7 @@
                 } else {
                     // Maker/Admin view
                     if (item.hasPendingRefund) {
-                        // Check if refund has been processed through Razorpay
+                        // Check refund status
                         if (item.razorpayRefundId) {
                             // Successfully refunded through Razorpay
                             statusBadge = `
@@ -305,8 +305,9 @@
                                     </svg>
                                     Razorpay Processed
                                 </div>`;
+                            actionButton = statusBadge;
                         } else if (item.refundStatus === 'Failed') {
-                            // Failed refund
+                            // Failed refund - Show retry button
                             statusBadge = `
                                 <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
                                     Failed
@@ -318,14 +319,31 @@
                                     </svg>
                                     Error
                                 </div>` : ''}`;
+
+                            // Add retry button for failed refunds
+                            if (response.canApprove || userRole === 'Admin') {
+                                actionButton = `
+                                    <button class="bg-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-orange-700 flex items-center"
+                                            onclick="retryRefund(${item.refundPaymentId})"
+                                            title="Retry failed refund">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                        Retry
+                                    </button>`;
+                            } else {
+                                actionButton = statusBadge;
+                            }
                         } else if (item.refundStatus === 'Approved') {
                             // Approved but not yet processed through Razorpay (maybe manual refund)
                             statusBadge = '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Approved</span>';
+                            actionButton = statusBadge;
                         } else {
                             // Pending approval
                             statusBadge = '<span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Pending Approval</span>';
+                            actionButton = statusBadge;
                         }
-                        actionButton = statusBadge;
                     } else {
                         // Not initiated
                         statusBadge = '<span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">Not Initiated</span>';
@@ -349,8 +367,8 @@
                     </a>
                 `;
 
-                // Add refund details link if refund has been processed
-                if (item.refundPaymentId && (item.razorpayRefundId || item.refundStatus === 'Approved' || item.refundStatus === 'Failed')) {
+                // Add refund details link if refund exists
+                if (item.refundPaymentId) {
                     viewButtons += `
                         <a href="/Refund/Details/${item.refundPaymentId}"
                            class="ml-2 inline-flex items-center justify-center px-3 py-1 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100">
@@ -381,6 +399,43 @@
                         <td class="px-6 py-3 whitespace-nowrap text-center">${viewButtons}</td>
                     </tr>
                 `);
+            });
+        }
+
+        // Add new function to handle retry
+        function retryRefund(refundPaymentId) {
+            if (!confirm('Are you sure you want to retry this failed refund?')) {
+                return;
+            }
+
+            showProcessingModal();
+
+            $.ajax({
+                url: '@Url.Action("RetryRefund", "Refund")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    RefundPaymentId: refundPaymentId
+                }),
+                success: function (response) {
+                    hideProcessingModal();
+
+                    if (response.success) {
+                        showResultModal('success', 'Refund Retry Successful', response.message);
+                    } else {
+                        showResultModal('error', 'Retry Failed', response.message || 'Failed to retry refund.');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    hideProcessingModal();
+
+                    let errorMessage = 'An error occurred while retrying the refund.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+
+                    showResultModal('error', 'Connection Error', errorMessage);
+                }
             });
         }
 

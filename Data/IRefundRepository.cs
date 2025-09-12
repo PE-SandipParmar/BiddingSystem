@@ -37,5 +37,7 @@ namespace BiddingSystem.Data
         /// Gets refund statistics for dashboard/reporting
         /// </summary>
         Task<RefundStatistics> GetRefundStatisticsAsync();
+
+        Task<RetryRefundResult> RetryFailedRefundAsync(int refundPaymentId, int userId);
     }
 }

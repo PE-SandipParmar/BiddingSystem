@@ -349,5 +349,72 @@ namespace BiddingSystem.Controllers
                 return RedirectToAction("ApprovedRefunds");
             }
         }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin,Checker,Approver")]
+        public async Task<IActionResult> RetryRefund([FromBody] RetryRefundRequest request)
+        {
+            try
+            {
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+
+                // Only Checker, Approver, and Admin can retry refunds
+                if (userRole != "Checker" && userRole != "Admin" && userRole != "Approver")
+                {
+                    return Json(new { success = false, message = "You don't have permission to retry refunds." });
+                }
+
+                if (request.RefundPaymentId <= 0)
+                {
+                    return Json(new { success = false, message = "Invalid refund payment ID." });
+                }
+
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
+
+                // Call repository to retry the refund
+                var result = await _refundRepository.RetryFailedRefundAsync(request.RefundPaymentId, userId);
+
+                if (result.Success)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = result.Message,
+                        refundId = result.RazorpayRefundId
+                    });
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = result.Message
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrying refund: {RefundPaymentId}", request.RefundPaymentId);
+                return Json(new
+                {
+                    success = false,
+                    message = "An error occurred while retrying the refund: " + ex.Message
+                });
+            }
+        }
+
     }
+}
+
+// Add this class to your ViewModels
+public class RetryRefundRequest
+{
+    public int RefundPaymentId { get; set; }
+}
+
+public class RetryRefundResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; }
+    public string? RazorpayRefundId { get; set; }
 }

@@ -1,4 +1,4 @@
-// Location: /Data/RefundRepository.cs
+﻿// Location: /Data/RefundRepository.cs
 // REPLACE your existing RefundRepository.cs with this complete version
 
 using Dapper;
@@ -108,12 +108,12 @@ namespace BiddingSystem.Data
 
                                 // Create notes for the refund
                                 var notes = new Dictionary<string, object>
-                        {
-                            { "tender_id", refundDetails.TenderIdString },
-                            { "bidder_name", refundDetails.BidderName },
-                            { "refund_reason", refundDetails.ReasonForRefund },
-                            { "refund_payment_id", refundId.ToString() }
-                        };
+                                {
+                                    { "tender_id", refundDetails.TenderIdString },
+                                    { "bidder_name", refundDetails.BidderName },
+                                    { "refund_reason", refundDetails.ReasonForRefund },
+                                    { "refund_payment_id", refundId.ToString() }
+                                };
 
                                 // *** CALL RAZORPAY API ***
                                 var refundResponse = await _razorpay.ProcessRefund(
@@ -648,5 +648,235 @@ namespace BiddingSystem.Data
                 return null;
             }
         }
+        public async Task<RetryRefundResult> RetryFailedRefundAsync(int refundPaymentId, int userId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // Get the failed refund details
+                var refundDetailsSql = @"
+            SELECT 
+                rp.*,
+                pt.RazorpayPaymentId,
+                pt.RazorpayOrderId,
+                pt.Amount as FinalRefundAmount,  -- Get refund amount from actual payment
+                pt.PaymentMethod as OriginalPaymentMethod,
+                pt.TransactionDate as OriginalPaymentDate,
+                tb.BidderName,
+                tb.BidderEmail,
+                t.TenderId as TenderIdString
+            FROM RefundPayments rp WITH (UPDLOCK, ROWLOCK)
+            INNER JOIN TenderBids tb ON rp.TenderBidId = tb.Id
+            INNER JOIN Tenders t ON rp.TenderId = t.Id
+            INNER JOIN PaymentTransactions pt ON  -- Changed to INNER JOIN to ensure payment exists
+                pt.TenderBidId = rp.TenderBidId 
+                AND pt.TenderId = rp.TenderId  -- Added TenderId check for additional validation
+                AND pt.Status = 'Success'  -- Only successful payments
+                AND pt.RazorpayPaymentId IS NOT NULL  -- Must have valid payment ID
+                AND (pt.PaymentMethod != 'REFUND' OR pt.PaymentMethod IS NULL)  -- Exclude previous refund transactions
+            WHERE 
+                rp.Id = @RefundPaymentId
+                AND rp.RefundStatus IN ('Failed', 'Pending', 'Retry')  -- Allow retry for failed/pending refunds";
+
+                var refundDetails = await connection.QuerySingleOrDefaultAsync<dynamic>(
+                    refundDetailsSql,
+                    new { RefundPaymentId = refundPaymentId },
+                    transaction);
+
+                if (refundDetails == null)
+                {
+                    transaction.Rollback();
+                    return new RetryRefundResult
+                    {
+                        Success = false,
+                        Message = "Refund not found or is not in failed status."
+                    };
+                }
+
+                if (refundDetails.RazorpayPaymentId == null)
+                {
+                    transaction.Rollback();
+                    return new RetryRefundResult
+                    {
+                        Success = false,
+                        Message = "Original payment not found. Cannot process refund without original payment reference."
+                    };
+                }
+
+                // Clear previous error and attempt retry
+                var clearErrorSql = @"
+            UPDATE RefundPayments 
+            SET RefundErrorMessage = NULL
+            WHERE Id = @RefundPaymentId";
+
+                await connection.ExecuteAsync(clearErrorSql,
+                    new { RefundPaymentId = refundPaymentId },
+                    transaction);
+
+                _logger.LogInformation($"Retrying refund for payment: {refundDetails.RazorpayPaymentId}");
+
+                // Create notes for the refund
+                var notes = new Dictionary<string, object>
+        {
+            { "tender_id", refundDetails.TenderIdString },
+            { "bidder_name", refundDetails.BidderName },
+            { "refund_reason", refundDetails.ReasonForRefund },
+            { "refund_payment_id", refundPaymentId.ToString() },
+            { "retry_attempt", "true" },
+            { "retried_by_user_id", userId.ToString() }
+        };
+
+                // Attempt to process refund through Razorpay
+                var refundResponse = await _razorpay.ProcessRefund(
+                    refundDetails.RazorpayPaymentId,
+                    refundDetails.FinalRefundAmount,
+                    refundDetails.ReasonForRefund + " (Retry)",
+                    notes
+                );
+
+                if (refundResponse.Success)
+                {
+                    // Update refund payment as successful
+                    var updateSuccessSql = @"
+                UPDATE RefundPayments 
+                SET RefundStatus = 'Approved',
+                    RazorpayRefundId = @RazorpayRefundId,
+                    RefundErrorMessage = NULL,
+                    ApprovedBy = @ApprovedBy,
+                    ApprovedAt = GETUTCDATE(),
+                    RefundProcessedAt = GETUTCDATE()
+                WHERE Id = @RefundPaymentId";
+
+                    await connection.ExecuteAsync(updateSuccessSql, new
+                    {
+                        RefundPaymentId = refundPaymentId,
+                        RazorpayRefundId = refundResponse.RefundId,
+                        ApprovedBy = userId
+                    }, transaction);
+
+                    // Insert refund transaction record
+                    var insertTransactionSql = @"
+                INSERT INTO PaymentTransactions (
+                    PaymentLinkId,
+                    TenderId,
+                    TenderBidId,
+                    RazorpayPaymentId,
+                    RazorpayOrderId,
+                    Amount,
+                    Status,
+                    PaymentMethod,
+                    CustomerEmail,
+                    TransactionDate,
+                    CreatedAt,
+                    ErrorDescription
+                ) VALUES (
+                    @PaymentLinkId,
+                    @TenderId,
+                    @TenderBidId,
+                    @RazorpayRefundId,
+                    @RazorpayOrderId,
+                    @Amount,
+                    'Refunded',
+                    'REFUND_RETRY',
+                    @CustomerEmail,
+                    GETUTCDATE(),
+                    GETUTCDATE(),
+                    'Refund retry successful'
+                )";
+
+                    await connection.ExecuteAsync(insertTransactionSql, new
+                    {
+                        PaymentLinkId = $"REFUND_RETRY_{refundDetails.RazorpayPaymentId}",
+                        TenderId = refundDetails.TenderId,
+                        TenderBidId = refundDetails.TenderBidId,
+                        RazorpayRefundId = refundResponse.RefundId,
+                        RazorpayOrderId = refundDetails.RazorpayOrderId,
+                        Amount = -refundDetails.FinalRefundAmount,
+                        CustomerEmail = refundDetails.BidderEmail
+                    }, transaction);
+
+                    // Update TenderBid payment status
+                    var updateBidSql = @"
+                UPDATE tb 
+                SET tb.PaymentStatus = 'Refunded'
+                FROM TenderBids tb
+                WHERE tb.Id = @TenderBidId";
+
+                    await connection.ExecuteAsync(updateBidSql,
+                        new { TenderBidId = refundDetails.TenderBidId },
+                        transaction);
+
+                    transaction.Commit();
+
+                    _logger.LogInformation($"Refund retry successful. Refund ID: {refundResponse.RefundId}");
+
+                    return new RetryRefundResult
+                    {
+                        Success = true,
+                        Message = $"Refund processed successfully. Amount ₹{refundDetails.FinalRefundAmount:N2} has been refunded.",
+                        RazorpayRefundId = refundResponse.RefundId
+                    };
+                }
+                else
+                {
+                    // Update with new error message
+                    var updateFailureSql = @"
+                UPDATE RefundPayments 
+                SET RefundErrorMessage = @ErrorMessage
+                WHERE Id = @RefundPaymentId";
+
+                    await connection.ExecuteAsync(updateFailureSql, new
+                    {
+                        RefundPaymentId = refundPaymentId,
+                        ErrorMessage = $"Retry failed: {refundResponse.ErrorMessage}"
+                    }, transaction);
+
+                    transaction.Commit();
+
+                    _logger.LogError($"Refund retry failed: {refundResponse.ErrorMessage}");
+
+                    return new RetryRefundResult
+                    {
+                        Success = false,
+                        Message = $"Refund retry failed: {refundResponse.ErrorMessage}"
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                _logger.LogError(ex, $"Error retrying refund {refundPaymentId}");
+
+                // Update error message in database
+                try
+                {
+                    using var errorConnection = new SqlConnection(_connectionString);
+                    var updateErrorSql = @"
+                UPDATE RefundPayments 
+                SET RefundErrorMessage = @ErrorMessage
+                WHERE Id = @RefundPaymentId";
+
+                    await errorConnection.ExecuteAsync(updateErrorSql, new
+                    {
+                        RefundPaymentId = refundPaymentId,
+                        ErrorMessage = $"Retry exception: {ex.Message}"
+                    });
+                }
+                catch
+                {
+                    // Log but don't throw
+                }
+
+                return new RetryRefundResult
+                {
+                    Success = false,
+                    Message = $"An error occurred while retrying the refund: {ex.Message}"
+                };
+            }
+        }
+
     }
 }
