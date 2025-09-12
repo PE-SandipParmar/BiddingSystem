@@ -35,13 +35,13 @@ namespace BiddingSystem.Controllers
 
         // GET: /Payment/Pay/{linkId}?token={securityToken}
         [HttpGet]
-        [Route("Payment/Pay/{linkId}")]
-        public async Task<IActionResult> Pay(string linkId, string token)
+        [Route("Payment/Pay")]
+        public async Task<IActionResult> Pay(string token)
         {
             try
             {
                 // Validate link ID
-                if (string.IsNullOrEmpty(linkId) || string.IsNullOrEmpty(token))
+                if (string.IsNullOrEmpty(token))
                 {
                     return View("InvalidLink");
                 }
@@ -117,7 +117,7 @@ namespace BiddingSystem.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing payment link: {LinkId}", linkId);
+                _logger.LogError(ex, "Error processing payment link: {token}", token);
                 return View("Error");
             }
         }
