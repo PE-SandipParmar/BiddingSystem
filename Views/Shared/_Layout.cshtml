@@ -253,8 +253,7 @@
                         <span class="sidebar-text">Refund Management</span>
                     </a>
                     @if (User.IsInRole("Admin") || User.IsInRole("Maker") || User.IsInRole("Checker"))
-                    {
-                       
+                    {                       
                         <a asp-controller="Refund" asp-action="ApprovedRefunds"
                            class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
                            data-nav="my-refunds">

@@ -7,6 +7,7 @@ namespace BiddingSystem.Data
         Task<RazorpayOrderResponse> CreateOrderAsync(PaymentLink paymentLink, TenderBid tenderBid);
         Task<PaymentVerificationResult> VerifyPaymentAsync(string paymentId, string orderId, string signature);
         bool VerifyWebhookSignature(string payload, string signature);
+
     }
 
     public class RazorpayOrderResponse
@@ -25,5 +26,28 @@ namespace BiddingSystem.Data
         public string PaymentId { get; set; }
         public string OrderId { get; set; }
         public string Message { get; set; }
+    }
+
+    public class RefundResponse
+    {
+        public bool Success { get; set; }
+        public string RefundId { get; set; }
+        public string PaymentId { get; set; }
+        public decimal Amount { get; set; }
+        public string Status { get; set; }
+        public string SpeedProcessed { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string Receipt { get; set; }
+        public string ErrorMessage { get; set; }
+        public string ErrorCode { get; set; }
+        public string RawResponse { get; set; }
+    }
+
+    public class RazorRefundStatus
+    {
+        public string RefundId { get; set; }
+        public string Status { get; set; }
+        public decimal Amount { get; set; }
+        public DateTime? ProcessedAt { get; set; }
     }
 }
