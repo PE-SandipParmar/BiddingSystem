@@ -265,6 +265,9 @@ namespace BiddingSystem.ViewModels
         public List<TenderBidDocument> ExistingDocuments { get; set; } = new List<TenderBidDocument>();
         public List<TenderBidDocument> Documents { get; set; } = new List<TenderBidDocument>();
 
+        public bool HasRefund { get; set; }
+        public RefundPaymentInfo? RefundInfo { get; set; }
+
         // Computed properties
         public string StatusDisplayName => Status;
         public string StatusBadgeClass => Status switch
@@ -429,5 +432,39 @@ namespace BiddingSystem.ViewModels
         public List<Tender> AvailableTenders { get; set; } = new List<Tender>();
         public List<string> StatusOptions { get; set; } = new List<string> { "Submitted", "Under Review", "Accepted", "Rejected", "Withdrawn" };
         public List<string> PaymentStatusOptions { get; set; } = new List<string> { "Pending", "Paid", "Failed", "Refunded" };
+    }
+
+    public class RefundPaymentInfo
+    {
+        public int RefundPaymentId { get; set; }
+        public decimal RefundAmount { get; set; }
+        public string RefundStatus { get; set; }
+        public string? RazorpayRefundId { get; set; }
+        public string? ReasonForRefund { get; set; }
+        public DateTime? InitiatedAt { get; set; }
+        public DateTime? ApprovedAt { get; set; }
+        public string? CheckerRemarks { get; set; }
+        public string? RefundErrorMessage { get; set; }
+        public string? InitiatedByName { get; set; }
+        public string? ApprovedByName { get; set; }
+        public string? OriginalPaymentId { get; set; }
+        public decimal? OriginalPaymentAmount { get; set; }
+
+        public string RefundStatusBadgeClass
+        {
+            get
+            {
+                return RefundStatus switch
+                {
+                    "Approved" => "bg-green-100 text-green-800",
+                    "Pending" => "bg-yellow-100 text-yellow-800",
+                    "Failed" => "bg-red-100 text-red-800",
+                    "Rejected" => "bg-gray-100 text-gray-800",
+                    _ => "bg-gray-100 text-gray-800"
+                };
+            }
+        }
+
+        public bool IsProcessedSuccessfully => RefundStatus == "Approved" && !string.IsNullOrEmpty(RazorpayRefundId);
     }
 }

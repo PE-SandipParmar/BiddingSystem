@@ -1,3 +1,4 @@
+using BiddingSystem.ViewModels;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -108,6 +109,9 @@ namespace BiddingSystem.Models
         [StringLength(500)]
         [Display(Name = "Allocation Remarks")]
         public string? AllocationRemarks { get; set; }
+
+        [NotMapped]
+        public RefundPaymentInfo? RefundInfo { get; set; }
 
         // Navigation properties
         public virtual ICollection<TenderBidDocument> Documents { get; set; } = new List<TenderBidDocument>();

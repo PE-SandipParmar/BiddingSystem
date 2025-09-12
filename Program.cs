@@ -30,6 +30,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEMDSDService, EMDSDService>();
 builder.Services.AddScoped<ITenderBidService, TenderBidService>();
 
+
 // Configure options
 builder.Services.Configure<PasswordOptions>(
     builder.Configuration.GetSection("PasswordOptions"));
