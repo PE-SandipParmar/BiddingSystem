@@ -1,0 +1,86 @@
+﻿@model BiddingSystem.Models.PaymentRequest
+@{
+    ViewData["Title"] = "Make Payment";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fa fa-credit-card"></i> Payment Details</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="ProcessRequestOrder" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Name" class="control-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-user"></i></span>
+                                <input asp-for="Name" class="form-control" placeholder="Enter your full name" />
+                            </div>
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Email" class="control-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-envelope"></i></span>
+                                <input asp-for="Email" class="form-control" placeholder="email@example.com" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="PhoneNumber" class="control-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-phone"></i></span>
+                                <input asp-for="PhoneNumber" class="form-control" placeholder="+91 9999999999" />
+                            </div>
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Address" class="control-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-home"></i></span>
+                                <textarea asp-for="Address" class="form-control" rows="2" placeholder="Enter your address"></textarea>
+                            </div>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Amount" class="control-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input asp-for="Amount" class="form-control" placeholder="Enter amount" />
+                            </div>
+                            <span asp-validation-for="Amount" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Description" class="control-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-info-circle"></i></span>
+                                <input asp-for="Description" class="form-control" placeholder="Payment description (optional)" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary btn-block w-100">
+                                <i class="fa fa-arrow-right"></i> Proceed to Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

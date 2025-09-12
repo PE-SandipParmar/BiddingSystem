@@ -1,0 +1,68 @@
+﻿@{
+    ViewData["Title"] = "Payment Successful";
+    Layout = "~/Views/Shared/_PaymentLayout.cshtml";
+    var paymentId = ViewBag.PaymentId;
+    var linkId = ViewBag.LinkId;
+}
+
+<div class="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
+            <div class="text-center">
+                <!-- Success Icon -->
+                <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-4">
+                    <i class="ri-checkbox-circle-fill text-green-600 text-4xl animate-pulse"></i>
+                </div>
+
+                <!-- Success Message -->
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
+                <p class="text-sm text-gray-600 mb-6">Your payment has been processed successfully</p>
+
+                <!-- Payment Details -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Payment ID:</span>
+                            <span class="text-sm font-mono font-medium text-gray-900">@paymentId</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Link ID:</span>
+                            <span class="text-sm font-mono font-medium text-gray-900">@linkId</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Status:</span>
+                            <span class="text-sm font-medium text-green-600">Completed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Steps -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h3 class="text-sm font-medium text-blue-900 mb-2">Next Steps</h3>
+                    <ul class="text-sm text-blue-700 space-y-1 text-left">
+                        <li>• A confirmation email has been sent to your registered email</li>
+                        <li>• Keep the payment receipt for your records</li>
+                        <li>• You can now proceed with tender submission</li>
+                    </ul>
+                </div>
+
+                <!-- Actions -->
+                <div class="space-y-3">
+                    <button onclick="window.print()" class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        <i class="ri-printer-line mr-2"></i> Print Receipt
+                    </button>
+                    <a href="/" class="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        <i class="ri-home-line mr-2"></i> Return to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Information -->
+        <div class="mt-6 text-center">
+            <p class="text-xs text-gray-500">
+                For any queries, contact support with Reference: @paymentId
+            </p>
+        </div>
+    </div>
+</div>

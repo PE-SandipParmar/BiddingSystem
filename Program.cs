@@ -9,6 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllersWithViews();
 
+// Register Payment Service
+builder.Services.AddScoped<IRazorpayPaymentService, RazorpayPaymentService>();
+builder.Services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
+builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITenderRepository, TenderRepository>();
 

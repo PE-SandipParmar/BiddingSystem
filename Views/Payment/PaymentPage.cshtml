@@ -1,0 +1,218 @@
+﻿@model BiddingSystem.Models.MerchantOrder
+@{
+    ViewData["Title"] = "Complete Payment";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4>Order Summary</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Order ID:</strong> @Model.OrderId
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Amount:</strong> ₹@(Model.Amount / 100)
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Name:</strong> @Model.Name
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Email:</strong> @Model.Email
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <strong>Description:</strong> @Model.Description
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button id="rzp-button" class="btn btn-success btn-lg">
+                            <i class="fa fa-lock"></i> Pay Now ₹@(Model.Amount / 100)
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fa fa-shield"></i> Secured by Razorpay
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Methods Info -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6>Accepted Payment Methods:</h6>
+                    <div class="payment-methods">
+                        <span class="badge bg-secondary m-1">Credit Card</span>
+                        <span class="badge bg-secondary m-1">Debit Card</span>
+                        <span class="badge bg-secondary m-1">UPI</span>
+                        <span class="badge bg-secondary m-1">Net Banking</span>
+                        <span class="badge bg-secondary m-1">Wallets</span>
+                        <span class="badge bg-secondary m-1">EMI</span>
+                        <span class="badge bg-secondary m-1">PayLater</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Razorpay Checkout Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    // Razorpay checkout configuration
+    var options = {
+        "key": "@Model.RazorpayKey", // Enter the Key ID generated from the Dashboard
+        "amount": "@Model.Amount", // Amount is in currency subunits (paise)
+        "currency": "@Model.Currency",
+        "name": "Axis EasyPay", // Your business name
+        "description": "@Model.Description",
+        "image": "/images/logo.png", // Your logo URL
+        "order_id": "@Model.OrderId", // Order ID from backend
+
+        // Handler function for successful payment
+        "handler": function (response) {
+            // Payment successful - verify on backend
+            verifyPayment(response);
+        },
+
+        // Prefill customer information
+        "prefill": {
+            "name": "@Model.Name",
+            "email": "@Model.Email",
+            "contact": "@Model.PhoneNumber"
+        },
+
+        // Additional options
+        "notes": {
+            "address": "@Model.Address"
+        },
+
+        // Theme customization
+        "theme": {
+            "color": "#3399cc"
+        },
+
+        // Modal options
+        "modal": {
+            "ondismiss": function() {
+                alert('Payment cancelled by user');
+                window.location.href = '/Payment/Failed';
+            }
+        },
+
+        // Payment method configuration - all methods enabled
+        "config": {
+            "display": {
+                "blocks": {
+                    "utib": { // Axis Bank
+                        "name": "Axis Bank",
+                        "instruments": [
+                            {
+                                "method": "card"
+                            },
+                            {
+                                "method": "netbanking"
+                            },
+                            {
+                                "method": "upi"
+                            },
+                            {
+                                "method": "wallet"
+                            }
+                        ]
+                    },
+                    "other": { // Other payment methods
+                        "name": "Other Payment modes",
+                        "instruments": [
+                            {
+                                "method": "card"
+                            },
+                            {
+                                "method": "netbanking"
+                            },
+                            {
+                                "method": "upi"
+                            },
+                            {
+                                "method": "wallet"
+                            },
+                            {
+                                "method": "emi"
+                            },
+                            {
+                                "method": "paylater"
+                            }
+                        ]
+                    }
+                },
+                "sequence": ["block.utib", "block.other"],
+                "preferences": {
+                    "show_default_blocks": true
+                }
+            }
+        }
+    };
+
+    // Create Razorpay instance
+    var rzp = new Razorpay(options);
+
+    // Handle payment failures
+    rzp.on('payment.failed', function (response) {
+        console.error('Payment failed:', response.error);
+        alert('Payment failed: ' + response.error.description);
+        window.location.href = '/Payment/Failed';
+    });
+
+    // Attach click event to pay button
+    document.getElementById('rzp-button').onclick = function(e) {
+        rzp.open();
+        e.preventDefault();
+    }
+
+    // Function to verify payment on backend
+    function verifyPayment(paymentResponse) {
+        // Show loading indicator
+        document.getElementById('rzp-button').disabled = true;
+        document.getElementById('rzp-button').innerHTML = '<i class="fa fa-spinner fa-spin"></i> Verifying Payment...';
+
+        // Send payment details to backend for verification
+        fetch('/Payment/VerifyPayment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+            },
+            body: JSON.stringify({
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_signature: paymentResponse.razorpay_signature
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Payment verified successfully
+                window.location.href = '/Payment/Success?paymentId=' + paymentResponse.razorpay_payment_id;
+            } else {
+                // Verification failed
+                alert('Payment verification failed: ' + data.message);
+                window.location.href = '/Payment/Failed';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while verifying payment');
+            window.location.href = '/Payment/Failed';
+        });
+    }
+</script>
