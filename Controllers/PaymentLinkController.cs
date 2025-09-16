@@ -17,6 +17,7 @@ namespace BiddingSystem.Controllers
         private readonly ITenderBidRepository _tenderBidRepository;
         private readonly ISecurityService _securityService;
         private readonly IEMDSDRepository _emdSdRepository;
+        private readonly ISmsService _smsService;
         private readonly ILogger<PaymentLinkController> _logger;
 
         public PaymentLinkController(
@@ -25,6 +26,7 @@ namespace BiddingSystem.Controllers
             ITenderBidRepository tenderBidRepository,
             ISecurityService securityService,
             IEMDSDRepository emdSdRepository,
+            ISmsService smsService,
             ILogger<PaymentLinkController> logger)
         {
             _paymentLinkRepository = paymentLinkRepository;
@@ -32,6 +34,7 @@ namespace BiddingSystem.Controllers
             _tenderBidRepository = tenderBidRepository;
             _securityService = securityService;
             _emdSdRepository = emdSdRepository;
+            _smsService = smsService;
             _logger = logger;
         }
 
@@ -166,6 +169,42 @@ namespace BiddingSystem.Controllers
                 };
 
                 await _paymentLinkRepository.CreateAsync(paymentLink);
+
+                // Send SMS to bidder if tender bid is linked
+                if (model.TenderBidId.HasValue)
+                {
+                    try
+                    {
+                        var tenderBid = await _tenderBidRepository.GetBidByIdAsync(model.TenderBidId.Value);
+                        if (tenderBid != null && !string.IsNullOrEmpty(tenderBid.BidderPhone))
+                        {
+                            var smsSent = await _smsService.SendPaymentLinkSmsAsync(
+                                tenderBid.BidderPhone, 
+                                paymentLink.PaymentUrl, 
+                                tenderBid.BidderName);
+                            
+                            if (smsSent)
+                            {
+                                _logger.LogInformation("SMS sent successfully to bidder {BidderName} at {PhoneNumber} for payment link {LinkId}", 
+                                    tenderBid.BidderName, tenderBid.BidderPhone, paymentLink.LinkId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to send SMS to bidder {BidderName} at {PhoneNumber} for payment link {LinkId}", 
+                                    tenderBid.BidderName, tenderBid.BidderPhone, paymentLink.LinkId);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No valid phone number found for bidder in tender bid {TenderBidId}", model.TenderBidId.Value);
+                        }
+                    }
+                    catch (Exception smsEx)
+                    {
+                        _logger.LogError(smsEx, "Error sending SMS for payment link {LinkId}", paymentLink.LinkId);
+                        // Don't fail the payment link creation if SMS fails
+                    }
+                }
 
                 TempData["SuccessMessage"] = "Payment link generated successfully.";
                 return RedirectToAction("Details", new { id = paymentLink.Id });

@@ -44,6 +44,7 @@ builder.Services.Configure<SecurityOptions>(
 // Register security services
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ISmsService, SmsService>();
 builder.Services.AddScoped<IPaymentLinkRepository, PaymentLinkRepository>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
 builder.Services.AddScoped<IInputValidationService, InputValidationService>();
