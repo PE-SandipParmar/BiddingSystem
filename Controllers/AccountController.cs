@@ -277,7 +277,7 @@ namespace BiddingSystem.Controllers
             var userName = User.Identity?.Name;
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             _logger.LogInformation($"User {userName} logged out");
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Login", "Account");
         }
 
         // GET: /Account/ForgotPassword

@@ -148,7 +148,7 @@
             
             <div>
                 <label asp-for="TenderOpeningDate" class="block text-sm font-medium text-gray-700 mb-2">
-                    Tender Opening Date
+                    Tender Allocation Date
                 </label>
                 <input asp-for="TenderOpeningDate" type="date" 
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base">
@@ -419,7 +419,7 @@ else
                     const closingDate = new Date(tenderClosingDate);
                     
                     if (openingDate <= closingDate) {
-                        errors.push('Tender opening date should be after closing date');
+                        errors.push('Tender Allocation date should be after closing date');
                         showFieldError(document.getElementById('TenderOpeningDate'), 'Should be after closing date');
                     }
                 }
@@ -479,7 +479,7 @@ else
                     'EstimatedValue': 'Estimated Value',
                     'LastDateEmd': 'Last Date to Pay EMD',
                     'TenderClosingDate': 'Tender Closing Date',
-                    'TenderOpeningDate': 'Tender Opening Date'
+                    'TenderOpeningDate': 'Tender Allocation Date'
                 };
                 return displayNames[fieldName] || fieldName;
             }

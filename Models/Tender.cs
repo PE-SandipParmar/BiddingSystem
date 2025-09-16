@@ -59,7 +59,7 @@ namespace BiddingSystem.Models
         [Display(Name = "Tender Closing Date")]
         public DateTime? TenderClosingDate { get; set; }
 
-        [Display(Name = "Tender Opening Date")]
+        [Display(Name = "Tender Allocation Date")]
         public DateTime? TenderOpeningDate { get; set; }
 
         [Display(Name = "Status")]
