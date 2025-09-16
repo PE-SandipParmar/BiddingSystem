@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "Invalid Payment Link";
+    Layout = "~/Views/Shared/_PaymentLayout.cshtml";
+}
+
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
+            <div class="text-center">
+                <!-- Error Icon -->
+                <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-100 mb-4">
+                    <i class="ri-link-unlink-m text-gray-600 text-4xl"></i>
+                </div>
+
+                <!-- Error Message -->
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Invalid Payment Link</h2>
+                <p class="text-sm text-gray-600 mb-6">The payment link you are trying to access is invalid or has been removed</p>
+
+                <!-- Information -->
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                    <p class="text-sm text-gray-700">
+                        Please ensure you have the correct payment link URL and try again. If you continue to experience issues, contact the administrator.
+                    </p>
+                </div>
+
+                <!-- Action -->
+                <a href="/" class="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    <i class="ri-home-line mr-2"></i> Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

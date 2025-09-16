@@ -529,7 +529,11 @@ namespace BiddingSystem.Controllers
                 UpdatedAt = bid.UpdatedAt,
                 Remarks = bid.Remarks,
                 Tender = bid.Tender,
-                Documents = bid.Documents.ToList()
+                Documents = bid.Documents.ToList(),
+
+                // Add refund information
+                HasRefund = bid.RefundInfo != null,
+                RefundInfo = bid.RefundInfo
             };
         }
     }

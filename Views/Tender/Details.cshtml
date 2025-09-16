@@ -263,7 +263,7 @@
             @if (Model.Bids.Any())
             {
                 <div class="space-y-3">
-                    @foreach (var bid in Model.Bids.Take(5))
+                    @foreach (var bid in Model.Bids)
                     {
                         <a href="/TenderBid/Details/@bid.Id" class="flex items-center justify-between p-3 border border-gray-200 rounded-lg @(bid.Status == "Accepted" ? "bg-green-50 border-green-300" : "")">
                             <div class="flex items-center">
@@ -307,14 +307,14 @@
                         </a>
                     }
 
-                    @if (Model.Bids.Count > 5)
+                   @*  @if (Model.Bids.Count > 5)
                     {
                         <div class="text-center">
                             <a asp-controller="TenderBid" asp-action="Index" asp-route-tenderId="@Model.Id" class="text-primary hover:text-primary/80 text-sm">
                                 View all @Model.Bids.Count bids
                             </a>
                         </div>
-                    }
+                    } *@
                 </div>
             }
             else

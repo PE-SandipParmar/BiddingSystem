@@ -14,6 +14,8 @@
         public bool HasPendingRefund { get; set; }
         public int? RefundPaymentId { get; set; }
         public string? RefundStatus { get; set; }
+        public string? RazorpayRefundId { get; set; }
+        public string? RefundErrorMessage { get; set; }
     }
 
     public class RefundStatistics
@@ -21,6 +23,7 @@
         public int TotalPendingRefunds { get; set; }
         public int TotalApprovedRefunds { get; set; }
         public int TotalRejectedRefunds { get; set; }
+        public int TotalFailedRefunds { get; set; } // ADD THIS 
         public decimal TotalRefundAmount { get; set; }
         public decimal PendingRefundAmount { get; set; }
         public decimal ApprovedRefundAmount { get; set; }
@@ -57,6 +60,10 @@
         public string? CheckerRemarks { get; set; }
         public string? ApprovedByName { get; set; }
         public bool PaymentProcessed { get; set; }
+
+        // ADD THESE NEW PROPERTIES
+        public string RazorpayRefundId { get; set; }
+        public string RefundErrorMessage { get; set; }
     }
     public class PaginatedList<T>
     {

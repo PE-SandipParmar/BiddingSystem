@@ -7,6 +7,7 @@ using BiddingSystem.ViewModels;
 using System.Security.Claims;
 using Microsoft.Extensions.Logging;
 using BiddingSystem.Data;
+using static BiddingSystem.Data.RefundRepository;
 
 namespace BiddingSystem.Controllers
 {
@@ -237,29 +238,83 @@ namespace BiddingSystem.Controllers
                 }
 
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
-                var result = await _refundRepository.ProcessRefundsAsync(
-                    request.RefundPaymentIds,
-                    request.Action,
-                    request.CheckerRemarks ?? "",
-                    userId
-                );
 
-                if (result)
+                try
                 {
-                    var actionText = request.Action == "Approve" ? "approved" : "rejected";
+                    var result = await _refundRepository.ProcessRefundsAsync(
+                        request.RefundPaymentIds,
+                        request.Action,
+                        request.CheckerRemarks ?? "",
+                        userId
+                    );
+
+                    if (result)
+                    {
+                        var actionText = request.Action == "Approve" ? "approved" : "rejected";
+                        return Json(new
+                        {
+                            success = true,
+                            message = $"All {request.RefundPaymentIds.Count} refund(s) {actionText} successfully!",
+                            allSuccessful = true
+                        });
+                    }
+                    else
+                    {
+                        // Some refunds may have failed
+                        return Json(new
+                        {
+                            success = false,
+                            message = "Some refunds could not be processed. Please check the refund status for details.",
+                            allSuccessful = false
+                        });
+                    }
+                }
+                catch (PartialSuccessException psEx)
+                {
+                    // Handle partial success scenario
+                    _logger.LogWarning(psEx, "Partial success in refund processing");
+
+                    var successCount = psEx.SuccessfulRefunds?.Count ?? 0;
+                    var failCount = psEx.FailedRefunds?.Count ?? 0;
+
                     return Json(new
                     {
-                        success = true,
-                        message = $"Refund(s) {actionText} successfully for {request.RefundPaymentIds.Count} record(s)!"
+                        success = false,
+                        partialSuccess = true,
+                        message = $"Partial success: {successCount} refund(s) processed successfully, {failCount} failed.",
+                        details = new
+                        {
+                            successful = psEx.SuccessfulRefunds,
+                            failed = psEx.FailedRefunds?.Select(f => new {
+                                refundId = f.RefundId,
+                                error = f.Error
+                            })
+                        },
+                        allSuccessful = false
                     });
                 }
+                catch (Exception refundEx)
+                {
+                    // Complete failure - all changes rolled back
+                    _logger.LogError(refundEx, "Complete failure in refund processing - all changes rolled back");
 
-                return Json(new { success = false, message = "Failed to process refund requests." });
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Failed to process refunds. All changes have been rolled back. Error: {refundEx.Message}",
+                        allSuccessful = false,
+                        rolledBack = true
+                    });
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in ProcessRefunds");
-                return Json(new { success = false, message = "An error occurred: " + ex.Message });
+                return Json(new
+                {
+                    success = false,
+                    message = "An unexpected error occurred: " + ex.Message
+                });
             }
         }
 
@@ -294,5 +349,72 @@ namespace BiddingSystem.Controllers
                 return RedirectToAction("ApprovedRefunds");
             }
         }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin,Checker,Approver")]
+        public async Task<IActionResult> RetryRefund([FromBody] RetryRefundRequest request)
+        {
+            try
+            {
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+
+                // Only Checker, Approver, and Admin can retry refunds
+                if (userRole != "Checker" && userRole != "Admin" && userRole != "Approver")
+                {
+                    return Json(new { success = false, message = "You don't have permission to retry refunds." });
+                }
+
+                if (request.RefundPaymentId <= 0)
+                {
+                    return Json(new { success = false, message = "Invalid refund payment ID." });
+                }
+
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
+
+                // Call repository to retry the refund
+                var result = await _refundRepository.RetryFailedRefundAsync(request.RefundPaymentId, userId);
+
+                if (result.Success)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = result.Message,
+                        refundId = result.RazorpayRefundId
+                    });
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = result.Message
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrying refund: {RefundPaymentId}", request.RefundPaymentId);
+                return Json(new
+                {
+                    success = false,
+                    message = "An error occurred while retrying the refund: " + ex.Message
+                });
+            }
+        }
+
     }
+}
+
+// Add this class to your ViewModels
+public class RetryRefundRequest
+{
+    public int RefundPaymentId { get; set; }
+}
+
+public class RetryRefundResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; }
+    public string? RazorpayRefundId { get; set; }
 }

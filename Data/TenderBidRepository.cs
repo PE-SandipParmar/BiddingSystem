@@ -3,6 +3,7 @@ using BiddingSystem.Models;
 using System.Data.SqlClient;
 using System.Data;
 using Microsoft.Extensions.Configuration;
+using BiddingSystem.ViewModels;
 
 namespace BiddingSystem.Data
 {
@@ -42,11 +43,13 @@ namespace BiddingSystem.Data
         public async Task<TenderBid?> GetBidByIdAsync(int id)
         {
             using var connection = CreateConnection();
+
+            // First get the bid with tender information
             const string sql = @"
-                SELECT tb.*, t.*
-                FROM TenderBids tb
-                LEFT JOIN Tenders t ON tb.TenderId = t.Id
-                WHERE tb.Id = @Id AND tb.IsActive = 1";
+        SELECT tb.*, t.*
+        FROM TenderBids tb
+        LEFT JOIN Tenders t ON tb.TenderId = t.Id
+        WHERE tb.Id = @Id AND tb.IsActive = 1";
 
             var result = await connection.QueryAsync<TenderBid, Tender, TenderBid>(sql, (bid, tender) =>
             {
@@ -55,13 +58,68 @@ namespace BiddingSystem.Data
             }, new { Id = id }, splitOn: "Id");
 
             var bid = result.FirstOrDefault();
+
             if (bid != null)
             {
                 // Load documents for this bid
                 bid.Documents = (await GetBidDocumentsAsync(id)).ToList();
+
+                // Load refund information if exists
+                bid.RefundInfo = await GetRefundInfoForBidAsync(id);
             }
 
             return bid;
+        }
+
+        public async Task<RefundPaymentInfo?> GetRefundInfoForBidAsync(int tenderBidId)
+        {
+            using var connection = CreateConnection();
+
+            const string sql = @"
+        SELECT 
+            rp.Id as RefundPaymentId,
+            rp.RefundAmount,
+            rp.RefundStatus,
+            rp.RazorpayRefundId,
+            rp.ReasonForRefund,
+            rp.InitiatedAt,
+            rp.ApprovedAt,
+            rp.CheckerRemarks,
+            rp.RefundErrorMessage,
+            u1.Username as InitiatedByName,
+            u2.Username as ApprovedByName,
+            pt.RazorpayPaymentId as OriginalPaymentId,
+            pt.Amount as OriginalPaymentAmount
+        FROM RefundPayments rp
+        LEFT JOIN Users u1 ON rp.InitiatedBy = u1.Id
+        LEFT JOIN Users u2 ON rp.ApprovedBy = u2.Id
+        LEFT JOIN PaymentTransactions pt ON pt.TenderBidId = rp.TenderBidId 
+            AND pt.Status = 'Success' 
+            AND pt.PaymentMethod != 'REFUND'
+        WHERE rp.TenderBidId = @TenderBidId 
+        AND rp.RefundStatus IN ('Pending', 'Approved', 'Failed')
+        ORDER BY rp.InitiatedAt DESC";
+
+            var result = await connection.QueryFirstOrDefaultAsync<dynamic>(sql, new { TenderBidId = tenderBidId });
+
+            if (result == null) return null;
+
+            return new RefundPaymentInfo
+            {
+                RefundPaymentId = result.RefundPaymentId,
+                RefundAmount = result.RefundAmount,
+                RefundStatus = result.RefundStatus,
+                RazorpayRefundId = result.RazorpayRefundId,
+                ReasonForRefund = result.ReasonForRefund,
+                InitiatedAt = result.InitiatedAt,
+                ApprovedAt = result.ApprovedAt,
+                CheckerRemarks = result.CheckerRemarks,
+                RefundErrorMessage = result.RefundErrorMessage,
+                InitiatedByName = result.InitiatedByName,
+                ApprovedByName = result.ApprovedByName,
+                OriginalPaymentId = result.OriginalPaymentId,
+                OriginalPaymentAmount = result.OriginalPaymentAmount
+            };
         }
 
         public async Task<TenderBid?> GetBidByPaymentReferenceAsync(string paymentReference)

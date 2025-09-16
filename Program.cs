@@ -1,5 +1,6 @@
 ﻿using BiddingSystem.Data;
 using BiddingSystem.Models;
+using BiddingSystem.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.FileProviders;
@@ -8,6 +9,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddControllersWithViews();
+
+// Register Payment Service
+builder.Services.AddScoped<IRazorpayService, RazorpayService>();
+builder.Services.AddScoped<IRazorpayPaymentService, RazorpayPaymentService>();
+builder.Services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
+builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITenderRepository, TenderRepository>();
@@ -22,6 +29,7 @@ builder.Services.AddScoped<IRefundRepository, RefundRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IEMDSDService, EMDSDService>();
 builder.Services.AddScoped<ITenderBidService, TenderBidService>();
+
 
 // Configure options
 builder.Services.Configure<PasswordOptions>(
