@@ -301,6 +301,13 @@ namespace BiddingSystem.ViewModels
         public string? SearchTerm { get; set; }
         public string? Status { get; set; }
         public string? PaymentStatus { get; set; }
+
+        // Add these new properties for tender selection:
+        public int? SelectedTenderId { get; set; }
+        public string? SelectedTenderName { get; set; }
+        public List<Tender> AvailableTenders { get; set; } = new List<Tender>();
+
+
         public List<string> StatusOptions { get; set; } = new List<string> { "Submitted", "Under Review", "Accepted", "Rejected", "Withdrawn" };
         public List<string> PaymentStatusOptions { get; set; } = new List<string> { "Pending", "Paid", "Failed", "Refunded" };
     }

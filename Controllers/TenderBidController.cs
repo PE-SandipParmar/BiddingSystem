@@ -32,8 +32,9 @@ namespace BiddingSystem.Controllers
         }
 
         // GET: TenderBid
+
         [Authorize(Roles = "Admin,Maker,Checker")]
-        public async Task<IActionResult> Index(string searchTerm = "", string status = "", string paymentStatus = "", int page = 1, int pageSize = 25)
+        public async Task<IActionResult> Index(int? tenderId = null, string searchTerm = "", string status = "", string paymentStatus = "", int page = 1, int pageSize = 25)
         {
             try
             {
@@ -41,7 +42,64 @@ namespace BiddingSystem.Controllers
                 if (page < 1) page = 1;
                 if (pageSize < 1 || pageSize > 100) pageSize = 25;
 
-                var (bids, totalCount) = await _tenderBidService.GetBidsPagedAsync(page, pageSize, searchTerm, status, paymentStatus);
+                // Get all tenders for dropdown
+                var allTenders = await _tenderRepository.GetAllAsync();
+
+                // If tenderId is provided, validate it exists
+                Tender? selectedTender = null;
+                if (tenderId.HasValue)
+                {
+                    selectedTender = await _tenderRepository.GetByIdAsync(tenderId.Value);
+                    if (selectedTender == null)
+                    {
+                        TempData["ErrorMessage"] = "Selected tender not found.";
+                        tenderId = null;
+                    }
+                }
+
+                // Get bids - if tenderId is provided, filter by it
+                IEnumerable<TenderBid> bids;
+                int totalCount;
+
+                if (tenderId.HasValue)
+                {
+                    // Get bids for specific tender
+                    var allBidsForTender = await _tenderBidService.GetBidsByTenderIdAsync(tenderId.Value);
+
+                    // Apply additional filters
+                    var filteredBids = allBidsForTender.AsQueryable();
+
+                    if (!string.IsNullOrEmpty(searchTerm))
+                    {
+                        filteredBids = filteredBids.Where(b =>
+                            b.BidderName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                            b.CompanyName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                            b.BidderEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    if (!string.IsNullOrEmpty(status))
+                    {
+                        filteredBids = filteredBids.Where(b => b.Status == status);
+                    }
+
+                    if (!string.IsNullOrEmpty(paymentStatus))
+                    {
+                        filteredBids = filteredBids.Where(b => b.PaymentStatus == paymentStatus);
+                    }
+
+                    totalCount = filteredBids.Count();
+                    bids = filteredBids
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToList();
+                }
+                else
+                {
+                    // Get all bids with filters
+                    var result = await _tenderBidService.GetBidsPagedAsync(page, pageSize, searchTerm, status, paymentStatus);
+                    bids = result.bids;
+                    totalCount = result.totalCount;
+                }
 
                 var viewModel = new TenderBidListViewModel
                 {
@@ -51,7 +109,10 @@ namespace BiddingSystem.Controllers
                     PageSize = pageSize,
                     SearchTerm = searchTerm,
                     Status = status,
-                    PaymentStatus = paymentStatus
+                    PaymentStatus = paymentStatus,
+                    SelectedTenderId = tenderId,
+                    SelectedTenderName = selectedTender?.TenderTitle,
+                    AvailableTenders = allTenders.Where(t => t.IsActive).ToList()
                 };
 
                 return View(viewModel);

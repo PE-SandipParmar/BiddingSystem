@@ -157,41 +157,47 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
-                                    <a asp-action="Details" asp-route-id="@tender.Id" 
-                                       class="text-primary hover:text-primary/80">
+                                    <a asp-action="Details" asp-route-id="@tender.Id"
+                                       class="text-primary hover:text-primary/80" title="View Details">
                                         <i class="ri-eye-line"></i>
                                     </a>
-                                    
+
+                                    <!-- NEW: View Bids Button -->
+                                    <a asp-controller="TenderBid" asp-action="Index" asp-route-tenderId="@tender.Id"
+                                       class="text-purple-600 hover:text-purple-800" title="View Bids">
+                                        <i class="ri-auction-line"></i>
+                                    </a>
+
                                     @if (tender.IsEditable)
                                     {
-                                        <a asp-action="Edit" asp-route-id="@tender.Id" 
-                                           class="text-blue-600 hover:text-blue-800">
+                                        <a asp-action="Edit" asp-route-id="@tender.Id"
+                                           class="text-blue-600 hover:text-blue-800" title="Edit">
                                             <i class="ri-edit-line"></i>
                                         </a>
-                                        
-                                        <form asp-action="Delete" asp-route-id="@tender.Id" method="post" 
+
+                                        <form asp-action="Delete" asp-route-id="@tender.Id" method="post"
                                               class="inline" onsubmit="return confirm('Are you sure you want to delete this tender?')">
-                                            <button type="submit" class="text-red-600 hover:text-red-800">
+                                            <button type="submit" class="text-red-600 hover:text-red-800" title="Delete">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </form>
                                     }
-                                    
+
                                     @if (tender.Status == TenderStatus.Draft)
                                     {
-                                        <form asp-action="Publish" asp-route-id="@tender.Id" method="post" 
+                                        <form asp-action="Publish" asp-route-id="@tender.Id" method="post"
                                               class="inline" onsubmit="return confirm('Are you sure you want to publish this tender?')">
-                                            <button type="submit" class="text-green-600 hover:text-green-800">
+                                            <button type="submit" class="text-green-600 hover:text-green-800" title="Publish">
                                                 <i class="ri-send-plane-line"></i>
                                             </button>
                                         </form>
                                     }
-                                    
+
                                     @if (tender.Status == TenderStatus.Published)
                                     {
-                                        <form asp-action="Close" asp-route-id="@tender.Id" method="post" 
+                                        <form asp-action="Close" asp-route-id="@tender.Id" method="post"
                                               class="inline" onsubmit="return confirm('Are you sure you want to close this tender?')">
-                                            <button type="submit" class="text-orange-600 hover:text-orange-800">
+                                            <button type="submit" class="text-orange-600 hover:text-orange-800" title="Close">
                                                 <i class="ri-close-circle-line"></i>
                                             </button>
                                         </form>
