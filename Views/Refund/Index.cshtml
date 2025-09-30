@@ -233,6 +233,7 @@
 
 @section Scripts {
     <script>
+        // ===== GLOBAL VARIABLES =====
         let currentPage = 1;
         let pageSize = 10;
         let selectedRefundIds = [];
@@ -243,14 +244,21 @@
         let currentTenderId = null;
         let allRefundData = [];
 
-        // Load data on page load
+        // Store refund items globally for the modal
+        window.pendingRefundItems = null;
+
+        // ===== DEFINE ALL FUNCTIONS IN GLOBAL SCOPE =====
+
+        // Initialize on page load
         $(document).ready(function () {
             console.log('User Role:', userRole);
             console.log('Can Approve:', canApprove);
+            console.log('Can Initiate:', canInitiate);
             loadRefundList();
         });
 
-        function loadRefundList() {
+        // Main function to load refund list
+        window.loadRefundList = function () {
             const searchData = {
                 tenderId: $('#searchTenderId').val(),
                 tenderName: $('#searchTenderName').val(),
@@ -279,18 +287,19 @@
                     showAlert('error', 'Failed to load refund list');
                 }
             });
-        }
+        };
 
-        function renderTable(data) {
+        // Render table data
+        window.renderTable = function (data) {
             const tbody = $('#refundTableBody');
             tbody.empty();
 
             if (!data || data.length === 0) {
                 tbody.append(`
-                        <tr>
-                            <td colspan="9" class="px-6 py-4 text-center text-gray-500">No refund records found</td>
-                        </tr>
-                    `);
+                            <tr>
+                                <td colspan="9" class="px-6 py-4 text-center text-gray-500">No refund records found</td>
+                            </tr>
+                        `);
                 return;
             }
 
@@ -312,15 +321,15 @@
             Object.values(groupedData).forEach(tender => {
                 // Tender header row
                 tbody.append(`
-                        <tr class="bg-gray-100">
-                            <td colspan="9" class="px-6 py-3 font-semibold text-gray-800">
-                                Tender: ${tender.tenderName} (${tender.tenderId})
-                                <button onclick="viewTenderDetails('${tender.tenderId}')" class="ml-4 text-blue-600 hover:text-blue-800 text-sm">
-                                    View Details
-                                </button>
-                            </td>
-                        </tr>
-                    `);
+                            <tr class="bg-gray-100">
+                                <td colspan="9" class="px-6 py-3 font-semibold text-gray-800">
+                                    Tender: ${tender.tenderName} (${tender.tenderId})
+                                    <button onclick="viewTenderDetails('${tender.tenderId}')" class="ml-4 text-blue-600 hover:text-blue-800 text-sm">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
 
                 // Update current tender for select all
                 if (!currentTenderId) {
@@ -336,58 +345,60 @@
                     // Add error info tooltip for failed refunds
                     const errorInfo = item.status === 'Failed' && item.refundErrorMessage
                         ? `<span class="ml-2 text-xs text-red-600" title="${item.refundErrorMessage}">
-                                 <svg class="inline w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                 </svg>
-                               </span>` : '';
+                                     <svg class="inline w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                     </svg>
+                                   </span>` : '';
 
                     tbody.append(`
-                            <tr class="hover:bg-gray-50 ${item.status === 'Failed' ? 'bg-red-50' : ''}">
-                                <td class="px-6 py-4">
-                                    <input type="checkbox"
-                                           value="${item.id}"
-                                           data-tender="${tender.tenderId}"
-                                           data-status="${item.status}"
-                                           data-payment-link-id="${item.paymentLinkId}"
-                                           class="refund-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                           onchange="updateSelection()"
-                                           ${isCheckboxEnabled ? '' : 'disabled'}>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.bidderName}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.companyName}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs rounded-full ${getPaymentTypeClass(item.paymentType)}">
-                                        ${item.paymentType}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">₹${formatAmount(item.amount)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">${item.paymentId || 'N/A'}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">${actionBadge}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    ${statusBadge}
-                                    ${errorInfo}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <a href="/TenderBid/Details/${item.tenderBidId}"
-                                       class="inline-flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                        Bid
-                                    </a>
-                                </td>
-                            </tr>
-                        `);
+                                <tr class="hover:bg-gray-50 ${item.status === 'Failed' ? 'bg-red-50' : ''}">
+                                    <td class="px-6 py-4">
+                                        <input type="checkbox"
+                                               value="${item.id}"
+                                               data-tender="${tender.tenderId}"
+                                               data-status="${item.status}"
+                                               data-payment-link-id="${item.paymentLinkId}"
+                                               data-tender-bid-id="${item.tenderBidId}"
+                                               data-payment-type-value="${item.paymentTypeValue || 1}"
+                                               class="refund-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                               onchange="updateSelection()"
+                                               ${isCheckboxEnabled ? '' : 'disabled'}>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.bidderName}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.companyName}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs rounded-full ${getPaymentTypeClass(item.paymentType)}">
+                                            ${item.paymentType}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">₹${formatAmount(item.amount)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">${item.paymentId || 'N/A'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">${actionBadge}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        ${statusBadge}
+                                        ${errorInfo}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <a href="/TenderBid/Details/${item.tenderBidId}"
+                                           class="inline-flex items-center px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            Bid
+                                        </a>
+                                    </td>
+                                </tr>
+                            `);
                 });
             });
 
             // Update button states after rendering
             updateButtonStates();
-        }
+        };
 
-        function shouldEnableCheckbox(item) {
-            // Debug logging
+        // Check if checkbox should be enabled
+        window.shouldEnableCheckbox = function (item) {
             console.log('Checking checkbox for:', {
                 id: item.id,
                 status: item.status,
@@ -403,7 +414,6 @@
 
             // For Checker/Approver: Enable for both Pending and Failed status
             if (userRole === 'Checker' || userRole === 'Approver') {
-                // Check if item has a refund ID and is either Pending or Failed
                 const isEnabled = item.id > 0 && (item.status === 'Pending' || item.status === 'Failed');
                 console.log('Checker/Approver - Checkbox enabled:', isEnabled);
                 return isEnabled;
@@ -420,45 +430,21 @@
             }
 
             return false;
-        }
+        };
 
-        function getStatusBadge(status) {
-            const statusClasses = {
-                'Pending': 'bg-yellow-100 text-yellow-800',
-                'Pending Approval': 'bg-orange-100 text-orange-800',
-                'Approved': 'bg-green-100 text-green-800',
-                'Rejected': 'bg-red-100 text-red-800',
-                'Failed': 'bg-red-100 text-red-800 font-bold',
-                'Processed': 'bg-blue-100 text-blue-800'
-            };
-            const cssClass = statusClasses[status] || 'bg-gray-100 text-gray-800';
-            return `<span class="px-2 py-1 text-xs font-medium rounded-full ${cssClass}">${status}</span>`;
-        }
+        // Toggle select all
+        window.toggleSelectAll = function () {
+            const isChecked = $('#selectAll').is(':checked');
 
-        function getActionBadge(item) {
-            if (item.status === 'Failed') {
-                return `<span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Retry Required</span>`;
-            } else if (item.actionStatus === 'Awaiting Action') {
-                return `<span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Awaiting Action</span>`;
-            } else if (item.actionStatus === 'Ready to Initiate') {
-                return `<span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">Ready to Initiate</span>`;
-            }
-            return `<span class="text-xs text-gray-500">${item.actionStatus || '-'}</span>`;
-        }
+            $('.refund-checkbox:not(:disabled)').each(function () {
+                $(this).prop('checked', isChecked);
+            });
 
-        function getPaymentTypeClass(type) {
-            const typeStr = String(type).toLowerCase();
-            if (typeStr.includes('bid') || typeStr.includes('emd')) {
-                return 'bg-purple-100 text-purple-800';
-            } else if (typeStr.includes('security')) {
-                return 'bg-indigo-100 text-indigo-800';
-            } else if (typeStr.includes('processing')) {
-                return 'bg-green-100 text-green-800';
-            }
-            return 'bg-gray-100 text-gray-800';
-        }
+            updateSelection();
+        };
 
-        function updateSelection() {
+        // Update selection
+        window.updateSelection = function () {
             selectedRefundIds = [];
             selectedFailedRefundIds = [];
 
@@ -476,9 +462,10 @@
             console.log('Selected IDs:', selectedRefundIds);
             console.log('Failed IDs:', selectedFailedRefundIds);
             updateButtonStates();
-        }
+        };
 
-        function updateButtonStates() {
+        // Update button states
+        window.updateButtonStates = function () {
             const hasSelection = selectedRefundIds.length > 0;
             const hasFailedSelection = selectedFailedRefundIds.length > 0;
             const hasOnlyFailed = selectedFailedRefundIds.length === selectedRefundIds.length && hasSelection;
@@ -509,9 +496,179 @@
                     $('#btnInitiate').prop('disabled', true).addClass('hidden');
                 }
             }
-        }
+        };
 
-        function processSelectedRefunds(action) {
+        // FIXED: Define initiateSelectedRefunds in global scope
+        window.initiateSelectedRefunds = function () {
+            if (selectedRefundIds.length === 0) {
+                showAlert('warning', 'Please select at least one payment for refund');
+                return;
+            }
+
+            // Build refund items from selected rows
+            const refundItems = [];
+
+            $('.refund-checkbox:checked').each(function () {
+                const paymentLinkId = $(this).data('payment-link-id');
+                const tenderBidId = $(this).data('tender-bid-id');
+                const paymentType = $(this).data('payment-type-value');
+
+                if (!paymentLinkId && !tenderBidId) {
+                    // Try to find from allRefundData
+                    const item = allRefundData.find(r => r.id == $(this).val());
+                    if (item) {
+                        refundItems.push({
+                            paymentLinkId: item.paymentLinkId || $(this).val(),
+                            tenderBidId: item.tenderBidId,
+                            paymentType: item.paymentTypeValue || 1
+                        });
+                    }
+                } else {
+                    refundItems.push({
+                        paymentLinkId: paymentLinkId || $(this).val(),
+                        tenderBidId: parseInt(tenderBidId) || 0,
+                        paymentType: parseInt(paymentType) || 1
+                    });
+                }
+            });
+
+            if (refundItems.length === 0) {
+                showAlert('error', 'Unable to get payment details. Please refresh and try again.');
+                return;
+            }
+
+            // Show modal for refund reason
+            showInitiateModal(refundItems);
+        };
+
+        // Show initiate modal
+        window.showInitiateModal = function (refundItems) {
+            const modalHtml = `
+                        <div id="initiateRefundModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                                <div class="mt-3">
+                                    <h3 class="text-lg leading-6 font-medium text-gray-900">Initiate Refund</h3>
+                                    <div class="mt-2 px-7 py-3">
+                                        <p class="text-sm text-gray-600 mb-3">
+                                            You are about to initiate refund for ${refundItems.length} payment(s).
+                                        </p>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Refund Reason</label>
+                                        <select id="refundReasonSelect" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="Tender awarded to another bidder">Tender awarded to another bidder</option>
+                                            <option value="Bid rejected - not meeting requirements">Bid rejected - not meeting requirements</option>
+                                            <option value="Tender cancelled">Tender cancelled</option>
+                                            <option value="Other">Other (specify below)</option>
+                                        </select>
+                                        <textarea id="refundReasonText" rows="3"
+                                                  class="w-full px-3 py-2 mt-3 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hidden"
+                                                  placeholder="Enter custom reason..."></textarea>
+                                    </div>
+                                    <div class="items-center px-4 py-3">
+                                        <button onclick="confirmInitiateRefund()"
+                                                class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            Confirm Initiate Refund
+                                        </button>
+                                        <button onclick="closeInitiateModal()"
+                                                class="mt-3 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+            // Remove existing modal if any
+            $('#initiateRefundModal').remove();
+
+            // Add modal to body
+            $('body').append(modalHtml);
+
+            // Show/hide custom reason textarea based on selection
+            $('#refundReasonSelect').on('change', function () {
+                if ($(this).val() === 'Other') {
+                    $('#refundReasonText').removeClass('hidden');
+                } else {
+                    $('#refundReasonText').addClass('hidden');
+                }
+            });
+
+            // Store refund items globally for confirm function
+            window.pendingRefundItems = refundItems;
+        };
+
+        // Confirm initiate refund
+        window.confirmInitiateRefund = function () {
+            const reasonSelect = $('#refundReasonSelect').val();
+            let reason = reasonSelect;
+
+            if (reasonSelect === 'Other') {
+                reason = $('#refundReasonText').val().trim();
+                if (!reason) {
+                    showAlert('warning', 'Please enter a refund reason');
+                    return;
+                }
+            }
+
+            const refundItems = window.pendingRefundItems;
+
+            if (!refundItems || refundItems.length === 0) {
+                showAlert('error', 'No items selected for refund');
+                closeInitiateModal();
+                return;
+            }
+
+            // Show loading overlay
+            showLoadingOverlay('Initiating Refunds...', `Processing ${refundItems.length} refund request(s)`);
+
+            // Close modal
+            closeInitiateModal();
+
+            // Make AJAX call to initiate refunds
+            $.ajax({
+                url: '/Refund/InitiateRefunds',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    refundItems: refundItems,
+                    reason: reason
+                }),
+                success: function (response) {
+                    hideLoadingOverlay();
+
+                    if (response.success) {
+                        showAlert('success', response.message || `Successfully initiated ${refundItems.length} refund(s) for approval`);
+
+                        // Clear selections
+                        selectedRefundIds = [];
+                        $('.refund-checkbox').prop('checked', false);
+                        $('#selectAll').prop('checked', false);
+
+                        // Reload the list
+                        loadRefundList();
+                    } else {
+                        showAlert('error', response.message || 'Failed to initiate refunds');
+                        if (response.errors && Array.isArray(response.errors)) {
+                            response.errors.forEach(error => showAlert('warning', error));
+                        }
+                    }
+                },
+                error: function (xhr, status, error) {
+                    hideLoadingOverlay();
+                    console.error('Error initiating refunds:', error);
+                    showAlert('error', 'Failed to initiate refunds. Please try again.');
+                }
+            });
+        };
+
+        // Close initiate modal
+        window.closeInitiateModal = function () {
+            $('#initiateRefundModal').remove();
+            window.pendingRefundItems = null;
+        };
+
+        // Process selected refunds (Approve/Reject)
+        window.processSelectedRefunds = function (action) {
             // Filter out failed refunds - only process pending ones
             const pendingRefundIds = selectedRefundIds.filter(id => !selectedFailedRefundIds.includes(id));
 
@@ -556,9 +713,10 @@
                     showAlert('error', 'Failed to process refunds');
                 }
             });
-        }
+        };
 
-        function retrySelectedRefunds() {
+        // Retry selected refunds
+        window.retrySelectedRefunds = function () {
             if (selectedFailedRefundIds.length === 0) {
                 showAlert('warning', 'Please select failed refund requests to retry');
                 return;
@@ -568,7 +726,6 @@
                 return;
             }
 
-            // Process each failed refund individually
             let processedCount = 0;
             let successCount = 0;
             let failCount = 0;
@@ -591,7 +748,6 @@
                             showAlert('error', `Refund ID ${refundId}: ${response.message}`);
                         }
 
-                        // If all processed, reload the list
                         if (processedCount === selectedFailedRefundIds.length) {
                             setTimeout(() => {
                                 showAlert('info', `Retry complete: ${successCount} succeeded, ${failCount} failed`);
@@ -616,9 +772,10 @@
                     }
                 });
             });
-        }
+        };
 
-        function confirmReject() {
+        // Confirm reject
+        window.confirmReject = function () {
             const reason = $('#rejectReason').val().trim();
             const pendingRefundIds = selectedRefundIds.filter(id => !selectedFailedRefundIds.includes(id));
 
@@ -652,19 +809,38 @@
                     showAlert('error', 'Failed to reject refunds');
                 }
             });
-        }
+        };
 
-        function closeRejectModal() {
+        // Close reject modal
+        window.closeRejectModal = function () {
             $('#rejectModal').addClass('hidden');
             $('#rejectReason').val('');
-        }
+        };
 
-        function searchRefunds() {
+        // Search refunds
+        window.searchRefunds = function () {
             currentPage = 1;
             loadRefundList();
-        }
+        };
 
-        function updatePagination(totalPages, totalRecords) {
+        // Change page
+        window.changePage = function (page) {
+            currentPage = page;
+            loadRefundList();
+        };
+
+        // View payment summary
+        window.viewPaymentSummary = function () {
+            window.open('/Refund/PaymentSummary', '_blank');
+        };
+
+        // View tender details
+        window.viewTenderDetails = function (tenderId) {
+            window.open(`/Tender/Details/${tenderId}`, '_blank');
+        };
+
+        // Update pagination
+        window.updatePagination = function (totalPages, totalRecords) {
             const from = ((currentPage - 1) * pageSize) + 1;
             const to = Math.min(currentPage * pageSize, totalRecords);
 
@@ -680,268 +856,93 @@
             // Previous button
             if (currentPage > 1) {
                 pagination.append(`
-                        <button onclick="changePage(${currentPage - 1})" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                            Previous
-                        </button>
-                    `);
+                            <button onclick="changePage(${currentPage - 1})" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                Previous
+                            </button>
+                        `);
             }
 
             // Page numbers
             for (let i = 1; i <= totalPages; i++) {
                 if (i === currentPage) {
                     pagination.append(`
-                            <span class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md">${i}</span>
-                        `);
+                                <span class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md">${i}</span>
+                            `);
                 } else if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
                     pagination.append(`
-                            <button onclick="changePage(${i})" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                                ${i}
-                            </button>
-                        `);
+                                <button onclick="changePage(${i})" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                    ${i}
+                                </button>
+                            `);
                 }
             }
 
             // Next button
             if (currentPage < totalPages) {
                 pagination.append(`
-                        <button onclick="changePage(${currentPage + 1})" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                            Next
-                        </button>
-                    `);
+                            <button onclick="changePage(${currentPage + 1})" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                Next
+                            </button>
+                        `);
             }
-        }
+        };
 
-        function changePage(page) {
-            currentPage = page;
-            loadRefundList();
-        }
-
-        function updateStats(stats) {
+        // Update stats
+        window.updateStats = function (stats) {
             if (stats) {
                 $('#pendingCount').text(stats.pending || 0);
                 $('#approvedCount').text(stats.approved || 0);
                 $('#failedCount').text(stats.failed || 0);
                 $('#totalAmount').text(formatAmount(stats.totalAmount || 0));
             }
-        }
+        };
 
-        function formatAmount(amount) {
+        // Get status badge
+        window.getStatusBadge = function (status) {
+            const statusClasses = {
+                'Pending': 'bg-yellow-100 text-yellow-800',
+                'Pending Approval': 'bg-orange-100 text-orange-800',
+                'Approved': 'bg-green-100 text-green-800',
+                'Rejected': 'bg-red-100 text-red-800',
+                'Failed': 'bg-red-100 text-red-800 font-bold',
+                'Processed': 'bg-blue-100 text-blue-800'
+            };
+            const cssClass = statusClasses[status] || 'bg-gray-100 text-gray-800';
+            return `<span class="px-2 py-1 text-xs font-medium rounded-full ${cssClass}">${status}</span>`;
+        };
+
+        // Get action badge
+        window.getActionBadge = function (item) {
+            if (item.status === 'Failed') {
+                return `<span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Retry Required</span>`;
+            } else if (item.actionStatus === 'Awaiting Action') {
+                return `<span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">Awaiting Action</span>`;
+            } else if (item.actionStatus === 'Ready to Initiate') {
+                return `<span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">Ready to Initiate</span>`;
+            }
+            return `<span class="text-xs text-gray-500">${item.actionStatus || '-'}</span>`;
+        };
+
+        // Get payment type class
+        window.getPaymentTypeClass = function (type) {
+            const typeStr = String(type).toLowerCase();
+            if (typeStr.includes('bid') || typeStr.includes('emd')) {
+                return 'bg-purple-100 text-purple-800';
+            } else if (typeStr.includes('security')) {
+                return 'bg-indigo-100 text-indigo-800';
+            } else if (typeStr.includes('processing')) {
+                return 'bg-green-100 text-green-800';
+            }
+            return 'bg-gray-100 text-gray-800';
+        };
+
+        // Format amount
+        window.formatAmount = function (amount) {
             return new Intl.NumberFormat('en-IN').format(amount);
-        }
+        };
 
-        function viewPaymentSummary() {
-            window.open('/Refund/PaymentSummary', '_blank');
-        }
-
-        function viewTenderDetails(tenderId) {
-            window.open(`/Tender/Details/${tenderId}`, '_blank');
-        }
-
-        function showAlert(type, message) {
-            const alertClass = type === 'success' ? 'border-green-500' :
-                type === 'error' ? 'border-red-500' :
-                    type === 'warning' ? 'border-yellow-500' :
-                        'border-blue-500';
-
-            const toast = $(`
-                    <div class="fixed top-4 right-4 z-50 max-w-sm">
-                        <div class="bg-white rounded-lg shadow-lg p-4 border-l-4 ${alertClass}">
-                            <div class="flex items-center">
-                                <span class="text-gray-800">${message}</span>
-                            </div>
-                        </div>
-                    </div>
-                `);
-
-            $('body').append(toast);
-            setTimeout(() => toast.fadeOut(() => toast.remove()), 3000);
-        }
-
-        // Add this function to your Refund Index view's Scripts section
-
-        function initiateSelectedRefunds() {
-            if (selectedRefundIds.length === 0) {
-                showAlert('warning', 'Please select at least one payment for refund');
-                return;
-            }
-
-            // Build refund items from selected rows
-            const refundItems = [];
-
-            $('.refund-checkbox:checked').each(function () {
-                const $row = $(this).closest('tr');
-                const paymentLinkId = $(this).data('payment-link-id') || $(this).val();
-                const tenderBidId = $(this).data('tender-bid-id');
-                const paymentType = $(this).data('payment-type-value');
-
-                // Get data from the row if not in data attributes
-                if (!tenderBidId) {
-                    // Find from allRefundData if available
-                    const item = allRefundData.find(r => r.id == $(this).val() || r.paymentLinkId == paymentLinkId);
-                    if (item) {
-                        refundItems.push({
-                            paymentLinkId: item.paymentLinkId,
-                            tenderBidId: item.tenderBidId,
-                            paymentType: item.paymentTypeValue || 1
-                        });
-                    }
-                } else {
-                    refundItems.push({
-                        paymentLinkId: parseInt(paymentLinkId),
-                        tenderBidId: parseInt(tenderBidId),
-                        paymentType: parseInt(paymentType) || 1
-                    });
-                }
-            });
-
-            if (refundItems.length === 0) {
-                showAlert('error', 'Unable to get payment details. Please refresh and try again.');
-                return;
-            }
-
-            // Show modal or prompt for refund reason
-            const defaultReason = 'Tender awarded to another bidder';
-
-            // Create a modal for refund reason
-            const modalHtml = `
-                <div id="initiateRefundModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                        <div class="mt-3">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900">Initiate Refund</h3>
-                            <div class="mt-2 px-7 py-3">
-                                <p class="text-sm text-gray-600 mb-3">
-                                    You are about to initiate refund for ${refundItems.length} payment(s).
-                                </p>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Refund Reason</label>
-                                <select id="refundReasonSelect" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="Tender awarded to another bidder">Tender awarded to another bidder</option>
-                                    <option value="Bid rejected - not meeting requirements">Bid rejected - not meeting requirements</option>
-                                    <option value="Tender cancelled">Tender cancelled</option>
-                                    <option value="Other">Other (specify below)</option>
-                                </select>
-                                <textarea id="refundReasonText" rows="3"
-                                          class="w-full px-3 py-2 mt-3 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hidden"
-                                          placeholder="Enter custom reason..."></textarea>
-                            </div>
-                            <div class="items-center px-4 py-3">
-                                <button onclick="confirmInitiateRefund()"
-                                        class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    Confirm Initiate Refund
-                                </button>
-                                <button onclick="closeInitiateModal()"
-                                        class="mt-3 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // Remove existing modal if any
-            $('#initiateRefundModal').remove();
-
-            // Add modal to body
-            $('body').append(modalHtml);
-
-            // Show/hide custom reason textarea based on selection
-            $('#refundReasonSelect').on('change', function () {
-                if ($(this).val() === 'Other') {
-                    $('#refundReasonText').removeClass('hidden');
-                } else {
-                    $('#refundReasonText').addClass('hidden');
-                }
-            });
-
-            // Store refund items globally for confirm function
-            window.pendingRefundItems = refundItems;
-        }
-
-        function confirmInitiateRefund() {
-            const reasonSelect = $('#refundReasonSelect').val();
-            let reason = reasonSelect;
-
-            if (reasonSelect === 'Other') {
-                reason = $('#refundReasonText').val().trim();
-                if (!reason) {
-                    showAlert('warning', 'Please enter a refund reason');
-                    return;
-                }
-            }
-
-            const refundItems = window.pendingRefundItems;
-
-            if (!refundItems || refundItems.length === 0) {
-                showAlert('error', 'No items selected for refund');
-                closeInitiateModal();
-                return;
-            }
-
-            // Show loading overlay
-            if (typeof showLoadingOverlay === 'function') {
-                showLoadingOverlay('Initiating Refunds...', `Processing ${refundItems.length} refund request(s)`);
-            }
-
-            // Close modal
-            closeInitiateModal();
-
-            // Make AJAX call to initiate refunds
-            $.ajax({
-                url: '/Refund/InitiateRefunds',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    refundItems: refundItems,
-                    reason: reason
-                }),
-                success: function (response) {
-                    if (typeof hideLoadingOverlay === 'function') {
-                        hideLoadingOverlay();
-                    }
-
-                    if (response.success) {
-                        showAlert('success', response.message || `Successfully initiated ${refundItems.length} refund(s) for approval`);
-
-                        // Clear selections
-                        selectedRefundIds = [];
-                        $('.refund-checkbox').prop('checked', false);
-                        $('#selectAll').prop('checked', false);
-
-                        // Reload the list
-                        if (typeof loadRefundList === 'function') {
-                            loadRefundList();
-                        } else {
-                            location.reload();
-                        }
-                    } else {
-                        showAlert('error', response.message || 'Failed to initiate refunds');
-                        if (response.errors && Array.isArray(response.errors)) {
-                            response.errors.forEach(error => showAlert('warning', error));
-                        }
-                    }
-                },
-                error: function (xhr, status, error) {
-                    if (typeof hideLoadingOverlay === 'function') {
-                        hideLoadingOverlay();
-                    }
-                    console.error('Error initiating refunds:', error);
-                    showAlert('error', 'Failed to initiate refunds. Please try again.');
-                }
-            });
-        }
-
-        function closeInitiateModal() {
-            $('#initiateRefundModal').remove();
-            window.pendingRefundItems = null;
-        }
-
-        // Helper function for showing alerts if not already defined
-        function showAlert(type, message) {
-            // Check if function already exists
-            if (window.showAlertOriginal) {
-                return window.showAlertOriginal(type, message);
-            }
-
+        // Show alert
+        window.showAlert = function (type, message) {
             const alertClass = type === 'success' ? 'border-green-500 bg-green-50' :
                 type === 'error' ? 'border-red-500 bg-red-50' :
                     type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
@@ -953,17 +954,17 @@
                         'text-blue-600';
 
             const toast = $(`
-                <div class="fixed top-4 right-4 z-50 max-w-sm animate-fade-in">
-                    <div class="${alertClass} rounded-lg shadow-lg p-4 border-l-4">
-                        <div class="flex items-center">
-                            <span class="${iconColor} mr-2">
-                                ${type === 'success' ? '✓' : type === 'error' ? '✕' : type === 'warning' ? '⚠' : 'ℹ'}
-                            </span>
-                            <span class="text-gray-800">${message}</span>
+                        <div class="fixed top-4 right-4 z-50 max-w-sm animate-fade-in">
+                            <div class="${alertClass} rounded-lg shadow-lg p-4 border-l-4">
+                                <div class="flex items-center">
+                                    <span class="${iconColor} mr-2">
+                                        ${type === 'success' ? '✓' : type === 'error' ? '✕' : type === 'warning' ? '⚠' : 'ℹ'}
+                                    </span>
+                                    <span class="text-gray-800">${message}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            `);
+                    `);
 
             $('body').append(toast);
 
@@ -973,6 +974,18 @@
                     $(this).remove();
                 });
             }, 5000);
-        }
+        };
+
+        // Show loading overlay
+        window.showLoadingOverlay = function (text, subtext) {
+            $('#loadingText').text(text || 'Processing...');
+            $('#loadingSubtext').text(subtext || 'Please wait while we process your request');
+            $('#loadingOverlay').removeClass('hidden');
+        };
+
+        // Hide loading overlay
+        window.hideLoadingOverlay = function () {
+            $('#loadingOverlay').addClass('hidden');
+        };
     </script>
 }
