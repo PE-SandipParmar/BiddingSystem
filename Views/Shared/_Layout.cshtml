@@ -257,13 +257,13 @@
 
                     @if (User.IsInRole("Admin") || User.IsInRole("Maker") || User.IsInRole("Checker"))
                     {
-                        <a asp-controller="EMDSD" asp-action="Index"
+                        <a asp-controller="Payment" asp-action="Transactions"
                            class="sidebar-item flex items-center px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg mb-1 text-sm transition-colors duration-200"
                            data-nav="emd-sd-management">
                             <div class="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
                                 <i class="ri-secure-payment-line"></i>
                             </div>
-                            <span class="sidebar-text">EMD/SD Management</span>
+                            <span class="sidebar-text">Transactions</span>
                         </a>
                     }
 

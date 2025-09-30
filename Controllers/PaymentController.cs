@@ -1,5 +1,7 @@
 ﻿using BiddingSystem.Data;
 using BiddingSystem.Models;
+using BiddingSystem.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
@@ -417,6 +419,146 @@ namespace BiddingSystem.Controllers
             {
                 _logger.LogError(ex, "Error logging failed transaction");
                 return StatusCode(500);
+            }
+        }
+
+
+
+        // GET: /Payment/Transactions
+        [HttpGet]
+        [Authorize(Roles = "Admin,Checker,Approver,Maker")]
+        [Route("Payment/Transactions")]
+        public async Task<IActionResult> Transactions()
+        {
+            var filter = new PaymentTransactionSearchFilter
+            {
+                PageNumber = 1,
+                PageSize = 10
+            };
+
+            var transactions = await _transactionRepository.GetTransactionListAsync(filter);
+            var statistics = await _transactionRepository.GetTransactionStatisticsAsync();
+
+            ViewBag.Statistics = statistics;
+            ViewBag.Filter = filter;
+
+            return View(transactions);
+        }
+
+        // POST: /Payment/SearchTransactions
+        [HttpPost]
+        [Authorize(Roles = "Admin,Checker,Approver,Maker")]
+        [Route("Payment/SearchTransactions")]
+        public async Task<IActionResult> SearchTransactions(PaymentTransactionSearchFilter filter)
+        {
+            try
+            {
+                if (filter == null)
+                {
+                    filter = new PaymentTransactionSearchFilter
+                    {
+                        PageNumber = 1,
+                        PageSize = 10
+                    };
+                }
+
+                filter.PageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+                filter.PageSize = filter.PageSize < 1 ? 10 : filter.PageSize;
+
+                var transactions = await _transactionRepository.GetTransactionListAsync(filter);
+
+                return PartialView("_TransactionListPartial", transactions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching transactions");
+                return StatusCode(500, new { error = "An error occurred while searching transactions" });
+            }
+        }
+
+        // GET: /Payment/TransactionDetails/{id}
+        [HttpGet]
+        [Authorize(Roles = "Admin,Checker,Approver,Maker")]
+        [Route("Payment/TransactionDetails/{id}")]
+        public async Task<IActionResult> TransactionDetails(int id)
+        {
+            try
+            {
+                var transaction = await _transactionRepository.GetByIdAsync(id);
+
+                if (transaction == null)
+                {
+                    return NotFound();
+                }
+
+                // Map to view model
+                var viewModel = new PaymentTransactionViewModel
+                {
+                    Id = transaction.Id,
+                    PaymentLinkId = transaction.PaymentLinkId,
+                    TenderId = transaction.TenderId,
+                    TenderBidId = transaction.TenderBidId,
+                    RazorpayPaymentId = transaction.RazorpayPaymentId,
+                    RazorpayOrderId = transaction.RazorpayOrderId,
+                    Amount = transaction.Amount,
+                    Status = transaction.Status,
+                    PaymentMethod = transaction.PaymentMethod,
+                    BankName = transaction.BankName,
+                    CardLast4 = transaction.CardLast4,
+                    UPIId = transaction.UPIId,
+                    WalletName = transaction.WalletName,
+                    ErrorCode = transaction.ErrorCode,
+                    ErrorDescription = transaction.ErrorDescription,
+                    CustomerEmail = transaction.CustomerEmail,
+                    CustomerPhone = transaction.CustomerPhone,
+                    TransactionDate = transaction.TransactionDate,
+                    CreatedAt = transaction.CreatedAt,
+                    //PaymentType = transaction.PaymentType
+                    PaymentType = null
+                };
+
+                return Json(new { success = true, data = viewModel });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting transaction details for ID: {id}");
+                return Json(new { success = false, message = "Error loading transaction details" });
+            }
+        }
+
+        // GET: /Payment/ExportTransactions
+        [HttpGet]
+        [Authorize(Roles = "Admin,Checker,Approver")]
+        [Route("Payment/ExportTransactions")]
+        public async Task<IActionResult> ExportTransactions(PaymentTransactionSearchFilter filter)
+        {
+            try
+            {
+                // Set high page size for export
+                filter.PageSize = 10000;
+                filter.PageNumber = 1;
+
+                var transactions = await _transactionRepository.GetTransactionListAsync(filter);
+
+                // Generate CSV
+                var csv = new System.Text.StringBuilder();
+                csv.AppendLine("Transaction ID,Payment Link ID,Tender ID,Tender Title,Bidder Name,Company,Razorpay Payment ID,Amount,Status,Payment Method,Payment Type,Transaction Date,Customer Email,Customer Phone,Error Description");
+
+                foreach (var t in transactions.Items)
+                {
+                    csv.AppendLine($"{t.Id},{t.PaymentLinkId},{t.TenderIdString},{t.TenderTitle}," +
+                        $"{t.BidderName},{t.CompanyName},{t.RazorpayPaymentId},{t.Amount},{t.Status}," +
+                        $"{t.PaymentMethodDisplay},{t.PaymentTypeDisplay},{t.TransactionDate:yyyy-MM-dd HH:mm:ss}," +
+                        $"{t.CustomerEmail},{t.CustomerPhone},{t.ErrorDescription}");
+                }
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+                return File(bytes, "text/csv", $"Transactions_{DateTime.Now:yyyyMMddHHmmss}.csv");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting transactions");
+                return RedirectToAction("Transactions");
             }
         }
 
