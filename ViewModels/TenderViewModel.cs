@@ -268,6 +268,10 @@ namespace BiddingSystem.ViewModels
         public bool HasRefund { get; set; }
         public RefundPaymentInfo? RefundInfo { get; set; }
 
+        // NEW: Add Payment Links property
+        public List<PaymentLink> PaymentLinks { get; set; } = new List<PaymentLink>();
+
+
         // Computed properties
         public string StatusDisplayName => Status;
         public string StatusBadgeClass => Status switch
@@ -440,6 +444,8 @@ namespace BiddingSystem.ViewModels
         public List<string> StatusOptions { get; set; } = new List<string> { "Submitted", "Under Review", "Accepted", "Rejected", "Withdrawn" };
         public List<string> PaymentStatusOptions { get; set; } = new List<string> { "Pending", "Paid", "Failed", "Refunded" };
     }
+
+
 
     public class RefundPaymentInfo
     {

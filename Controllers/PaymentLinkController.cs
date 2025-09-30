@@ -709,7 +709,7 @@ namespace BiddingSystem.Controllers
                 .Select(s => new SelectListItem
                 {
                     Value = ((int)s).ToString(),
-                    Text = s.GetDisplayName()
+                    Text = BiddingSystem.Models.PaymentLinkStatusExtensions.GetDisplayName(s)
                 })
                 .ToList();
         }

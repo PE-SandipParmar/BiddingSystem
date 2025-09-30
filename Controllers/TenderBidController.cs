@@ -32,7 +32,6 @@ namespace BiddingSystem.Controllers
         }
 
         // GET: TenderBid
-
         [Authorize(Roles = "Admin,Maker,Checker")]
         public async Task<IActionResult> Index(int? tenderId = null, string searchTerm = "", string status = "", string paymentStatus = "", int page = 1, int pageSize = 25)
         {
@@ -101,9 +100,17 @@ namespace BiddingSystem.Controllers
                     totalCount = result.totalCount;
                 }
 
-                var viewModel = new TenderBidListViewModel
+                // Map each bid to view model asynchronously
+                var bidViewModels = new List<TenderBidViewModel>();
+                foreach (var bid in bids)
                 {
-                    Bids = bids.Select(MapToViewModel).ToList(),
+                    var viewModel = await MapToViewModelAsync(bid);
+                    bidViewModels.Add(viewModel);
+                }
+
+                var listViewModel = new TenderBidListViewModel
+                {
+                    Bids = bidViewModels,
                     TotalCount = totalCount,
                     CurrentPage = page,
                     PageSize = pageSize,
@@ -115,7 +122,7 @@ namespace BiddingSystem.Controllers
                     AvailableTenders = allTenders.Where(t => t.IsActive).ToList()
                 };
 
-                return View(viewModel);
+                return View(listViewModel);
             }
             catch (Exception ex)
             {
@@ -138,7 +145,7 @@ namespace BiddingSystem.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                var viewModel = MapToViewModel(bid);
+                var viewModel = await MapToViewModelAsync(bid);
                 return View(viewModel);
             }
             catch (Exception ex)
@@ -255,7 +262,11 @@ namespace BiddingSystem.Controllers
                     Remarks = model.Remarks
                 };
 
+                // Create the bid
                 await _tenderBidService.CreateBidAsync(bid);
+
+                // AUTO-GENERATE THREE PAYMENT LINKS
+                await GeneratePaymentLinksForBid(bid, tender);
 
                 // Log successful bid creation
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -269,7 +280,7 @@ namespace BiddingSystem.Controllers
                     UserAgent = HttpContext.Request.Headers.UserAgent.ToString()
                 });
 
-                TempData["SuccessMessage"] = "Tender bid created successfully.";
+                TempData["SuccessMessage"] = "Tender bid created successfully with payment links generated.";
                 return RedirectToAction(nameof(Details), new { id = bid.Id });
             }
             catch (Exception ex)
@@ -280,6 +291,87 @@ namespace BiddingSystem.Controllers
                 model.AvailableTenders = tenders.Where(t => t.IsActive && t.Status == TenderStatus.Published).ToList();
                 return View(model);
             }
+        }
+
+        // Generate payment links for the bid
+        private async Task GeneratePaymentLinksForBid(TenderBid bid, Tender tender)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var expiryDate = DateTime.UtcNow.AddDays(30); // 30 days expiry
+
+            // Define payment components with correct payment types
+            var paymentComponents = new[]
+            {
+                new { Type = PaymentType.EMD, Amount = bid.BidAmount, Description = "Bid Amount Payment" },
+                new { Type = PaymentType.SD, Amount = bid.EmdAmount, Description = "EMD Amount Payment" },
+                new { Type = PaymentType.ProcessingFee, Amount = bid.ProcessingFee, Description = "Processing Fee Payment" }
+            };
+
+            // Get IPaymentLinkRepository from DI
+            var paymentLinkRepository = HttpContext.RequestServices.GetService<IPaymentLinkRepository>();
+            var smsService = HttpContext.RequestServices.GetService<ISmsService>();
+
+            if (paymentLinkRepository == null)
+            {
+                _logger.LogError("PaymentLinkRepository service not found in DI container");
+                return;
+            }
+
+            foreach (var component in paymentComponents.Where(c => c.Amount > 0))
+            {
+                try
+                {
+                    // Generate unique link ID and security token
+                    var linkId = await paymentLinkRepository.GenerateUniqueLinkIdAsync();
+                    var securityToken = PaymentLink.GenerateSecureToken();
+                    var paymentUrl = $"{Request.Scheme}://{Request.Host}/Payment/Pay?token={securityToken}";
+
+                    var paymentLink = new PaymentLink
+                    {
+                        LinkId = linkId,
+                        TenderId = tender.Id,
+                        TenderBidId = bid.Id,
+                        Amount = Convert.ToDecimal(component.Amount),
+                        PaymentType = component.Type,
+                        PaymentUrl = paymentUrl,
+                        SecurityToken = securityToken,
+                        Status = PaymentLinkStatus.Active,
+                        CreatedDate = DateTime.UtcNow,
+                        ExpiryDate = expiryDate,
+                        CreatedBy = userId,
+                        IsActive = true,
+                        Notes = $"{component.Description} for Tender: {tender.TenderTitle}, Bidder: {bid.BidderName}"
+                    };
+
+                    await paymentLinkRepository.CreateAsync(paymentLink);
+
+                    _logger.LogInformation("Payment link created for {PaymentType} - Amount: {Amount} for BidId: {BidId}",
+                        component.Type, component.Amount, bid.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error creating payment link for {PaymentType} - BidId: {BidId}",
+                        component.Type, bid.Id);
+                    // Continue creating other links even if one fails
+                }
+            }
+
+            // Send SMS notification about payment links (optional)
+            //try
+            //{
+            //    if (smsService != null && !string.IsNullOrEmpty(bid.BidderPhone))
+            //    {
+            //        var paymentPortalUrl = $"{Request.Scheme}://{Request.Host}/BidderPayment/Dashboard?bidId={bid.Id}";
+            //        var message = $"Dear {bid.BidderName}, Your tender bid has been submitted successfully. " +
+            //                     $"Please complete payment using the links sent to your email or visit: {paymentPortalUrl}";
+
+            //        await smsService.SendSmsAsync(bid.BidderPhone, message);
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogError(ex, "Error sending SMS notification for BidId: {BidId}", bid.Id);
+            //}
         }
 
         // GET: TenderBid/Edit/5
@@ -407,7 +499,7 @@ namespace BiddingSystem.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                var viewModel = MapToViewModel(bid);
+                var viewModel = await MapToViewModelAsync(bid);
                 return View(viewModel);
             }
             catch (Exception ex)
@@ -482,7 +574,7 @@ namespace BiddingSystem.Controllers
         {
             try
             {
-                _logger.LogInformation("UploadDocument called with bidId: {BidId}, file: {FileName}, documentType: {DocumentType}", 
+                _logger.LogInformation("UploadDocument called with bidId: {BidId}, file: {FileName}, documentType: {DocumentType}",
                     bidId, file?.FileName, documentType);
 
                 if (file == null || file.Length == 0)
@@ -500,36 +592,36 @@ namespace BiddingSystem.Controllers
                 }
 
                 var document = await _tenderBidService.AddBidDocumentAsync(bidId, file, documentType);
-                
-                _logger.LogInformation("Document uploaded successfully. Document ID: {DocumentId}, FilePath: {FilePath}", 
+
+                _logger.LogInformation("Document uploaded successfully. Document ID: {DocumentId}, FilePath: {FilePath}",
                     document.Id, document.FilePath);
-                
+
                 // Log file upload
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 await _securityAudit.LogFileUploadAsync(userId, file.FileName, document.FilePath, true);
-                
+
                 TempData["SuccessMessage"] = "Document uploaded successfully.";
                 return RedirectToAction(nameof(Details), new { id = bidId });
             }
             catch (ArgumentException ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-                
+
                 // Log failed file upload
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 await _securityAudit.LogFileUploadAsync(userId, file?.FileName ?? "unknown", "", false);
-                
+
                 return RedirectToAction(nameof(Details), new { id = bidId });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error uploading document for bid: {BidId}", bidId);
                 TempData["ErrorMessage"] = "An error occurred while uploading the document.";
-                
+
                 // Log failed file upload
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 await _securityAudit.LogFileUploadAsync(userId, file?.FileName ?? "unknown", "", false);
-                
+
                 return RedirectToAction(nameof(Details), new { id = bidId });
             }
         }
@@ -563,8 +655,25 @@ namespace BiddingSystem.Controllers
         }
 
         // Helper method to map TenderBid to TenderBidViewModel
-        private TenderBidViewModel MapToViewModel(TenderBid bid)
+        private async Task<TenderBidViewModel> MapToViewModelAsync(TenderBid bid)
         {
+            // Get payment links for this bid
+            var paymentLinkRepository = HttpContext.RequestServices.GetService<IPaymentLinkRepository>();
+            var paymentLinks = new List<PaymentLink>();
+
+            if (paymentLinkRepository != null && bid.Id > 0)
+            {
+                try
+                {
+                    var allLinks = await paymentLinkRepository.GetAllAsync();
+                    paymentLinks = allLinks.Where(pl => pl.TenderBidId == bid.Id).ToList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error loading payment links for bid: {BidId}", bid.Id);
+                }
+            }
+
             return new TenderBidViewModel
             {
                 Id = bid.Id,
@@ -590,11 +699,14 @@ namespace BiddingSystem.Controllers
                 UpdatedAt = bid.UpdatedAt,
                 Remarks = bid.Remarks,
                 Tender = bid.Tender,
-                Documents = bid.Documents.ToList(),
+                Documents = bid.Documents?.ToList() ?? new List<TenderBidDocument>(),
 
                 // Add refund information
                 HasRefund = bid.RefundInfo != null,
-                RefundInfo = bid.RefundInfo
+                RefundInfo = bid.RefundInfo,
+
+                // Add payment links
+                PaymentLinks = paymentLinks
             };
         }
     }

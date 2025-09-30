@@ -1,7 +1,4 @@
-﻿// Location: /Data/RefundRepository.cs
-// REPLACE your existing RefundRepository.cs with this complete version
-
-using Dapper;
+﻿using Dapper;
 using BiddingSystem.Models;
 using System.Data.SqlClient;
 using System.Data;
@@ -37,8 +34,284 @@ namespace BiddingSystem.Data
             _logger = logger;
         }
 
-        // Fixed ProcessRefundsAsync method with proper transaction handling
-        // This replaces the ProcessRefundsAsync method in RefundRepository.cs
+        // Fixed GetRefundListAsync method with corrected Checker query
+        // Replace the existing method in RefundRepository.cs
+
+
+        // Updated GetRefundListAsync method in RefundRepository.cs
+        // Replace the existing method with this version
+
+        public async Task<PaginatedList<RefundListViewModel>> GetRefundListAsync(RefundSearchFilter filter, string userRole)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var offset = (filter.PageNumber - 1) * filter.PageSize;
+
+            string sql;
+            if (userRole == "Maker" || (userRole == "Admin" && !filter.ShowPendingOnly))
+            {
+                // For Maker: Show ALL individual payment links that are eligible for refund
+                // This includes multiple payment types for the same bid
+                sql = @"
+            WITH RefundCTE AS (
+                SELECT 
+                    tb.Id as TenderBidId,
+                    t.Id as TenderId,
+                    t.TenderId as TenderIdString,
+                    t.TenderTitle,
+                    tb.BidderName,
+                    tb.CompanyName,
+                    pl.Id as PaymentLinkId,
+                    pl.PaymentType,
+                    CASE pl.PaymentType 
+                        WHEN 1 THEN 'Bid Amount'
+                        WHEN 2 THEN 'EMD Amount'
+                        WHEN 3 THEN 'Processing Fee'
+                        WHEN 4 THEN 'Security Deposit'
+                        ELSE 'Other'
+                    END as PaymentTypeDisplay,
+                    pl.Amount as PaymentAmount,
+                    pl.Status as PaymentLinkStatus,
+                    pl.LinkId,
+                    pt.RazorpayPaymentId,
+                    pt.TransactionDate,
+                    rp.Id as RefundPaymentId,
+                    rp.RefundStatus,
+                    rp.ReasonForRefund,
+                    rp.RazorpayRefundId,
+                    rp.RefundErrorMessage,
+                    ROW_NUMBER() OVER (ORDER BY t.TenderId, tb.BidderName, pl.PaymentType) as RowNum,
+                    COUNT(*) OVER() as TotalCount
+                FROM TenderBids tb
+                INNER JOIN Tenders t ON tb.TenderId = t.Id
+                INNER JOIN PaymentLinks pl ON pl.TenderBidId = tb.Id
+                INNER JOIN PaymentTransactions pt ON 
+                    pt.PaymentLinkId = pl.LinkId 
+                    AND pt.Status = 'Success'
+                    AND pt.RazorpayPaymentId IS NOT NULL
+                LEFT JOIN RefundPayments rp ON 
+                    rp.PaymentLinkId = pl.Id 
+                    AND rp.RefundStatus NOT IN ('Rejected') -- Exclude rejected refunds
+                WHERE tb.Status = 'Rejected'  -- Bid is rejected
+                    AND pl.Status = 2 -- Payment Link is Used/Paid
+                    AND t.Status = 3 -- Tender is Closed/Awarded
+                    AND tb.IsActive = 1
+                    AND pl.IsActive = 1
+                    AND rp.Id IS NULL -- No existing refund (or only rejected refunds exist)
+                    AND (@TenderId IS NULL OR @TenderId = '' OR t.TenderId LIKE '%' + @TenderId + '%')
+                    AND (@TenderName IS NULL OR @TenderName = '' OR t.TenderTitle LIKE '%' + @TenderName + '%')
+                    AND (@PaymentType IS NULL OR pl.PaymentType = @PaymentType)
+            )
+            SELECT * FROM RefundCTE
+            WHERE RowNum > @Offset AND RowNum <= @Offset + @PageSize
+            ORDER BY TenderIdString, BidderName, PaymentType";
+            }
+            else // Checker, Approver role or Admin with ShowPendingOnly
+            {
+                // For Checker: Show pending AND failed refunds for approval/retry
+                sql = @"
+            WITH RefundCTE AS (
+                SELECT 
+                    tb.Id as TenderBidId,
+                    t.Id as TenderId,
+                    t.TenderId as TenderIdString,
+                    t.TenderTitle,
+                    tb.BidderName,
+                    tb.CompanyName,
+                    rp.PaymentLinkId,
+                    COALESCE(rp.PaymentType, pl.PaymentType) as PaymentType,
+                    CASE COALESCE(rp.PaymentType, pl.PaymentType)
+                        WHEN 1 THEN 'Bid Amount'
+                        WHEN 2 THEN 'EMD Amount'
+                        WHEN 3 THEN 'Processing Fee'
+                        WHEN 4 THEN 'Security Deposit'
+                        ELSE 'Other'
+                    END as PaymentTypeDisplay,
+                    rp.RefundAmount as PaymentAmount,
+                    COALESCE(pl.Status, 2) as PaymentLinkStatus,
+                    pl.LinkId,
+                    COALESCE(rp.OriginalPaymentId, pt.RazorpayPaymentId) as RazorpayPaymentId,
+                    pt.TransactionDate,
+                    rp.Id as RefundPaymentId,
+                    rp.RefundStatus,
+                    rp.ReasonForRefund,
+                    rp.RazorpayRefundId,
+                    rp.RefundErrorMessage,
+                    rp.InitiatedAt,
+                    ROW_NUMBER() OVER (ORDER BY 
+                        CASE 
+                            WHEN rp.RefundStatus = 'Failed' THEN 1
+                            WHEN rp.RefundStatus = 'Pending' THEN 2
+                            ELSE 3
+                        END,
+                        rp.InitiatedAt DESC
+                    ) as RowNum,
+                    COUNT(*) OVER() as TotalCount
+                FROM RefundPayments rp
+                INNER JOIN TenderBids tb ON rp.TenderBidId = tb.Id
+                INNER JOIN Tenders t ON rp.TenderId = t.Id
+                LEFT JOIN PaymentLinks pl ON rp.PaymentLinkId = pl.Id
+                LEFT JOIN PaymentTransactions pt ON 
+                    pl.LinkId = pt.PaymentLinkId
+                    AND pt.Status = 'Success'
+                    AND pt.RazorpayPaymentId IS NOT NULL
+                WHERE rp.RefundStatus IN ('Pending', 'Failed')
+                    AND (@TenderId IS NULL OR @TenderId = '' OR t.TenderId LIKE '%' + @TenderId + '%')
+                    AND (@TenderName IS NULL OR @TenderName = '' OR t.TenderTitle LIKE '%' + @TenderName + '%')
+                    AND (@PaymentType IS NULL OR COALESCE(rp.PaymentType, pl.PaymentType) = @PaymentType)
+            )
+            SELECT * FROM RefundCTE
+            WHERE RowNum > @Offset AND RowNum <= @Offset + @PageSize
+            ORDER BY RowNum";
+            }
+
+            var parameters = new
+            {
+                TenderId = filter.TenderId ?? "",
+                TenderName = filter.TenderName ?? "",
+                PaymentType = filter.PaymentType.HasValue ? (int)filter.PaymentType.Value : (int?)null,
+                Offset = offset,
+                PageSize = filter.PageSize
+            };
+
+            var results = await connection.QueryAsync<dynamic>(sql, parameters);
+
+            var list = new PaginatedList<RefundListViewModel>
+            {
+                Items = new List<RefundListViewModel>(),
+                CurrentPage = filter.PageNumber,
+                PageSize = filter.PageSize
+            };
+
+            foreach (var item in results)
+            {
+                list.TotalCount = (int)item.TotalCount;
+
+                // Determine the payment link status string
+                string paymentLinkStatusString = "Active";
+                if (item.PaymentLinkStatus == 2) // Used status enum value
+                {
+                    paymentLinkStatusString = "Used";
+                }
+
+                // For Maker view - show transaction details
+                string transactionInfo = null;
+                if (item.RazorpayPaymentId != null && userRole == "Maker")
+                {
+                    var txnDate = item.TransactionDate != null
+                        ? Convert.ToDateTime(item.TransactionDate).ToString("dd MMM yyyy HH:mm")
+                        : "";
+                    transactionInfo = $"TXN: {item.RazorpayPaymentId} on {txnDate}";
+                }
+
+                list.Items.Add(new RefundListViewModel
+                {
+                    TenderBidId = item.TenderBidId,
+                    TenderId = item.TenderId,
+                    TenderIdString = item.TenderIdString,
+                    TenderTitle = item.TenderTitle,
+                    BidderName = item.BidderName,
+                    CompanyName = item.CompanyName,
+                    PaymentType = item.PaymentType != null ? (PaymentType)item.PaymentType : PaymentType.Other,
+                    PaymentTypeDisplay = item.PaymentTypeDisplay ?? "Other",
+                    PaymentLinkId = item.PaymentLinkId,
+                    PaymentLinkStatus = paymentLinkStatusString,
+                    RazorpayPaymentId = item.RazorpayPaymentId,
+                    PaymentAmount = item.PaymentAmount,
+                    TotalAmountToRefund = item.PaymentAmount,
+                    RefundPaymentId = item.RefundPaymentId,
+                    RefundStatus = item.RefundStatus,
+                    ReasonForRefund = item.ReasonForRefund ?? "Tender awarded to another bidder",
+                    HasPendingRefund = item.RefundPaymentId != null,
+                    RazorpayRefundId = item.RazorpayRefundId,
+                    RefundErrorMessage = item.RefundErrorMessage,
+                    TransactionDetails = transactionInfo
+                });
+            }
+
+            list.TotalPages = (int)Math.Ceiling(list.TotalCount / (double)filter.PageSize);
+            return list;
+        }
+
+
+        public async Task<bool> InitiateRefundsAsync(List<RefundRequestItem> refundItems, string reason, int userId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                foreach (var item in refundItems)
+                {
+                    // Check if refund already exists for this payment link
+                    var checkSql = @"
+                        SELECT COUNT(*) FROM RefundPayments 
+                        WHERE PaymentLinkId = @PaymentLinkId AND RefundStatus IN ('Pending', 'Approved')";
+
+                    var exists = await connection.QuerySingleAsync<int>(checkSql,
+                        new { PaymentLinkId = item.PaymentLinkId }, transaction);
+
+                    if (exists > 0) continue;
+
+                    // Get payment link and tender bid details with Razorpay payment info
+                    var paymentSql = @"
+                        SELECT 
+                            pl.Id, 
+                            pl.Amount, 
+                            pl.PaymentType,
+                            pl.LinkId,
+                            tb.TenderId, 
+                            pt.RazorpayPaymentId 
+                        FROM PaymentLinks pl 
+                        INNER JOIN TenderBids tb ON pl.TenderBidId = tb.Id
+                        LEFT JOIN PaymentTransactions pt ON 
+                            pt.PaymentLinkId = pl.LinkId 
+                            AND pt.Status = 'Success'
+                            AND pt.RazorpayPaymentId IS NOT NULL
+                        WHERE pl.Id = @PaymentLinkId";
+
+                    var payment = await connection.QuerySingleOrDefaultAsync<dynamic>(paymentSql,
+                        new { PaymentLinkId = item.PaymentLinkId }, transaction);
+
+                    if (payment == null) continue;
+
+                    // Insert refund record with payment type
+                    var insertSql = @"
+                        INSERT INTO RefundPayments (
+                            TenderBidId, TenderId, PaymentType, PaymentLinkId, 
+                            OriginalPaymentId, RefundAmount, ReasonForRefund, 
+                            RefundStatus, InitiatedBy, InitiatedAt, CreatedAt
+                        ) VALUES (
+                            @TenderBidId, @TenderId, @PaymentType, @PaymentLinkId,
+                            @OriginalPaymentId, @RefundAmount, @ReasonForRefund,
+                            'Pending', @InitiatedBy, GETUTCDATE(), GETUTCDATE()
+                        )";
+
+                    await connection.ExecuteAsync(insertSql, new
+                    {
+                        TenderBidId = item.TenderBidId,
+                        TenderId = payment.TenderId,
+                        PaymentType = (int)item.PaymentType,
+                        PaymentLinkId = item.PaymentLinkId,
+                        OriginalPaymentId = payment.RazorpayPaymentId,
+                        RefundAmount = payment.Amount,
+                        ReasonForRefund = reason,
+                        InitiatedBy = userId
+                    }, transaction);
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error initiating refunds");
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        // Fixed ProcessRefundsAsync method - replace the existing method in RefundRepository.cs
 
         public async Task<bool> ProcessRefundsAsync(List<int> refundPaymentIds, string action, string remarks, int userId)
         {
@@ -59,31 +332,35 @@ namespace BiddingSystem.Data
                 {
                     try
                     {
-                        // Get refund payment details with original payment information
+                        // Get refund payment details - use strongly typed query result
                         var refundDetailsSql = @"
                     SELECT 
                         rp.Id,
                         rp.TenderBidId,
                         rp.TenderId,
+                        CAST(rp.PaymentType as INT) as PaymentType,
+                        rp.PaymentLinkId,
                         rp.RefundAmount,
                         rp.ReasonForRefund,
                         rp.RefundStatus,
+                        pl.LinkId as PaymentLinkLinkId,
+                        CAST(pl.PaymentType as INT) as PaymentLinkPaymentType,
                         pt.RazorpayPaymentId,
                         pt.RazorpayOrderId,
-                        pt.Amount as OriginalAmount,
                         tb.BidderName,
                         tb.BidderEmail,
                         t.TenderId as TenderIdString
                     FROM RefundPayments rp WITH (UPDLOCK, ROWLOCK)
+                    INNER JOIN PaymentLinks pl ON rp.PaymentLinkId = pl.Id
                     INNER JOIN TenderBids tb ON rp.TenderBidId = tb.Id
                     INNER JOIN Tenders t ON rp.TenderId = t.Id
                     LEFT JOIN PaymentTransactions pt ON 
-                        pt.TenderBidId = rp.TenderBidId 
+                        pt.PaymentLinkId = pl.LinkId 
                         AND pt.Status = 'Success'
                         AND pt.RazorpayPaymentId IS NOT NULL
-                    WHERE rp.Id = @RefundId AND rp.RefundStatus = 'Pending'";
+                    WHERE rp.Id = @RefundId AND rp.RefundStatus IN ('Pending', 'Failed')";
 
-                        var refundDetails = await connection.QuerySingleOrDefaultAsync<dynamic>(
+                        var refundDetails = await connection.QuerySingleOrDefaultAsync<RefundDetailsDto>(
                             refundDetailsSql,
                             new { RefundId = refundId },
                             transaction);
@@ -100,26 +377,32 @@ namespace BiddingSystem.Data
                         bool razorpayProcessed = false;
 
                         // If approved and has Razorpay payment, process the refund
-                        if (status == "Approved" && refundDetails.RazorpayPaymentId != null)
+                        if (status == "Approved" && !string.IsNullOrEmpty(refundDetails.RazorpayPaymentId))
                         {
                             try
                             {
                                 _logger.LogInformation($"Processing Razorpay refund for payment: {refundDetails.RazorpayPaymentId}");
 
+                                // Safe conversion of PaymentType
+                                PaymentType paymentTypeEnum = (PaymentType)(refundDetails.PaymentType ?? 0);
+                                string paymentTypeStr = paymentTypeEnum.ToString();
+
                                 // Create notes for the refund
                                 var notes = new Dictionary<string, object>
-                                {
-                                    { "tender_id", refundDetails.TenderIdString },
-                                    { "bidder_name", refundDetails.BidderName },
-                                    { "refund_reason", refundDetails.ReasonForRefund },
-                                    { "refund_payment_id", refundId.ToString() }
-                                };
+                        {
+                            { "tender_id", refundDetails.TenderIdString ?? "" },
+                            { "bidder_name", refundDetails.BidderName ?? "" },
+                            { "payment_type", paymentTypeStr },
+                            { "payment_link_id", refundDetails.PaymentLinkId.ToString() },
+                            { "refund_reason", refundDetails.ReasonForRefund ?? "" },
+                            { "refund_payment_id", refundId.ToString() }
+                        };
 
-                                // *** CALL RAZORPAY API ***
+                                // Call Razorpay API
                                 var refundResponse = await _razorpay.ProcessRefund(
                                     refundDetails.RazorpayPaymentId,
                                     refundDetails.RefundAmount,
-                                    refundDetails.ReasonForRefund,
+                                    $"{paymentTypeStr} - {refundDetails.ReasonForRefund}",
                                     notes
                                 );
 
@@ -129,7 +412,7 @@ namespace BiddingSystem.Data
                                     razorpayProcessed = true;
                                     _logger.LogInformation($"Razorpay refund successful. Refund ID: {razorpayRefundId}");
 
-                                    // Only insert transaction record if Razorpay was successful
+                                    // Insert refund transaction record
                                     var insertTransactionSql = @"
                                 INSERT INTO PaymentTransactions (
                                     PaymentLinkId,
@@ -141,10 +424,8 @@ namespace BiddingSystem.Data
                                     Status,
                                     PaymentMethod,
                                     CustomerEmail,
-                                    CustomerPhone,
                                     TransactionDate,
                                     CreatedAt,
-                                    ErrorCode,
                                     ErrorDescription
                                 ) VALUES (
                                     @PaymentLinkId,
@@ -153,25 +434,22 @@ namespace BiddingSystem.Data
                                     @RazorpayRefundId,
                                     @RazorpayOrderId,
                                     @Amount,
-                                    @Status,
+                                    'Refunded',
                                     'REFUND',
                                     @CustomerEmail,
-                                    NULL,
                                     GETUTCDATE(),
                                     GETUTCDATE(),
-                                    NULL,
                                     @RefundReason
                                 )";
 
                                     await connection.ExecuteAsync(insertTransactionSql, new
                                     {
-                                        PaymentLinkId = $"REFUND_{refundDetails.RazorpayPaymentId}",
+                                        PaymentLinkId = $"REFUND_{refundDetails.PaymentLinkLinkId}",
                                         TenderId = refundDetails.TenderId,
                                         TenderBidId = refundDetails.TenderBidId,
                                         RazorpayRefundId = razorpayRefundId,
                                         RazorpayOrderId = refundDetails.RazorpayOrderId,
-                                        Amount = -refundDetails.RefundAmount, // Negative amount for refund
-                                        Status = "Refunded",
+                                        Amount = -refundDetails.RefundAmount,
                                         CustomerEmail = refundDetails.BidderEmail,
                                         RefundReason = refundDetails.ReasonForRefund
                                     }, transaction);
@@ -180,7 +458,6 @@ namespace BiddingSystem.Data
                                 }
                                 else
                                 {
-                                    // Razorpay refund failed - DO NOT update database as approved
                                     refundStatus = "Failed";
                                     refundErrorMessage = refundResponse.ErrorMessage;
                                     failedRefunds.Add((refundId, refundResponse.ErrorMessage));
@@ -190,7 +467,6 @@ namespace BiddingSystem.Data
                             }
                             catch (Exception razorEx)
                             {
-                                // Razorpay exception - DO NOT update database as approved
                                 refundStatus = "Failed";
                                 refundErrorMessage = $"Razorpay Error: {razorEx.Message}";
                                 failedRefunds.Add((refundId, razorEx.Message));
@@ -198,15 +474,13 @@ namespace BiddingSystem.Data
                                 _logger.LogError(razorEx, $"Exception processing Razorpay refund for RefundId {refundId}");
                             }
                         }
-                        else if (status == "Approved" && refundDetails.RazorpayPaymentId == null)
+                        else if (status == "Approved" && string.IsNullOrEmpty(refundDetails.RazorpayPaymentId))
                         {
-                            // No Razorpay payment ID - this is okay for manual refunds
                             _logger.LogWarning($"No Razorpay payment found for refund {refundId}. Marking as approved for manual processing.");
                             successfulRefunds.Add(refundId);
                         }
                         else if (status == "Rejected")
                         {
-                            // Rejection doesn't need Razorpay processing
                             successfulRefunds.Add(refundId);
                         }
 
@@ -220,7 +494,7 @@ namespace BiddingSystem.Data
                         RazorpayRefundId = @RazorpayRefundId,
                         RefundErrorMessage = @RefundErrorMessage,
                         RefundProcessedAt = CASE WHEN @RazorpayRefundId IS NOT NULL THEN GETUTCDATE() ELSE NULL END
-                    WHERE Id = @RefundId AND RefundStatus = 'Pending'";
+                    WHERE Id = @RefundId AND RefundStatus IN ('Pending', 'Failed')";
 
                         await connection.ExecuteAsync(updateSql, new
                         {
@@ -232,287 +506,94 @@ namespace BiddingSystem.Data
                             RefundErrorMessage = refundErrorMessage
                         }, transaction);
 
-                        // Only update TenderBid payment status if Razorpay refund was successful
-                        if (razorpayProcessed && razorpayRefundId != null)
+                        // Update payment link refund status if successful
+                        if (razorpayProcessed && !string.IsNullOrEmpty(razorpayRefundId))
                         {
-                            var updateBidSql = @"
-                        UPDATE tb 
-                        SET tb.PaymentStatus = 'Refunded',
-                            tb.UpdatedAt = GETUTCDATE()
-                        FROM TenderBids tb
-                        INNER JOIN RefundPayments rp ON tb.Id = rp.TenderBidId
-                        WHERE rp.Id = @RefundId";
+                            var updateLinkSql = @"
+                        UPDATE PaymentLinks 
+                        SET RefundStatus = 'Refunded',
+                            RefundId = @RefundId,
+                            RefundAmount = @RefundAmount,
+                            RefundDate = GETUTCDATE()
+                        WHERE Id = @PaymentLinkId";
 
-                            await connection.ExecuteAsync(updateBidSql,
-                                new { RefundId = refundId }, transaction);
+                            await connection.ExecuteAsync(updateLinkSql,
+                                new
+                                {
+                                    RefundId = razorpayRefundId,
+                                    RefundAmount = refundDetails.RefundAmount,
+                                    PaymentLinkId = refundDetails.PaymentLinkId
+                                }, transaction);
                         }
                     }
                     catch (Exception ex)
                     {
-                        // Error processing this specific refund
                         failedRefunds.Add((refundId, ex.Message));
                         allSuccessful = false;
                         _logger.LogError(ex, $"Error processing refund {refundId}");
-
-                        // Continue with next refund instead of failing entire batch
                         continue;
                     }
                 }
 
-                // Decision point: Commit or Rollback
-                if (action == "Approve" && failedRefunds.Any())
+                transaction.Commit();
+
+                // Log results
+                _logger.LogInformation($"Processed refunds with {successfulRefunds.Count} successes and {failedRefunds.Count} failures");
+
+                // If there were failures but also successes, throw PartialSuccessException
+                if (failedRefunds.Any() && successfulRefunds.Any())
                 {
-                    // For approvals with Razorpay failures, we have options:
-
-                    // Option 1: Rollback everything if ANY refund fails (STRICT MODE)
-                    // Uncomment this if you want all-or-nothing behavior
-                    /*
-                    transaction.Rollback();
-                    _logger.LogError($"Rolling back all refunds due to {failedRefunds.Count} failures");
-                    throw new Exception($"Failed to process {failedRefunds.Count} refund(s). All changes rolled back. Errors: " + 
-                        string.Join("; ", failedRefunds.Select(f => $"RefundId {f.RefundId}: {f.Error}")));
-                    */
-
-                    // Option 2: Commit successful refunds, mark failed ones as "Failed" (PARTIAL SUCCESS MODE)
-                    // This is currently active - allows partial success
-                    transaction.Commit();
-                    _logger.LogWarning($"Processed refunds with {successfulRefunds.Count} successes and {failedRefunds.Count} failures");
-
-                    // You might want to return details about what succeeded and what failed
-                    if (failedRefunds.Any())
-                    {
-                        var errorMessage = $"Partially successful: {successfulRefunds.Count} refunds processed, {failedRefunds.Count} failed. " +
-                            $"Failed RefundIds: {string.Join(", ", failedRefunds.Select(f => f.RefundId))}";
-                        throw new PartialSuccessException(errorMessage, successfulRefunds, failedRefunds);
-                    }
+                    var errorMessage = $"Partially successful: {successfulRefunds.Count} refunds processed, {failedRefunds.Count} failed. " +
+                        $"Failed RefundIds: {string.Join(", ", failedRefunds.Select(f => f.RefundId))}";
+                    throw new PartialSuccessException(errorMessage, successfulRefunds, failedRefunds);
                 }
-                else
+                else if (failedRefunds.Any() && !successfulRefunds.Any())
                 {
-                    // All successful or rejections (which don't need Razorpay)
-                    transaction.Commit();
-                    _logger.LogInformation($"Successfully processed {successfulRefunds.Count} refunds");
+                    // All failed - return false
+                    return false;
                 }
 
-                return allSuccessful;
+                return true;
+            }
+            catch (PartialSuccessException)
+            {
+                // Re-throw partial success exceptions
+                throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Fatal error in ProcessRefundsAsync - rolling back all changes");
-                transaction.Rollback();
-                throw;
-            }
-        }
-
-        // Add this custom exception class for partial success scenarios
-        public class PartialSuccessException : Exception
-        {
-            public List<int> SuccessfulRefunds { get; }
-            public List<(int RefundId, string Error)> FailedRefunds { get; }
-
-            public PartialSuccessException(string message, List<int> successfulRefunds, List<(int, string)> failedRefunds)
-                : base(message)
-            {
-                SuccessfulRefunds = successfulRefunds;
-                FailedRefunds = failedRefunds;
-            }
-        }
-
-        // Rest of your existing methods remain the same
-        public async Task<PaginatedList<RefundListViewModel>> GetRefundListAsync(RefundSearchFilter filter, string userRole)
-        {
-            using var connection = new SqlConnection(_connectionString);
-            var offset = (filter.PageNumber - 1) * filter.PageSize;
-
-            string sql;
-            if (userRole == "Maker" || userRole == "Admin")
-            {
-                // For Maker: Show eligible bidders for refund
-                sql = @"
-                    WITH RefundCTE AS (
-                        SELECT 
-                            tb.Id as TenderBidId,
-                            t.Id as TenderId,
-                            t.TenderId as TenderIdString,
-                            t.TenderTitle,
-                            tb.BidderName,
-                            tb.CompanyName,
-                            tb.TotalAmount as TotalAmountToRefund,
-                            rp.Id as RefundPaymentId,
-                            rp.RefundStatus,
-                            rp.ReasonForRefund,
-                            rp.RazorpayRefundId,
-                            rp.RefundErrorMessage,
-                            ROW_NUMBER() OVER (ORDER BY t.TenderId, tb.BidderName) as RowNum,
-                            COUNT(*) OVER() as TotalCount
-                        FROM TenderBids tb
-                        INNER JOIN Tenders t ON tb.TenderId = t.Id
-                        LEFT JOIN RefundPayments rp ON tb.Id = rp.TenderBidId 
-                            AND rp.RefundStatus IN ('Pending', 'Approved', 'Failed')
-                        WHERE tb.Status = 'Rejected'
-                            AND tb.PaymentStatus = 'Paid'
-                            AND t.Status = 3
-                            AND tb.IsActive = 1
-                            AND (@TenderId IS NULL OR t.TenderId LIKE '%' + @TenderId + '%')
-                            AND (@TenderName IS NULL OR t.TenderTitle LIKE '%' + @TenderName + '%')
-                    )
-                    SELECT * FROM RefundCTE
-                    WHERE RowNum > @Offset AND RowNum <= @Offset + @PageSize
-                    ORDER BY TenderIdString, BidderName";
-            }
-            else // Checker role
-            {
-                // For Checker: Show pending refunds for approval
-                sql = @"
-                    WITH RefundCTE AS (
-                        SELECT 
-                            tb.Id as TenderBidId,
-                            t.Id as TenderId,
-                            t.TenderId as TenderIdString,
-                            t.TenderTitle,
-                            tb.BidderName,
-                            tb.CompanyName,
-                            rp.RefundAmount as TotalAmountToRefund,
-                            rp.Id as RefundPaymentId,
-                            rp.RefundStatus,
-                            rp.ReasonForRefund,
-                            rp.RazorpayRefundId,
-                            rp.RefundErrorMessage,
-                            ROW_NUMBER() OVER (ORDER BY rp.InitiatedAt DESC) as RowNum,
-                            COUNT(*) OVER() as TotalCount
-                        FROM RefundPayments rp
-                        INNER JOIN TenderBids tb ON rp.TenderBidId = tb.Id
-                        INNER JOIN Tenders t ON rp.TenderId = t.Id
-                        WHERE rp.RefundStatus = 'Pending'
-                            AND (@TenderId IS NULL OR t.TenderId LIKE '%' + @TenderId + '%')
-                            AND (@TenderName IS NULL OR t.TenderTitle LIKE '%' + @TenderName + '%')
-                    )
-                    SELECT * FROM RefundCTE
-                    WHERE RowNum > @Offset AND RowNum <= @Offset + @PageSize
-                    ORDER BY TenderIdString, BidderName";
-            }
-
-            var parameters = new
-            {
-                filter.TenderId,
-                filter.TenderName,
-                Offset = offset,
-                filter.PageSize
-            };
-
-            var results = await connection.QueryAsync<dynamic>(sql, parameters);
-
-            var list = new PaginatedList<RefundListViewModel>
-            {
-                Items = new List<RefundListViewModel>(),
-                CurrentPage = filter.PageNumber,
-                PageSize = filter.PageSize
-            };
-
-            foreach (var item in results)
-            {
-                list.TotalCount = (int)item.TotalCount;
-                list.Items.Add(new RefundListViewModel
+                try
                 {
-                    TenderBidId = item.TenderBidId,
-                    TenderId = item.TenderId,
-                    TenderIdString = item.TenderIdString,
-                    TenderTitle = item.TenderTitle,
-                    BidderName = item.BidderName,
-                    CompanyName = item.CompanyName,
-                    TotalAmountToRefund = item.TotalAmountToRefund,
-                    RefundPaymentId = item.RefundPaymentId,
-                    RefundStatus = item.RefundStatus,
-                    ReasonForRefund = item.ReasonForRefund ?? "Tender awarded to another bidder",
-                    HasPendingRefund = item.RefundPaymentId != null,
-                    RazorpayRefundId = item.RazorpayRefundId,
-                    RefundErrorMessage = item.RefundErrorMessage
-                });
-            }
-
-            list.TotalPages = (int)Math.Ceiling(list.TotalCount / (double)filter.PageSize);
-            return list;
-        }
-
-        public async Task<bool> InitiateRefundsAsync(List<int> tenderBidIds, string reason, int userId)
-        {
-            using var connection = new SqlConnection(_connectionString);
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
-
-            try
-            {
-                foreach (var tenderBidId in tenderBidIds)
-                {
-                    // Check if refund already exists
-                    var checkSql = @"
-                        SELECT COUNT(*) FROM RefundPayments 
-                        WHERE TenderBidId = @TenderBidId AND RefundStatus IN ('Pending', 'Approved')";
-
-                    var exists = await connection.QuerySingleAsync<int>(checkSql,
-                        new { TenderBidId = tenderBidId }, transaction);
-
-                    if (exists > 0) continue;
-
-                    // Get tender bid details
-                    var bidSql = @"
-                        SELECT tb.*, t.Id as TenderId 
-                        FROM TenderBids tb 
-                        INNER JOIN Tenders t ON tb.TenderId = t.Id
-                        WHERE tb.Id = @TenderBidId";
-
-                    var bid = await connection.QuerySingleOrDefaultAsync<dynamic>(bidSql,
-                        new { TenderBidId = tenderBidId }, transaction);
-
-                    if (bid == null) continue;
-
-                    // Insert refund record - NO RAZORPAY CALL HERE
-                    var insertSql = @"
-                        INSERT INTO RefundPayments (
-                            TenderBidId, TenderId, RefundAmount, ReasonForRefund, 
-                            RefundStatus, InitiatedBy, InitiatedAt, CreatedAt
-                        ) VALUES (
-                            @TenderBidId, @TenderId, @RefundAmount, @ReasonForRefund,
-                            'Pending', @InitiatedBy, GETUTCDATE(), GETUTCDATE()
-                        )";
-
-                    await connection.ExecuteAsync(insertSql, new
-                    {
-                        TenderBidId = tenderBidId,
-                        TenderId = bid.TenderId,
-                        RefundAmount = bid.TotalAmount,
-                        ReasonForRefund = reason,
-                        InitiatedBy = userId
-                    }, transaction);
+                    transaction.Rollback();
                 }
-
-                transaction.Commit();
-                return true;
-            }
-            catch
-            {
-                transaction.Rollback();
+                catch (Exception rollbackEx)
+                {
+                    _logger.LogError(rollbackEx, "Error during transaction rollback");
+                }
                 throw;
             }
         }
 
-        public async Task<RefundStatistics> GetRefundStatisticsAsync()
+        public class RefundDetailsDto
         {
-            using var connection = new SqlConnection(_connectionString);
-
-            var sql = @"
-                SELECT 
-                    COUNT(CASE WHEN RefundStatus = 'Pending' THEN 1 END) as TotalPendingRefunds,
-                    COUNT(CASE WHEN RefundStatus = 'Approved' THEN 1 END) as TotalApprovedRefunds,
-                    COUNT(CASE WHEN RefundStatus = 'Rejected' THEN 1 END) as TotalRejectedRefunds,
-                    COUNT(CASE WHEN RefundStatus = 'Failed' THEN 1 END) as TotalFailedRefunds,
-                    SUM(RefundAmount) as TotalRefundAmount,
-                    SUM(CASE WHEN RefundStatus = 'Pending' THEN RefundAmount ELSE 0 END) as PendingRefundAmount,
-                    SUM(CASE WHEN RefundStatus = 'Approved' THEN RefundAmount ELSE 0 END) as ApprovedRefundAmount
-                FROM RefundPayments";
-
-            var stats = await connection.QuerySingleOrDefaultAsync<RefundStatistics>(sql);
-            return stats ?? new RefundStatistics();
+            public int Id { get; set; }
+            public int TenderBidId { get; set; }
+            public int TenderId { get; set; }
+            public int? PaymentType { get; set; }
+            public int PaymentLinkId { get; set; }
+            public decimal RefundAmount { get; set; }
+            public string? ReasonForRefund { get; set; }
+            public string? RefundStatus { get; set; }
+            public string? PaymentLinkLinkId { get; set; }
+            public int? PaymentLinkPaymentType { get; set; }
+            public string? RazorpayPaymentId { get; set; }
+            public string? RazorpayOrderId { get; set; }
+            public string? BidderName { get; set; }
+            public string? BidderEmail { get; set; }
+            public string? TenderIdString { get; set; }
         }
+
 
         public async Task<PaginatedList<ApprovedRefundViewModel>> GetRefundsByStatusAsync(RefundSearchFilter filter)
         {
@@ -532,6 +613,7 @@ namespace BiddingSystem.Data
                     WHERE rp.RefundStatus = @RefundStatus
                         AND (@TenderId IS NULL OR @TenderId = '' OR t.TenderId LIKE '%' + @TenderId + '%')
                         AND (@TenderName IS NULL OR @TenderName = '' OR t.TenderTitle LIKE '%' + @TenderName + '%')
+                        AND (@PaymentType IS NULL OR rp.PaymentType = @PaymentType)
                         AND (@FromDate IS NULL OR rp.ApprovedAt >= @FromDate);
 
                     -- Then get the data
@@ -544,6 +626,14 @@ namespace BiddingSystem.Data
                         tb.BidderName,
                         tb.BidderEmail,
                         tb.CompanyName,
+                        rp.PaymentType,
+                        CASE rp.PaymentType 
+                            WHEN 1 THEN 'Bid Amount (EMD)'
+                            WHEN 2 THEN 'Security Deposit'
+                            WHEN 3 THEN 'Processing Fee'
+                            ELSE 'Other'
+                        END as PaymentTypeDisplay,
+                        rp.OriginalPaymentId,
                         rp.RefundAmount,
                         rp.ReasonForRefund,
                         rp.RefundStatus,
@@ -554,7 +644,7 @@ namespace BiddingSystem.Data
                         rp.RefundErrorMessage,
                         u.Username as ApprovedByName,
                         CASE 
-                            WHEN tb.PaymentStatus = 'Refunded' THEN 1 
+                            WHEN rp.RazorpayRefundId IS NOT NULL THEN 1 
                             ELSE 0 
                         END as PaymentProcessed
                     FROM RefundPayments rp
@@ -564,6 +654,7 @@ namespace BiddingSystem.Data
                     WHERE rp.RefundStatus = @RefundStatus
                         AND (@TenderId IS NULL OR @TenderId = '' OR t.TenderId LIKE '%' + @TenderId + '%')
                         AND (@TenderName IS NULL OR @TenderName = '' OR t.TenderTitle LIKE '%' + @TenderName + '%')
+                        AND (@PaymentType IS NULL OR rp.PaymentType = @PaymentType)
                         AND (@FromDate IS NULL OR rp.ApprovedAt >= @FromDate)
                     ORDER BY rp.ApprovedAt DESC
                     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
@@ -573,6 +664,7 @@ namespace BiddingSystem.Data
                     RefundStatus = filter.RefundStatus ?? "Approved",
                     TenderId = filter.TenderId ?? "",
                     TenderName = filter.TenderName ?? "",
+                    PaymentType = filter.PaymentType.HasValue ? (int)filter.PaymentType.Value : (int?)null,
                     FromDate = filter.FromDate,
                     Offset = offset,
                     PageSize = filter.PageSize
@@ -618,6 +710,14 @@ namespace BiddingSystem.Data
                         tb.BidderName,
                         tb.BidderEmail,
                         tb.CompanyName,
+                        rp.PaymentType,
+                        CASE rp.PaymentType 
+                            WHEN 1 THEN 'Bid Amount (EMD)'
+                            WHEN 2 THEN 'Security Deposit'
+                            WHEN 3 THEN 'Processing Fee'
+                            ELSE 'Other'
+                        END as PaymentTypeDisplay,
+                        rp.OriginalPaymentId,
                         rp.RefundAmount,
                         rp.ReasonForRefund,
                         rp.RefundStatus,
@@ -628,7 +728,7 @@ namespace BiddingSystem.Data
                         rp.RefundErrorMessage,
                         u.Username as ApprovedByName,
                         CASE 
-                            WHEN tb.PaymentStatus = 'Refunded' THEN 1 
+                            WHEN rp.RazorpayRefundId IS NOT NULL THEN 1 
                             ELSE 0 
                         END as PaymentProcessed
                     FROM RefundPayments rp
@@ -648,6 +748,65 @@ namespace BiddingSystem.Data
                 return null;
             }
         }
+
+        public async Task<RefundStatistics> GetRefundStatisticsAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"
+                SELECT 
+                    COUNT(CASE WHEN RefundStatus = 'Pending' THEN 1 END) as TotalPendingRefunds,
+                    COUNT(CASE WHEN RefundStatus = 'Approved' THEN 1 END) as TotalApprovedRefunds,
+                    COUNT(CASE WHEN RefundStatus = 'Rejected' THEN 1 END) as TotalRejectedRefunds,
+                    COUNT(CASE WHEN RefundStatus = 'Failed' THEN 1 END) as TotalFailedRefunds,
+                    SUM(RefundAmount) as TotalRefundAmount,
+                    SUM(CASE WHEN RefundStatus = 'Pending' THEN RefundAmount ELSE 0 END) as PendingRefundAmount,
+                    SUM(CASE WHEN RefundStatus = 'Approved' THEN RefundAmount ELSE 0 END) as ApprovedRefundAmount
+                FROM RefundPayments";
+
+            var stats = await connection.QuerySingleOrDefaultAsync<RefundStatistics>(sql);
+            return stats ?? new RefundStatistics();
+        }
+
+        public async Task<Dictionary<PaymentType, RefundStatistics>> GetRefundStatisticsByPaymentTypeAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"
+                SELECT 
+                    PaymentType,
+                    COUNT(CASE WHEN RefundStatus = 'Pending' THEN 1 END) as TotalPendingRefunds,
+                    COUNT(CASE WHEN RefundStatus = 'Approved' THEN 1 END) as TotalApprovedRefunds,
+                    COUNT(CASE WHEN RefundStatus = 'Rejected' THEN 1 END) as TotalRejectedRefunds,
+                    COUNT(CASE WHEN RefundStatus = 'Failed' THEN 1 END) as TotalFailedRefunds,
+                    SUM(RefundAmount) as TotalRefundAmount,
+                    SUM(CASE WHEN RefundStatus = 'Pending' THEN RefundAmount ELSE 0 END) as PendingRefundAmount,
+                    SUM(CASE WHEN RefundStatus = 'Approved' THEN RefundAmount ELSE 0 END) as ApprovedRefundAmount
+                FROM RefundPayments
+                WHERE PaymentType IS NOT NULL
+                GROUP BY PaymentType";
+
+            var results = await connection.QueryAsync<dynamic>(sql);
+            var statistics = new Dictionary<PaymentType, RefundStatistics>();
+
+            foreach (var result in results)
+            {
+                var paymentType = (PaymentType)result.PaymentType;
+                statistics[paymentType] = new RefundStatistics
+                {
+                    TotalPendingRefunds = result.TotalPendingRefunds,
+                    TotalApprovedRefunds = result.TotalApprovedRefunds,
+                    TotalRejectedRefunds = result.TotalRejectedRefunds,
+                    TotalFailedRefunds = result.TotalFailedRefunds,
+                    TotalRefundAmount = result.TotalRefundAmount ?? 0,
+                    PendingRefundAmount = result.PendingRefundAmount ?? 0,
+                    ApprovedRefundAmount = result.ApprovedRefundAmount ?? 0
+                };
+            }
+
+            return statistics;
+        }
+
         public async Task<RetryRefundResult> RetryFailedRefundAsync(int refundPaymentId, int userId)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -656,32 +815,40 @@ namespace BiddingSystem.Data
 
             try
             {
-                // Get the failed refund details
+                // Get the failed refund details with payment link info
+                // FIXED: Cast PaymentType as INT in SQL query
                 var refundDetailsSql = @"
             SELECT 
-                rp.*,
+                rp.Id,
+                rp.TenderBidId,
+                rp.TenderId,
+                CAST(rp.PaymentType as INT) as PaymentType,
+                rp.PaymentLinkId,
+                rp.RefundAmount,
+                rp.ReasonForRefund,
+                rp.RefundStatus,
+                pl.LinkId,
+                CAST(pl.PaymentType as INT) as PaymentLinkPaymentType,
                 pt.RazorpayPaymentId,
                 pt.RazorpayOrderId,
-                pt.Amount as FinalRefundAmount,  -- Get refund amount from actual payment
-                pt.PaymentMethod as OriginalPaymentMethod,
-                pt.TransactionDate as OriginalPaymentDate,
+                pt.Amount as PaymentAmount,
                 tb.BidderName,
                 tb.BidderEmail,
                 t.TenderId as TenderIdString
             FROM RefundPayments rp WITH (UPDLOCK, ROWLOCK)
+            INNER JOIN PaymentLinks pl ON rp.PaymentLinkId = pl.Id
             INNER JOIN TenderBids tb ON rp.TenderBidId = tb.Id
             INNER JOIN Tenders t ON rp.TenderId = t.Id
-            INNER JOIN PaymentTransactions pt ON  -- Changed to INNER JOIN to ensure payment exists
-                pt.TenderBidId = rp.TenderBidId 
-                AND pt.TenderId = rp.TenderId  -- Added TenderId check for additional validation
-                AND pt.Status = 'Success'  -- Only successful payments
-                AND pt.RazorpayPaymentId IS NOT NULL  -- Must have valid payment ID
-                AND (pt.PaymentMethod != 'REFUND' OR pt.PaymentMethod IS NULL)  -- Exclude previous refund transactions
+            INNER JOIN PaymentTransactions pt ON 
+                pt.PaymentLinkId = pl.LinkId 
+                AND pt.Status = 'Success'
+                AND pt.RazorpayPaymentId IS NOT NULL
             WHERE 
                 rp.Id = @RefundPaymentId
-                AND rp.RefundStatus IN ('Failed', 'Pending', 'Retry')  -- Allow retry for failed/pending refunds";
+                AND rp.RefundStatus IN ('Failed', 'Pending', 'Retry')";
 
-                var refundDetails = await connection.QuerySingleOrDefaultAsync<dynamic>(
+                // Use strongly typed DTO for better type safety
+                var refundDetails = await connection.QuerySingleOrDefaultAsync<RetryRefundDto>(
                     refundDetailsSql,
                     new { RefundPaymentId = refundPaymentId },
                     transaction);
@@ -696,7 +863,7 @@ namespace BiddingSystem.Data
                     };
                 }
 
-                if (refundDetails.RazorpayPaymentId == null)
+                if (string.IsNullOrEmpty(refundDetails.RazorpayPaymentId))
                 {
                     transaction.Rollback();
                     return new RetryRefundResult
@@ -706,24 +873,19 @@ namespace BiddingSystem.Data
                     };
                 }
 
-                // Clear previous error and attempt retry
-                var clearErrorSql = @"
-            UPDATE RefundPayments 
-            SET RefundErrorMessage = NULL
-            WHERE Id = @RefundPaymentId";
-
-                await connection.ExecuteAsync(clearErrorSql,
-                    new { RefundPaymentId = refundPaymentId },
-                    transaction);
-
                 _logger.LogInformation($"Retrying refund for payment: {refundDetails.RazorpayPaymentId}");
+
+                // Safe conversion of PaymentType
+                PaymentType paymentTypeEnum = (PaymentType)(refundDetails.PaymentType ?? 0);
+                string paymentTypeStr = paymentTypeEnum.ToString();
 
                 // Create notes for the refund
                 var notes = new Dictionary<string, object>
         {
-            { "tender_id", refundDetails.TenderIdString },
-            { "bidder_name", refundDetails.BidderName },
-            { "refund_reason", refundDetails.ReasonForRefund },
+            { "tender_id", refundDetails.TenderIdString ?? "" },
+            { "bidder_name", refundDetails.BidderName ?? "" },
+            { "payment_type", paymentTypeStr },
+            { "refund_reason", refundDetails.ReasonForRefund ?? "" },
             { "refund_payment_id", refundPaymentId.ToString() },
             { "retry_attempt", "true" },
             { "retried_by_user_id", userId.ToString() }
@@ -732,8 +894,8 @@ namespace BiddingSystem.Data
                 // Attempt to process refund through Razorpay
                 var refundResponse = await _razorpay.ProcessRefund(
                     refundDetails.RazorpayPaymentId,
-                    refundDetails.FinalRefundAmount,
-                    refundDetails.ReasonForRefund + " (Retry)",
+                    refundDetails.RefundAmount,
+                    $"{paymentTypeStr} - {refundDetails.ReasonForRefund} (Retry)",
                     notes
                 );
 
@@ -756,6 +918,23 @@ namespace BiddingSystem.Data
                         RazorpayRefundId = refundResponse.RefundId,
                         ApprovedBy = userId
                     }, transaction);
+
+                    // Update payment link refund status
+                    var updateLinkSql = @"
+                UPDATE PaymentLinks 
+                SET RefundStatus = 'Refunded',
+                    RefundId = @RefundId,
+                    RefundAmount = @RefundAmount,
+                    RefundDate = GETUTCDATE()
+                WHERE Id = @PaymentLinkId";
+
+                    await connection.ExecuteAsync(updateLinkSql,
+                        new
+                        {
+                            RefundId = refundResponse.RefundId,
+                            RefundAmount = refundDetails.RefundAmount,
+                            PaymentLinkId = refundDetails.PaymentLinkId
+                        }, transaction);
 
                     // Insert refund transaction record
                     var insertTransactionSql = @"
@@ -780,34 +959,24 @@ namespace BiddingSystem.Data
                     @RazorpayOrderId,
                     @Amount,
                     'Refunded',
-                    'REFUND_RETRY',
+                    'REFUND',
                     @CustomerEmail,
                     GETUTCDATE(),
                     GETUTCDATE(),
-                    'Refund retry successful'
+                    @RefundReason
                 )";
 
                     await connection.ExecuteAsync(insertTransactionSql, new
                     {
-                        PaymentLinkId = $"REFUND_RETRY_{refundDetails.RazorpayPaymentId}",
+                        PaymentLinkId = $"REFUND_{refundDetails.LinkId}",
                         TenderId = refundDetails.TenderId,
                         TenderBidId = refundDetails.TenderBidId,
                         RazorpayRefundId = refundResponse.RefundId,
                         RazorpayOrderId = refundDetails.RazorpayOrderId,
-                        Amount = -refundDetails.FinalRefundAmount,
-                        CustomerEmail = refundDetails.BidderEmail
+                        Amount = -refundDetails.RefundAmount,
+                        CustomerEmail = refundDetails.BidderEmail,
+                        RefundReason = $"{refundDetails.ReasonForRefund} (Retry)"
                     }, transaction);
-
-                    // Update TenderBid payment status
-                    var updateBidSql = @"
-                UPDATE tb 
-                SET tb.PaymentStatus = 'Refunded'
-                FROM TenderBids tb
-                WHERE tb.Id = @TenderBidId";
-
-                    await connection.ExecuteAsync(updateBidSql,
-                        new { TenderBidId = refundDetails.TenderBidId },
-                        transaction);
 
                     transaction.Commit();
 
@@ -816,8 +985,9 @@ namespace BiddingSystem.Data
                     return new RetryRefundResult
                     {
                         Success = true,
-                        Message = $"Refund processed successfully. Amount ₹{refundDetails.FinalRefundAmount:N2} has been refunded.",
-                        RazorpayRefundId = refundResponse.RefundId
+                        Message = $"Refund processed successfully. Amount ₹{refundDetails.RefundAmount:N2} has been refunded.",
+                        RazorpayRefundId = refundResponse.RefundId,
+                        ProcessedAt = DateTime.UtcNow
                     };
                 }
                 else
@@ -850,26 +1020,6 @@ namespace BiddingSystem.Data
                 transaction.Rollback();
                 _logger.LogError(ex, $"Error retrying refund {refundPaymentId}");
 
-                // Update error message in database
-                try
-                {
-                    using var errorConnection = new SqlConnection(_connectionString);
-                    var updateErrorSql = @"
-                UPDATE RefundPayments 
-                SET RefundErrorMessage = @ErrorMessage
-                WHERE Id = @RefundPaymentId";
-
-                    await errorConnection.ExecuteAsync(updateErrorSql, new
-                    {
-                        RefundPaymentId = refundPaymentId,
-                        ErrorMessage = $"Retry exception: {ex.Message}"
-                    });
-                }
-                catch
-                {
-                    // Log but don't throw
-                }
-
                 return new RetryRefundResult
                 {
                     Success = false,
@@ -878,5 +1028,306 @@ namespace BiddingSystem.Data
             }
         }
 
+        public class RetryRefundDto
+        {
+            public int Id { get; set; }
+            public int TenderBidId { get; set; }
+            public int TenderId { get; set; }
+            public int? PaymentType { get; set; }
+            public int PaymentLinkId { get; set; }
+            public decimal RefundAmount { get; set; }
+            public string? ReasonForRefund { get; set; }
+            public string? RefundStatus { get; set; }
+            public string? LinkId { get; set; }
+            public int? PaymentLinkPaymentType { get; set; }
+            public string? RazorpayPaymentId { get; set; }
+            public string? RazorpayOrderId { get; set; }
+            public decimal? PaymentAmount { get; set; }
+            public string? BidderName { get; set; }
+            public string? BidderEmail { get; set; }
+            public string? TenderIdString { get; set; }
+        }
+
+        public async Task<List<PaymentRefundSummary>> GetPaymentSummaryForBidAsync(int tenderBidId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"
+                SELECT 
+                    pl.Id as PaymentLinkId,
+                    pl.TenderBidId,
+                    pl.PaymentType,
+                    CASE pl.PaymentType 
+                        WHEN 1 THEN 'Bid Amount (EMD)'
+                        WHEN 2 THEN 'Security Deposit'
+                        WHEN 3 THEN 'Processing Fee'
+                        ELSE 'Other'
+                    END as PaymentTypeDisplay,
+                    pl.Amount,
+                    pl.LinkId,
+                    pl.Status as PaymentStatus,
+                    pt.RazorpayPaymentId,
+                    pt.TransactionDate as PaymentDate,
+                    rp.Id as RefundPaymentId,
+                    rp.RefundStatus,
+                    rp.RazorpayRefundId,
+                    rp.InitiatedAt as RefundInitiatedDate,
+                    rp.ApprovedAt as RefundApprovedDate,
+                    rp.RefundErrorMessage,
+                    rp.RefundAmount
+                FROM PaymentLinks pl
+                LEFT JOIN PaymentTransactions pt ON 
+                    pt.PaymentLinkId = pl.LinkId 
+                    AND pt.Status = 'Success'
+                    AND pt.PaymentMethod != 'REFUND'
+                LEFT JOIN RefundPayments rp ON 
+                    rp.PaymentLinkId = pl.Id
+                    AND rp.RefundStatus IN ('Pending', 'Approved', 'Failed')
+                WHERE pl.TenderBidId = @TenderBidId 
+                    AND pl.IsActive = 1
+                ORDER BY pl.PaymentType";
+
+            var results = await connection.QueryAsync<PaymentRefundSummary>(sql, new { TenderBidId = tenderBidId });
+            return results.ToList();
+        }
+
+        public async Task<bool> HasPendingOrApprovedRefundAsync(int paymentLinkId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"
+                SELECT COUNT(*) 
+                FROM RefundPayments 
+                WHERE PaymentLinkId = @PaymentLinkId 
+                    AND RefundStatus IN ('Pending', 'Approved')";
+
+            var count = await connection.QuerySingleAsync<int>(sql, new { PaymentLinkId = paymentLinkId });
+            return count > 0;
+        }
+
+        public async Task<List<RefundHistoryItem>> GetRefundHistoryForPaymentAsync(int paymentLinkId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"
+                SELECT 
+                    rp.Id as RefundPaymentId,
+                    rp.RefundStatus,
+                    rp.RefundAmount,
+                    rp.InitiatedAt,
+                    u1.Username as InitiatedBy,
+                    rp.ApprovedAt,
+                    u2.Username as ApprovedBy,
+                    rp.RazorpayRefundId,
+                    rp.RefundErrorMessage as ErrorMessage,
+                    rp.CheckerRemarks as Remarks
+                FROM RefundPayments rp
+                LEFT JOIN Users u1 ON rp.InitiatedBy = u1.Id
+                LEFT JOIN Users u2 ON rp.ApprovedBy = u2.Id
+                WHERE rp.PaymentLinkId = @PaymentLinkId
+                ORDER BY rp.InitiatedAt DESC";
+
+            var results = await connection.QueryAsync<RefundHistoryItem>(sql, new { PaymentLinkId = paymentLinkId });
+            return results.ToList();
+        }
+
+        public async Task<RefundValidationResult> ValidateRefundRequestAsync(List<RefundRequestItem> refundItems)
+        {
+            var result = new RefundValidationResult { IsValid = true };
+
+            using var connection = new SqlConnection(_connectionString);
+
+            foreach (var item in refundItems)
+            {
+                var validationItem = new RefundValidationItem
+                {
+                    PaymentLinkId = item.PaymentLinkId,
+                    PaymentType = item.PaymentType,
+                    IsValid = true
+                };
+
+                // Check if payment link exists and is paid
+                var paymentCheckSql = @"
+                    SELECT pl.Status, pl.Amount, tb.Status as BidStatus
+                    FROM PaymentLinks pl
+                    INNER JOIN TenderBids tb ON pl.TenderBidId = tb.Id
+                    WHERE pl.Id = @PaymentLinkId";
+
+                var payment = await connection.QueryFirstOrDefaultAsync<dynamic>(paymentCheckSql, 
+                    new { PaymentLinkId = item.PaymentLinkId });
+
+                if (payment == null)
+                {
+                    validationItem.IsValid = false;
+                    validationItem.ErrorReason = "Payment link not found";
+                }
+                else if (payment.Status != 2) // Not Used/Paid
+                {
+                    validationItem.IsValid = false;
+                    validationItem.ErrorReason = "Payment not completed";
+                }
+                else if (payment.BidStatus != "Rejected")
+                {
+                    validationItem.IsValid = false;
+                    validationItem.ErrorReason = "Bid must be rejected to initiate refund";
+                }
+                else
+                {
+                    // Check for existing refund
+                    if (await HasPendingOrApprovedRefundAsync(item.PaymentLinkId))
+                    {
+                        validationItem.IsValid = false;
+                        validationItem.ErrorReason = "Refund already exists for this payment";
+                    }
+                }
+
+                if (!validationItem.IsValid)
+                {
+                    result.IsValid = false;
+                    result.Errors.Add($"Payment {item.PaymentType}: {validationItem.ErrorReason}");
+                }
+
+                result.ValidationItems.Add(validationItem);
+            }
+
+            return result;
+        }
+
+        public async Task<int> GetPendingRefundCountAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = "SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Pending'";
+            return await connection.QuerySingleAsync<int>(sql);
+        }
+
+        public async Task<int> GetFailedRefundCountAsync()
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = "SELECT COUNT(*) FROM RefundPayments WHERE RefundStatus = 'Failed'";
+            return await connection.QuerySingleAsync<int>(sql);
+        }
+
+        public async Task<BulkRetryResult> BulkRetryFailedRefundsAsync(List<int> refundPaymentIds, int userId)
+        {
+            var result = new BulkRetryResult
+            {
+                TotalAttempted = refundPaymentIds.Count,
+                Results = new List<IndividualRetryResult>()
+            };
+
+            foreach (var refundId in refundPaymentIds)
+            {
+                var retryResult = await RetryFailedRefundAsync(refundId, userId);
+                
+                var individualResult = new IndividualRetryResult
+                {
+                    RefundPaymentId = refundId,
+                    Success = retryResult.Success,
+                    RazorpayRefundId = retryResult.RazorpayRefundId,
+                    ErrorMessage = retryResult.Success ? null : retryResult.Message
+                };
+
+                if (retryResult.Success)
+                    result.SuccessfulCount++;
+                else
+                    result.FailedCount++;
+
+                result.Results.Add(individualResult);
+            }
+
+            return result;
+        }
+
+        public async Task<RefundExportData> GetRefundExportDataAsync(RefundSearchFilter filter)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var sql = @"
+                SELECT 
+                    t.TenderId,
+                    t.TenderTitle,
+                    tb.BidderName,
+                    tb.CompanyName,
+                    CASE rp.PaymentType 
+                        WHEN 1 THEN 'Bid Amount (EMD)'
+                        WHEN 2 THEN 'Security Deposit'
+                        WHEN 3 THEN 'Processing Fee'
+                        ELSE 'Other'
+                    END as PaymentType,
+                    pl.Amount as PaymentAmount,
+                    pt.RazorpayPaymentId as PaymentId,
+                    pt.TransactionDate as PaymentDate,
+                    rp.RefundStatus,
+                    rp.RefundAmount,
+                    rp.RazorpayRefundId as RefundId,
+                    rp.InitiatedAt as RefundInitiatedDate,
+                    rp.ApprovedAt as RefundApprovedDate,
+                    u1.Username as InitiatedBy,
+                    u2.Username as ApprovedBy,
+                    rp.ReasonForRefund as RefundReason,
+                    rp.RefundErrorMessage as ErrorMessage
+                FROM RefundPayments rp
+                INNER JOIN TenderBids tb ON rp.TenderBidId = tb.Id
+                INNER JOIN Tenders t ON rp.TenderId = t.Id
+                INNER JOIN PaymentLinks pl ON rp.PaymentLinkId = pl.Id
+                LEFT JOIN PaymentTransactions pt ON pt.PaymentLinkId = pl.LinkId AND pt.Status = 'Success'
+                LEFT JOIN Users u1 ON rp.InitiatedBy = u1.Id
+                LEFT JOIN Users u2 ON rp.ApprovedBy = u2.Id
+                WHERE 1=1
+                    AND (@TenderId IS NULL OR t.TenderId LIKE '%' + @TenderId + '%')
+                    AND (@TenderName IS NULL OR t.TenderTitle LIKE '%' + @TenderName + '%')
+                    AND (@PaymentType IS NULL OR rp.PaymentType = @PaymentType)
+                    AND (@RefundStatus IS NULL OR rp.RefundStatus = @RefundStatus)
+                    AND (@FromDate IS NULL OR rp.InitiatedAt >= @FromDate)
+                    AND (@ToDate IS NULL OR rp.InitiatedAt <= @ToDate)
+                ORDER BY rp.InitiatedAt DESC";
+
+            var parameters = new
+            {
+                filter.TenderId,
+                filter.TenderName,
+                PaymentType = filter.PaymentType.HasValue ? (int)filter.PaymentType.Value : (int?)null,
+                filter.RefundStatus,
+                filter.FromDate,
+                filter.ToDate
+            };
+
+            var rows = await connection.QueryAsync<RefundExportRow>(sql, parameters);
+
+            var exportData = new RefundExportData
+            {
+                Rows = rows.ToList(),
+                GeneratedAt = DateTime.UtcNow,
+                Summary = new RefundExportSummary
+                {
+                    TotalRefunds = rows.Count(),
+                    TotalRefundAmount = rows.Sum(r => r.RefundAmount),
+                    RefundsByStatus = rows.GroupBy(r => r.RefundStatus)
+                        .ToDictionary(g => g.Key ?? "Unknown", g => g.Count()),
+                    AmountByPaymentType = rows.GroupBy(r => r.PaymentType)
+                        .ToDictionary(
+                            g => Enum.Parse<PaymentType>(g.Key.Replace(" ", "").Replace("(", "").Replace(")", "")), 
+                            g => g.Sum(r => r.RefundAmount))
+                }
+            };
+
+            return exportData;
+        }
+    }
+
+    // Custom Exception for partial success scenarios
+    public class PartialSuccessException : Exception
+    {
+        public List<int> SuccessfulRefunds { get; }
+        public List<(int RefundId, string Error)> FailedRefunds { get; }
+
+        public PartialSuccessException(string message, List<int> successfulRefunds, List<(int, string)> failedRefunds)
+            : base(message)
+        {
+            SuccessfulRefunds = successfulRefunds;
+            FailedRefunds = failedRefunds;
+        }
     }
 }

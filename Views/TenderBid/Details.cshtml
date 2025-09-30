@@ -22,66 +22,173 @@
     </div>
 
     <div class="p-6">
-        <!-- Refund Alert Banner - Show if refund exists -->
+        <!-- Refund Alert Banner -->
         @if (Model.HasRefund && Model.RefundInfo != null)
         {
-            <div class="mb-6">
-                @if (Model.RefundInfo.IsProcessedSuccessfully)
-                {
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <h3 class="text-sm font-medium text-green-800">Refund Processed Successfully</h3>
-                                <p class="mt-1 text-sm text-green-700">Amount of ₹@Model.RefundInfo.RefundAmount.ToString("N2") has been refunded via Razorpay.</p>
-                                @if (!string.IsNullOrEmpty(Model.RefundInfo.RazorpayRefundId))
-                                {
-                                    <p class="mt-1 text-xs text-green-600">Refund ID: @Model.RefundInfo.RazorpayRefundId</p>
-                                }
-                            </div>
-                        </div>
+            <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h3 class="text-lg font-medium text-yellow-900 mb-2 flex items-center">
+                    <i class="ri-refund-line mr-2"></i>Refund Information
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">Refund Amount</p>
+                        <p class="text-lg font-semibold">₹@Model.RefundInfo.RefundAmount.ToString("N2")</p>
                     </div>
-                }
-                else if (Model.RefundInfo.RefundStatus == "Pending")
-                {
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <h3 class="text-sm font-medium text-yellow-800">Refund Pending Approval</h3>
-                                <p class="mt-1 text-sm text-yellow-700">A refund of ₹@Model.RefundInfo.RefundAmount.ToString("N2") is pending approval.</p>
-                            </div>
-                        </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Refund Status</p>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @Model.RefundInfo.RefundStatusBadgeClass">
+                            @Model.RefundInfo.RefundStatus
+                        </span>
                     </div>
-                }
-                else if (Model.RefundInfo.RefundStatus == "Failed")
-                {
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <h3 class="text-sm font-medium text-red-800">Refund Failed</h3>
-                                <p class="mt-1 text-sm text-red-700">The refund processing failed.</p>
-                                @if (!string.IsNullOrEmpty(Model.RefundInfo.RefundErrorMessage))
-                                {
-                                    <p class="mt-1 text-xs text-red-600">Error: @Model.RefundInfo.RefundErrorMessage</p>
-                                }
-                            </div>
+                    @if (!string.IsNullOrEmpty(Model.RefundInfo.RazorpayRefundId))
+                    {
+                        <div>
+                            <p class="text-sm text-gray-600">Refund ID</p>
+                            <p class="text-sm font-mono">@Model.RefundInfo.RazorpayRefundId</p>
                         </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.RefundInfo.ReasonForRefund))
+                    {
+                        <div>
+                            <p class="text-sm text-gray-600">Reason</p>
+                            <p class="text-sm">@Model.RefundInfo.ReasonForRefund</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Payment Links Section -->
+        @if (Model.PaymentLinks != null && Model.PaymentLinks.Any())
+        {
+            <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 class="text-lg font-medium text-blue-900 mb-4 flex items-center">
+                    <i class="ri-links-line mr-2"></i>Payment Links
+                </h3>
+
+                <!-- Overall Payment Status -->
+                <div class="mb-4 p-3 bg-white rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700">Overall Payment Status:</span>
+                        @{
+                            var allPaid = Model.PaymentLinks.All(pl => pl.Status == BiddingSystem.Models.PaymentLinkStatus.Used);
+                            var anyPaid = Model.PaymentLinks.Any(pl => pl.Status == BiddingSystem.Models.PaymentLinkStatus.Used);
+                        }
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @(allPaid ? "bg-green-100 text-green-800" : anyPaid ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800")">
+                            @(allPaid ? "All Payments Complete" : anyPaid ? "Partially Paid" : "Payment Pending")
+                        </span>
                     </div>
-                }
+                </div>
+
+                <!-- Payment Links Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Type</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Link ID</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach (var link in Model.PaymentLinks.OrderBy(pl => pl.PaymentType))
+                            {
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            @BiddingSystem.Models.PaymentTypeExtensions.GetDisplayName(link.PaymentType)
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                                        <div class="text-sm font-semibold text-gray-900">₹@link.Amount.ToString("N2")</div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @link.StatusBadgeClass">
+                                            @link.StatusDisplayName
+                                        </span>
+                                        @if (link.Status == BiddingSystem.Models.PaymentLinkStatus.Used && link.UsedDate.HasValue)
+                                        {
+                                            <p class="text-xs text-gray-500 mt-1">Paid on @link.UsedDate.Value.ToString("dd MMM yyyy")</p>
+                                        }
+                                        @if (link.IsExpired)
+                                        {
+                                            <p class="text-xs text-red-600 mt-1">Expired</p>
+                                        }
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900 font-mono">@link.LinkId</div>
+                                        @if (!string.IsNullOrEmpty(link.TransactionId))
+                                        {
+                                            <p class="text-xs text-gray-500">TXN: @link.TransactionId</p>
+                                        }
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-center">
+                                        @if (link.Status == BiddingSystem.Models.PaymentLinkStatus.Active && !link.IsExpired)
+                                        {
+                                            <div class="flex flex-col gap-2">
+                                                <a href="@link.PaymentUrl" target="_blank"
+                                                   class="inline-flex items-center justify-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                                                    <i class="ri-secure-payment-line mr-1"></i> Pay Now
+                                                </a>
+                                                <button onclick="copyPaymentLink('@link.PaymentUrl')"
+                                                        class="text-xs text-blue-600 hover:text-blue-800">
+                                                    <i class="ri-link-m"></i> Copy Link
+                                                </button>
+                                            </div>
+                                        }
+                                        else if (link.Status == BiddingSystem.Models.PaymentLinkStatus.Used)
+                                        {
+                                            <span class="inline-flex items-center text-xs text-green-600">
+                                                <i class="ri-check-line mr-1"></i> Paid
+                                            </span>
+                                        }
+                                        else if (link.IsExpired)
+                                        {
+                                            @if (User.IsInRole("Admin") || User.IsInRole("Maker"))
+                                            {
+                                                <button onclick="regenerateLink(@link.Id, '@link.PaymentType')"
+                                                        class="text-xs text-orange-600 hover:text-orange-800">
+                                                    <i class="ri-refresh-line"></i> Regenerate
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-xs text-gray-400">Expired</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-xs text-gray-400">@link.StatusDisplayName</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bidder Payment Dashboard Link -->
+                <div class="mt-4 p-3 bg-blue-100 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-blue-900">Bidder Payment Portal</p>
+                            <p class="text-xs text-blue-700 mt-1">Share this link with the bidder to access their payment dashboard</p>
+                        </div>
+                        <a href="@Url.Action("Dashboard", "BidderPayment", new { bidId = Model.Id, email = Model.BidderEmail })"
+                           target="_blank"
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            <i class="ri-external-link-line mr-2"></i> Open Dashboard
+                        </a>
+                    </div>
+                    <div class="mt-2">
+                        <input type="text" readonly
+                               value="@($"{Context.Request.Scheme}://{Context.Request.Host}/BidderPayment/Dashboard?bidId={Model.Id}&email={Model.BidderEmail}")"
+                               class="w-full px-3 py-1 text-xs bg-white border border-blue-200 rounded font-mono"
+                               onclick="this.select()">
+                    </div>
+                </div>
             </div>
         }
 
@@ -93,30 +200,26 @@
                     <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
                         <i class="ri-user-line mr-2"></i>Bidder Information
                     </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-500">Bidder Name</label>
+                            <label class="block text-sm font-medium text-gray-700">Bidder Name</label>
                             <p class="mt-1 text-sm text-gray-900">@Model.BidderName</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-500">Email</label>
-                            <p class="mt-1 text-sm text-gray-900">
-                                <a href="mailto:@Model.BidderEmail" class="text-primary hover:text-primary/80">@Model.BidderEmail</a>
-                            </p>
+                            <label class="block text-sm font-medium text-gray-700">Company Name</label>
+                            <p class="mt-1 text-sm text-gray-900">@(Model.CompanyName ?? "N/A")</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-500">Phone</label>
-                            <p class="mt-1 text-sm text-gray-900">
-                                <a href="tel:@Model.BidderPhone" class="text-primary hover:text-primary/80">@Model.BidderPhone</a>
-                            </p>
+                            <label class="block text-sm font-medium text-gray-700">Email</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.BidderEmail</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-500">Company</label>
-                            <p class="mt-1 text-sm text-gray-900">@Model.CompanyName</p>
+                            <label class="block text-sm font-medium text-gray-700">Phone</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.BidderPhone</p>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-500">Company Address</label>
-                            <p class="mt-1 text-sm text-gray-900">@Model.CompanyAddress</p>
+                        <div class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Company Address</label>
+                            <p class="mt-1 text-sm text-gray-900">@(Model.CompanyAddress ?? "N/A")</p>
                         </div>
                     </div>
                 </div>
@@ -126,173 +229,314 @@
                     <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
                         <i class="ri-money-dollar-circle-line mr-2"></i>Financial Information
                     </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-500">Bid Amount</label>
+                            <label class="block text-sm font-medium text-gray-700">Bid Amount</label>
                             <p class="mt-1 text-lg font-semibold text-gray-900">₹@Model.BidAmount.ToString("N2")</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-500">EMD Amount</label>
+                            <label class="block text-sm font-medium text-gray-700">EMD Amount</label>
                             <p class="mt-1 text-lg font-semibold text-gray-900">₹@Model.EmdAmount.ToString("N2")</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-500">Processing Fee</label>
+                            <label class="block text-sm font-medium text-gray-700">Processing Fee</label>
                             <p class="mt-1 text-lg font-semibold text-gray-900">₹@Model.ProcessingFee.ToString("N2")</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-500">Total Amount</label>
-                            <p class="mt-1 text-xl font-bold text-primary">₹@Model.TotalAmount.ToString("N2")</p>
+                            <label class="block text-sm font-medium text-gray-700">Total Amount</label>
+                            <p class="mt-1 text-lg font-semibold text-green-600">₹@Model.TotalAmount.ToString("N2")</p>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Payment Status</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @Model.PaymentStatusBadgeClass">
+                                @Model.PaymentStatusDisplayName
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Payment Reference</label>
+                            <p class="mt-1 text-sm text-gray-900">@(Model.PaymentReference ?? "N/A")</p>
+                        </div>
+                        @if (Model.PaymentDate.HasValue)
+                        {
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Payment Date</label>
+                                <p class="mt-1 text-sm text-gray-900">@Model.PaymentDate.Value.ToString("dd MMM yyyy HH:mm")</p>
+                            </div>
+                        }
                     </div>
                 </div>
 
-                <!-- Refund Information - Show if refund exists -->
-                @if (Model.HasRefund && Model.RefundInfo != null)
-                {
-                    <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <i class="ri-refund-line mr-2"></i>Refund Information
+                <!-- Documents Section -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                            <i class="ri-file-text-line mr-2"></i>Documents
                         </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500">Refund Amount</label>
-                                <p class="mt-1 text-lg font-semibold text-purple-900">₹@Model.RefundInfo.RefundAmount.ToString("N2")</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500">Refund Status</label>
-                                <p class="mt-1">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @Model.RefundInfo.RefundStatusBadgeClass">
-                                        @Model.RefundInfo.RefundStatus
-                                    </span>
-                                </p>
-                            </div>
-                            @if (!string.IsNullOrEmpty(Model.RefundInfo.RazorpayRefundId))
-                            {
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-500">Razorpay Refund ID</label>
-                                    <p class="mt-1 text-sm font-mono bg-white p-2 rounded border border-purple-200">@Model.RefundInfo.RazorpayRefundId</p>
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(Model.RefundInfo.ReasonForRefund))
-                            {
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-500">Reason for Refund</label>
-                                    <p class="mt-1 text-sm text-gray-900">@Model.RefundInfo.ReasonForRefund</p>
-                                </div>
-                            }
-                            @if (Model.RefundInfo.InitiatedAt.HasValue)
-                            {
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-500">Initiated At</label>
-                                    <p class="mt-1 text-sm text-gray-900">@Model.RefundInfo.InitiatedAt.Value.ToString("dd MMM yyyy HH:mm")</p>
-                                    @if (!string.IsNullOrEmpty(Model.RefundInfo.InitiatedByName))
-                                    {
-                                        <p class="text-xs text-gray-500">by @Model.RefundInfo.InitiatedByName</p>
-                                    }
-                                </div>
-                            }
-                            @if (Model.RefundInfo.ApprovedAt.HasValue)
-                            {
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-500">Processed At</label>
-                                    <p class="mt-1 text-sm text-gray-900">@Model.RefundInfo.ApprovedAt.Value.ToString("dd MMM yyyy HH:mm")</p>
-                                    @if (!string.IsNullOrEmpty(Model.RefundInfo.ApprovedByName))
-                                    {
-                                        <p class="text-xs text-gray-500">by @Model.RefundInfo.ApprovedByName</p>
-                                    }
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(Model.RefundInfo.CheckerRemarks))
-                            {
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-500">Checker Remarks</label>
-                                    <p class="mt-1 text-sm text-gray-900 bg-white p-2 rounded border border-purple-200">@Model.RefundInfo.CheckerRemarks</p>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Link to refund details -->
-                        <div class="mt-4 pt-4 border-t border-purple-200">
-                            <a href="/Refund/Details/@Model.RefundInfo.RefundPaymentId"
-                               class="inline-flex items-center text-purple-700 hover:text-purple-900 text-sm font-medium">
-                                <i class="ri-external-link-line mr-1"></i>
-                                View Full Refund Details
-                            </a>
-                        </div>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Maker"))
+                        {
+                            <button onclick="openUploadModal()" class="inline-flex items-center px-3 py-1 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-primary hover:bg-primary/90">
+                                <i class="ri-upload-2-line mr-1"></i>Upload
+                            </button>
+                        }
                     </div>
-                }
 
-                <!-- Documents section remains the same -->
-                @if (Model.Documents.Any())
+                    @if (Model.Documents != null && Model.Documents.Any())
+                    {
+                        <div class="space-y-2">
+                            @foreach (var doc in Model.Documents)
+                            {
+                                <div class="flex items-center justify-between p-2 bg-white rounded border">
+                                    <div class="flex items-center">
+                                        <i class="ri-file-3-line text-gray-400 mr-2"></i>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">@doc.DocumentName</p>
+                                            <p class="text-xs text-gray-500">@doc.DocumentType - Uploaded @doc.UploadedAt.ToString("dd MMM yyyy")</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <a href="@doc.FilePath" target="_blank" class="text-blue-600 hover:text-blue-800">
+                                            <i class="ri-download-line"></i>
+                                        </a>
+                                        @if (User.IsInRole("Admin") || User.IsInRole("Maker"))
+                                        {
+                                            <form asp-action="DeleteDocument" method="post" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="documentId" value="@doc.Id" />
+                                                <input type="hidden" name="bidId" value="@Model.Id" />
+                                                <button type="submit" onclick="return confirm('Are you sure you want to delete this document?')" class="text-red-600 hover:text-red-800">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-sm text-gray-500">No documents uploaded yet.</p>
+                    }
+                </div>
+
+                <!-- Remarks Section -->
+                @if (!string.IsNullOrEmpty(Model.Remarks))
                 {
                     <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <i class="ri-file-list-line mr-2"></i>Bid Documents
+                        <h3 class="text-lg font-medium text-gray-900 mb-2 flex items-center">
+                            <i class="ri-chat-3-line mr-2"></i>Remarks
                         </h3>
-                        <!-- Document list code remains the same -->
+                        <p class="text-sm text-gray-700">@Model.Remarks</p>
                     </div>
                 }
             </div>
 
             <!-- Sidebar -->
             <div class="space-y-6">
-                <!-- Status Cards -->
-                <div class="bg-white border border-gray-200 rounded-lg p-4">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Status</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 mb-2">Bid Status</label>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @Model.StatusBadgeClass">
-                                @Model.Status
-                            </span>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 mb-2">Payment Status</label>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium @Model.PaymentStatusBadgeClass">
-                                @Model.PaymentStatus
-                            </span>
-                            @if (Model.PaymentStatus == "Refunded" && Model.RefundInfo?.IsProcessedSuccessfully == true)
-                            {
-                                <p class="text-xs text-gray-500 mt-1">via Razorpay</p>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Payment Information -->
-                <div class="bg-white border border-gray-200 rounded-lg p-4">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Payment Information</h3>
+                <!-- Tender Information -->
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-blue-900 mb-4 flex items-center">
+                        <i class="ri-file-list-3-line mr-2"></i>Tender Information
+                    </h3>
                     <div class="space-y-3">
-                        @if (!string.IsNullOrEmpty(Model.PaymentReference))
-                        {
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500">Payment Reference</label>
-                                <p class="mt-1 text-sm text-gray-900 font-mono">@Model.PaymentReference</p>
-                            </div>
-                        }
-                        @if (Model.PaymentDate.HasValue)
-                        {
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500">Payment Date</label>
-                                <p class="mt-1 text-sm text-gray-900">@Model.PaymentDate.Value.ToString("dd MMM yyyy HH:mm")</p>
-                            </div>
-                        }
-                        @if (Model.HasRefund && Model.RefundInfo?.IsProcessedSuccessfully == true)
-                        {
-                            <div class="pt-3 border-t">
-                                <label class="block text-sm font-medium text-purple-700">Refund Processed</label>
-                                <p class="mt-1 text-sm text-purple-600">₹@Model.RefundInfo.RefundAmount.ToString("N2")</p>
-                                @if (Model.RefundInfo.ApprovedAt.HasValue)
-                                {
-                                    <p class="text-xs text-purple-500">on @Model.RefundInfo.ApprovedAt.Value.ToString("dd MMM yyyy")</p>
-                                }
-                            </div>
-                        }
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tender Title</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.TenderName</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tender Status</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.TenderStatus</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tender ID</label>
+                            <p class="mt-1 text-sm font-mono text-gray-900">@Model.TenderId</p>
+                        </div>
+                        <a asp-controller="Tender" asp-action="Details" asp-route-id="@Model.TenderId" class="inline-flex items-center px-3 py-2 border border-blue-600 text-sm leading-4 font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 w-full justify-center">
+                            View Tender Details
+                        </a>
                     </div>
                 </div>
 
-                <!-- Rest of the sidebar sections remain the same -->
+                <!-- Status Information -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <i class="ri-information-line mr-2"></i>Status Information
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Bid Status</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @Model.StatusBadgeClass">
+                                @Model.StatusDisplayName
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Submitted At</label>
+                            <p class="mt-1 text-sm text-gray-900">@Model.SubmittedAt.ToString("dd MMM yyyy HH:mm")</p>
+                        </div>
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Last Updated</label>
+                                <p class="mt-1 text-sm text-gray-900">@Model.UpdatedAt.Value.ToString("dd MMM yyyy HH:mm")</p>
+                            </div>
+                        }
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Active Status</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(Model.IsActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800")">
+                                @(Model.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                @if (User.IsInRole("Admin") || User.IsInRole("Maker"))
+                {
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                            <i class="ri-settings-3-line mr-2"></i>Actions
+                        </h3>
+                        <div class="space-y-2">
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 w-full justify-center">
+                                <i class="ri-edit-line mr-2"></i>Edit Bid
+                            </a>
+                            <button onclick="openPaymentStatusModal()" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 w-full justify-center">
+                                <i class="ri-money-dollar-circle-line mr-2"></i>Update Payment
+                            </button>
+                            <form asp-action="Delete" asp-route-id="@Model.Id" method="get" class="inline w-full">
+                                <button type="submit" class="inline-flex items-center px-3 py-2 border border-red-300 text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 w-full justify-center">
+                                    <i class="ri-delete-bin-line mr-2"></i>Delete Bid
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
 </div>
+
+<!-- Upload Document Modal -->
+<div id="uploadModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <form asp-action="UploadDocument" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="bidId" value="@Model.Id" />
+
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Upload Document</h3>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Document Type</label>
+                <select name="documentType" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                    <option value="">Select Type</option>
+                    <option value="TechnicalProposal">Technical Proposal</option>
+                    <option value="FinancialProposal">Financial Proposal</option>
+                    <option value="CompanyProfile">Company Profile</option>
+                    <option value="BankGuarantee">Bank Guarantee</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select File</label>
+                <input type="file" name="file" class="w-full px-3 py-2 border border-gray-300 rounded-md" required />
+            </div>
+
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeUploadModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Update Payment Status Modal -->
+<div id="paymentStatusModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <form asp-action="UpdatePaymentStatus" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Update Payment Status</h3>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+                <select name="paymentStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                    <option value="">Select Status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Failed">Failed</option>
+                    <option value="Refunded">Refunded</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Reference</label>
+                <input type="text" name="paymentReference" class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Payment Date</label>
+                <input type="datetime-local" name="paymentDate" class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+            </div>
+
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closePaymentStatusModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function copyPaymentLink(url) {
+        navigator.clipboard.writeText(url).then(function () {
+            alert('Payment link copied to clipboard!');
+        }, function (err) {
+            console.error('Could not copy text: ', err);
+        });
+    }
+
+    async function regenerateLink(linkId, paymentType) {
+        if (!confirm(`Are you sure you want to regenerate the payment link for ${paymentType}?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/PaymentLink/Regenerate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ linkId: linkId })
+            });
+
+            if (response.ok) {
+                alert('Payment link regenerated successfully!');
+                location.reload();
+            } else {
+                alert('Failed to regenerate payment link.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while regenerating the payment link.');
+        }
+    }
+
+    function openUploadModal() {
+        document.getElementById('uploadModal').classList.remove('hidden');
+    }
+
+    function closeUploadModal() {
+        document.getElementById('uploadModal').classList.add('hidden');
+    }
+
+    function openPaymentStatusModal() {
+        document.getElementById('paymentStatusModal').classList.remove('hidden');
+    }
+
+    function closePaymentStatusModal() {
+        document.getElementById('paymentStatusModal').classList.add('hidden');
+    }
+</script>

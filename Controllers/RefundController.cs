@@ -3,15 +3,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using BiddingSystem.Data;
 using BiddingSystem.ViewModels;
+using BiddingSystem.Models;
 using System.Security.Claims;
 using Microsoft.Extensions.Logging;
-using BiddingSystem.Data;
-using static BiddingSystem.Data.RefundRepository;
+using System.Collections.Generic;
 
 namespace BiddingSystem.Controllers
 {
-    [Authorize] // Simplified authorization - any authenticated user
+    [Authorize]
     public class RefundController : Controller
     {
         private readonly IRefundRepository _refundRepository;
@@ -23,110 +24,217 @@ namespace BiddingSystem.Controllers
             _logger = logger;
         }
 
-        // GET: Refund/Index
+        // GET: Refund/Index - Main page
         public IActionResult Index()
         {
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Maker";
+            var userRole = GetUserRole();
 
             ViewBag.UserRole = userRole;
-            ViewBag.CanInitiate = userRole == "Maker" || userRole == "Admin";
-            ViewBag.CanApprove = userRole == "Checker" || userRole == "Admin" || userRole == "Approver";
-
-            _logger.LogInformation($"Refund Index accessed by user with role: {userRole}");
+            ViewBag.CanInitiate = CanInitiateRefund(userRole);
+            ViewBag.CanApprove = CanApproveRefund(userRole);
 
             return View();
         }
 
-        // AJAX: Get refund list - with debugging
+        // AJAX: Get refunds list
         [HttpGet]
-        public async Task<IActionResult> GetRefundList(RefundSearchFilter filter)
+        public async Task<IActionResult> GetRefundsList(
+            string? tenderId,
+            string? tenderName,
+            int? paymentType,
+            int page = 1,
+            int pageSize = 10,
+            bool showPendingOnly = false)
         {
             try
             {
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "Maker";
+                var userRole = GetUserRole();
 
-                _logger.LogInformation($"GetRefundList called - Role: {userRole}, Filter: TenderId={filter.TenderId}, TenderName={filter.TenderName}, Page={filter.PageNumber}");
-
-                // Determine display mode based on role
-                string displayMode = "Maker";
-
-                if (userRole == "Checker" || userRole == "Approver")
+                // Create filter from request parameters
+                var filter = new RefundSearchFilter
                 {
-                    displayMode = "Checker";
-                }
-                else if (userRole == "Admin" && filter.ShowPendingOnly)
+                    TenderId = tenderId,
+                    TenderName = tenderName,
+                    PaymentType = paymentType.HasValue ? (PaymentType)paymentType.Value : (PaymentType?)null,
+                    PageNumber = page,
+                    PageSize = pageSize,
+                    ShowPendingOnly = showPendingOnly || (userRole == "Checker" || userRole == "Approver")
+                };
+
+                // Call repository method with userRole parameter
+                var result = await _refundRepository.GetRefundListAsync(filter, userRole);
+
+                // Transform the data for frontend
+                var transformedData = result.Items.Select(item => new
                 {
-                    displayMode = "Checker";
-                }
+                    id = item.RefundPaymentId ?? 0,
+                    tenderBidId = item.TenderBidId,
+                    tenderId = item.TenderId,
+                    tenderIdString = item.TenderIdString,
+                    tenderName = item.TenderTitle,
+                    bidderName = item.BidderName,
+                    companyName = item.CompanyName,
+                    paymentType = item.PaymentTypeDisplay,
+                    paymentTypeValue = (int)item.PaymentType,
+                    amount = item.PaymentAmount,
+                    paymentId = item.RazorpayPaymentId,
+                    paymentLinkId = item.PaymentLinkId,
+                    status = GetRefundStatusDisplay(item),
+                    actionStatus = GetActionStatus(item, userRole),
+                    canSelect = CanSelectRefund(item, userRole),
+                    razorpayRefundId = item.RazorpayRefundId,
+                    refundErrorMessage = item.RefundErrorMessage
+                }).ToList();
 
-                _logger.LogInformation($"Display mode: {displayMode}");
+                // Calculate statistics with proper failed count
+                var stats = new
+                {
+                    pending = result.Items.Count(x =>
+                        string.Equals(x.RefundStatus, "Pending", StringComparison.OrdinalIgnoreCase) ||
+                        (!x.HasPendingRefund && userRole == "Maker")),
+                    approved = result.Items.Count(x =>
+                        string.Equals(x.RefundStatus, "Approved", StringComparison.OrdinalIgnoreCase)),
+                    failed = result.Items.Count(x =>
+                        string.Equals(x.RefundStatus, "Failed", StringComparison.OrdinalIgnoreCase)),
+                    totalAmount = result.Items.Sum(x => x.PaymentAmount)
+                };
 
-                var refunds = await _refundRepository.GetRefundListAsync(filter, displayMode);
-
-                _logger.LogInformation($"Refunds retrieved: {refunds?.Items?.Count ?? 0} items");
-
-                
                 return Json(new
                 {
                     success = true,
-                    data = refunds,
-                    userRole = userRole,
-                    canInitiate = userRole == "Maker" || userRole == "Admin",
-                    canApprove = userRole == "Checker" || userRole == "Admin" || userRole == "Approver",
-                    debug = new
+                    data = transformedData,
+                    totalPages = result.TotalPages,
+                    totalRecords = result.TotalCount,
+                    currentPage = result.CurrentPage,
+                    stats = stats
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading refunds list");
+                return Json(new { success = false, message = "Failed to load refunds: " + ex.Message });
+            }
+        }
+
+        // AJAX: Initiate refunds (for Maker role)
+        [HttpPost]
+        public async Task<IActionResult> InitiateRefunds([FromBody] InitiateRefundsRequest request)
+        {
+            try
+            {
+                var userRole = GetUserRole();
+                var userId = GetUserId();
+
+                // Validate permissions
+                if (!CanInitiateRefund(userRole))
+                {
+                    return Json(new { success = false, message = "You don't have permission to initiate refunds" });
+                }
+
+                if (request.RefundItems == null || !request.RefundItems.Any())
+                {
+                    return Json(new { success = false, message = "No items selected for refund" });
+                }
+
+                // Validate the refund request
+                var validationResult = await _refundRepository.ValidateRefundRequestAsync(request.RefundItems);
+                if (!validationResult.IsValid)
+                {
+                    return Json(new
                     {
-                        totalCount = refunds?.TotalCount ?? 0,
-                        itemCount = refunds?.Items?.Count ?? 0,
-                        displayMode = displayMode
-                    }
-                });
+                        success = false,
+                        message = "Validation failed",
+                        errors = validationResult.Errors
+                    });
+                }
+
+                // Initiate refunds
+                var success = await _refundRepository.InitiateRefundsAsync(
+                    request.RefundItems,
+                    request.Reason ?? "Tender awarded to another bidder",
+                    userId);
+
+                if (success)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = $"Successfully initiated {request.RefundItems.Count} refund(s) for approval"
+                    });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Failed to initiate refunds" });
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in GetRefundList");
-                return Json(new
-                {
-                    success = false,
-                    message = "Error loading refund list: " + ex.Message,
-                    error = ex.ToString()
-                });
+                _logger.LogError(ex, "Error initiating refunds");
+                return Json(new { success = false, message = "An error occurred: " + ex.Message });
             }
         }
 
-        // Test method to check database connectivity
-        [HttpGet]
-        public async Task<IActionResult> TestConnection()
+        // AJAX: Process refunds (Approve/Reject for Checker role)
+        [HttpPost]
+        public async Task<IActionResult> ProcessRefunds([FromBody] ProcessRefundsRequest request)
         {
             try
             {
-                var filter = new RefundSearchFilter { PageNumber = 1, PageSize = 5 };
-                var result = await _refundRepository.GetRefundListAsync(filter, "Maker");
+                var userRole = GetUserRole();
+                var userId = GetUserId();
+
+                // Validate permissions
+                if (!CanApproveRefund(userRole))
+                {
+                    return Json(new { success = false, message = "You don't have permission to approve/reject refunds" });
+                }
+
+                if (request.RefundIds == null || !request.RefundIds.Any())
+                {
+                    return Json(new { success = false, message = "No refunds selected" });
+                }
+
+                // Process refunds - this now handles both Pending and Failed status
+                bool success = await _refundRepository.ProcessRefundsAsync(
+                    request.RefundIds,
+                    request.Action,
+                    request.Reason ?? "",
+                    userId);
+
+                string message = request.Action == "Approve"
+                    ? $"Successfully approved {request.RefundIds.Count} refund(s)"
+                    : $"Successfully rejected {request.RefundIds.Count} refund(s)";
+
+                return Json(new { success = success, message = message });
+            }
+            catch (PartialSuccessException psEx)
+            {
+                // Handle partial success
+                var message = $"Partially completed: {psEx.SuccessfulRefunds.Count} succeeded, {psEx.FailedRefunds.Count} failed";
+                var errors = psEx.FailedRefunds.Select(f => $"RefundId {f.RefundId}: {f.Error}").ToList();
 
                 return Json(new
                 {
-                    success = true,
-                    message = "Connection successful",
-                    recordCount = result?.TotalCount ?? 0
+                    success = psEx.SuccessfulRefunds.Any(),
+                    message = message,
+                    errors = errors
                 });
             }
             catch (Exception ex)
             {
-                return Json(new
-                {
-                    success = false,
-                    message = "Connection failed: " + ex.Message
-                });
+                _logger.LogError(ex, "Error processing refunds");
+                return Json(new { success = false, message = "An error occurred: " + ex.Message });
             }
         }
 
-        // GET: Refund/ApprovedRefunds - View for approved refunds (Checker/Admin only)
+        // GET: Approved refunds page
         [Authorize]
         public IActionResult ApprovedRefunds()
         {
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+            var userRole = GetUserRole();
 
             // Only Checker, Approver, and Admin can view approved refunds
-            if (userRole != "Checker" && userRole != "Maker" && userRole != "Admin" && userRole != "Approver")
+            if (!CanApproveRefund(userRole))
             {
                 return RedirectToAction("Index");
             }
@@ -135,286 +243,256 @@ namespace BiddingSystem.Controllers
             return View();
         }
 
-        // AJAX: Get approved refunds list
+        // AJAX: Get approved refunds
         [HttpGet]
-        public async Task<IActionResult> GetApprovedRefundsList(RefundSearchFilter filter)
+        public async Task<IActionResult> GetApprovedRefunds(
+            string? tenderId,
+            string? tenderName,
+            int? paymentType,
+            DateTime? fromDate,
+            int page = 1,
+            int pageSize = 10)
         {
             try
             {
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
-
-                // Check permission
-                if (userRole != "Checker" && userRole != "Maker" && userRole != "Admin" && userRole != "Approver")
+                var filter = new RefundSearchFilter
                 {
-                    return Json(new { success = false, message = "Unauthorized access" });
-                }
+                    TenderId = tenderId,
+                    TenderName = tenderName,
+                    PaymentType = paymentType.HasValue ? (PaymentType)paymentType.Value : (PaymentType?)null,
+                    RefundStatus = "Approved",
+                    FromDate = fromDate,
+                    PageNumber = page,
+                    PageSize = pageSize
+                };
 
-                filter.RefundStatus = "Approved"; // Force to show only approved
-                var refunds = await _refundRepository.GetRefundsByStatusAsync(filter);
+                var result = await _refundRepository.GetRefundsByStatusAsync(filter);
 
                 return Json(new
                 {
                     success = true,
-                    data = refunds,
-                    userRole = userRole
+                    data = result.Items,
+                    totalPages = result.TotalPages,
+                    totalRecords = result.TotalCount
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in GetApprovedRefundsList");
-                return Json(new { success = false, message = "Error loading approved refunds: " + ex.Message });
+                _logger.LogError(ex, "Error loading approved refunds");
+                return Json(new { success = false, message = "Failed to load approved refunds" });
             }
         }
 
-        // Rest of the methods remain the same...
-
+        // AJAX: Retry failed refund (single)
         [HttpPost]
-        public async Task<IActionResult> InitiateRefunds([FromBody] InitiateRefundRequest request)
+        public async Task<IActionResult> RetryFailedRefund([FromBody] RetryRefundRequest request)
         {
             try
             {
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+                var userRole = GetUserRole();
+                var userId = GetUserId();
 
-                if (userRole != "Maker" && userRole != "Admin")
+                if (!CanApproveRefund(userRole))
                 {
-                    return Json(new { success = false, message = "You don't have permission to initiate refunds." });
+                    return Json(new { success = false, message = "You don't have permission to retry refunds" });
                 }
 
-                if (request.TenderBidIds == null || !request.TenderBidIds.Any())
+                var result = await _refundRepository.RetryFailedRefundAsync(request.RefundPaymentId, userId);
+
+                return Json(new
                 {
-                    return Json(new { success = false, message = "Please select at least one bidder for refund." });
-                }
-
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
-                var result = await _refundRepository.InitiateRefundsAsync(
-                    request.TenderBidIds,
-                    request.ReasonForRefund,
-                    userId
-                );
-
-                if (result)
-                {
-                    return Json(new
-                    {
-                        success = true,
-                        message = $"Refund request(s) initiated successfully for {request.TenderBidIds.Count} bidder(s)!"
-                    });
-                }
-
-                return Json(new { success = false, message = "Failed to initiate refund requests." });
+                    success = result.Success,
+                    message = result.Message,
+                    razorpayRefundId = result.RazorpayRefundId
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in InitiateRefunds");
-                return Json(new { success = false, message = "An error occurred: " + ex.Message });
+                _logger.LogError(ex, "Error retrying refund");
+                return Json(new { success = false, message = "Failed to retry refund: " + ex.Message });
             }
         }
 
+        // AJAX: Bulk retry failed refunds (NEW)
         [HttpPost]
-        public async Task<IActionResult> ProcessRefunds([FromBody] ApproveRefundRequest request)
+        public async Task<IActionResult> BulkRetryFailedRefunds([FromBody] BulkRetryRequest request)
         {
             try
             {
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+                var userRole = GetUserRole();
+                var userId = GetUserId();
 
-                if (userRole != "Checker" && userRole != "Admin" && userRole != "Approver")
+                if (!CanApproveRefund(userRole))
                 {
-                    return Json(new { success = false, message = "You don't have permission to approve/reject refunds." });
+                    return Json(new { success = false, message = "You don't have permission to retry refunds" });
                 }
 
                 if (request.RefundPaymentIds == null || !request.RefundPaymentIds.Any())
                 {
-                    return Json(new { success = false, message = "Please select at least one refund to process." });
+                    return Json(new { success = false, message = "No refunds selected for retry" });
                 }
 
-                if (string.IsNullOrEmpty(request.Action))
+                var result = await _refundRepository.BulkRetryFailedRefundsAsync(request.RefundPaymentIds, userId);
+
+                var message = result.SuccessfulCount > 0
+                    ? $"Retry completed: {result.SuccessfulCount} succeeded, {result.FailedCount} failed"
+                    : "All retry attempts failed";
+
+                return Json(new
                 {
-                    return Json(new { success = false, message = "Please specify an action (Approve or Reject)." });
-                }
-
-                if (request.Action == "Reject" && string.IsNullOrWhiteSpace(request.CheckerRemarks))
-                {
-                    return Json(new { success = false, message = "Remarks are required when rejecting refunds." });
-                }
-
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
-
-                try
-                {
-                    var result = await _refundRepository.ProcessRefundsAsync(
-                        request.RefundPaymentIds,
-                        request.Action,
-                        request.CheckerRemarks ?? "",
-                        userId
-                    );
-
-                    if (result)
-                    {
-                        var actionText = request.Action == "Approve" ? "approved" : "rejected";
-                        return Json(new
-                        {
-                            success = true,
-                            message = $"All {request.RefundPaymentIds.Count} refund(s) {actionText} successfully!",
-                            allSuccessful = true
-                        });
-                    }
-                    else
-                    {
-                        // Some refunds may have failed
-                        return Json(new
-                        {
-                            success = false,
-                            message = "Some refunds could not be processed. Please check the refund status for details.",
-                            allSuccessful = false
-                        });
-                    }
-                }
-                catch (PartialSuccessException psEx)
-                {
-                    // Handle partial success scenario
-                    _logger.LogWarning(psEx, "Partial success in refund processing");
-
-                    var successCount = psEx.SuccessfulRefunds?.Count ?? 0;
-                    var failCount = psEx.FailedRefunds?.Count ?? 0;
-
-                    return Json(new
-                    {
-                        success = false,
-                        partialSuccess = true,
-                        message = $"Partial success: {successCount} refund(s) processed successfully, {failCount} failed.",
-                        details = new
-                        {
-                            successful = psEx.SuccessfulRefunds,
-                            failed = psEx.FailedRefunds?.Select(f => new {
-                                refundId = f.RefundId,
-                                error = f.Error
-                            })
-                        },
-                        allSuccessful = false
-                    });
-                }
-                catch (Exception refundEx)
-                {
-                    // Complete failure - all changes rolled back
-                    _logger.LogError(refundEx, "Complete failure in refund processing - all changes rolled back");
-
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"Failed to process refunds. All changes have been rolled back. Error: {refundEx.Message}",
-                        allSuccessful = false,
-                        rolledBack = true
-                    });
-                }
+                    success = result.SuccessfulCount > 0,
+                    message = message,
+                    successCount = result.SuccessfulCount,
+                    failedCount = result.FailedCount,
+                    results = result.Results
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in ProcessRefunds");
-                return Json(new
-                {
-                    success = false,
-                    message = "An unexpected error occurred: " + ex.Message
-                });
+                _logger.LogError(ex, "Error in bulk retry");
+                return Json(new { success = false, message = "Failed to retry refunds: " + ex.Message });
             }
         }
 
-        // GET: Refund/Details - View refund details
+        // AJAX: Get refund statistics
         [HttpGet]
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> GetRefundStatistics()
         {
             try
             {
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+                var stats = await _refundRepository.GetRefundStatisticsAsync();
+                var statsByType = await _refundRepository.GetRefundStatisticsByPaymentTypeAsync();
 
-                // Check permission
-                if (userRole != "Checker" && userRole != "Maker" && userRole != "Admin" && userRole != "Approver")
-                {
-                    return RedirectToAction("Index");
-                }
-
-                var refundDetails = await _refundRepository.GetRefundDetailsAsync(id);
-                
-                if (refundDetails == null)
-                {
-                    TempData["ErrorMessage"] = "Refund not found.";
-                    return RedirectToAction("ApprovedRefunds");
-                }
-
-                return View(refundDetails);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in Refund Details for ID: {RefundId}", id);
-                TempData["ErrorMessage"] = "An error occurred while loading refund details.";
-                return RedirectToAction("ApprovedRefunds");
-            }
-        }
-
-        [HttpPost]
-        [Authorize(Roles = "Admin,Checker,Approver")]
-        public async Task<IActionResult> RetryRefund([FromBody] RetryRefundRequest request)
-        {
-            try
-            {
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
-
-                // Only Checker, Approver, and Admin can retry refunds
-                if (userRole != "Checker" && userRole != "Admin" && userRole != "Approver")
-                {
-                    return Json(new { success = false, message = "You don't have permission to retry refunds." });
-                }
-
-                if (request.RefundPaymentId <= 0)
-                {
-                    return Json(new { success = false, message = "Invalid refund payment ID." });
-                }
-
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
-
-                // Call repository to retry the refund
-                var result = await _refundRepository.RetryFailedRefundAsync(request.RefundPaymentId, userId);
-
-                if (result.Success)
-                {
-                    return Json(new
-                    {
-                        success = true,
-                        message = result.Message,
-                        refundId = result.RazorpayRefundId
-                    });
-                }
-                else
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = result.Message
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrying refund: {RefundPaymentId}", request.RefundPaymentId);
                 return Json(new
                 {
-                    success = false,
-                    message = "An error occurred while retrying the refund: " + ex.Message
+                    success = true,
+                    overall = stats,
+                    byPaymentType = statsByType
                 });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading statistics");
+                return Json(new { success = false, message = "Failed to load statistics" });
             }
         }
 
+        // Helper methods
+        private string GetUserRole()
+        {
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(role))
+            {
+                if (User.IsInRole("Admin")) return "Admin";
+                if (User.IsInRole("Checker")) return "Checker";
+                if (User.IsInRole("Approver")) return "Approver";
+                if (User.IsInRole("Maker")) return "Maker";
+            }
+
+            return role ?? "Maker";
+        }
+
+        private int GetUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : 0;
+        }
+
+        private bool CanInitiateRefund(string role)
+        {
+            return role == "Maker" || role == "Admin";
+        }
+
+        private bool CanApproveRefund(string role)
+        {
+            return role == "Checker" || role == "Approver" || role == "Admin";
+        }
+
+        private string GetRefundStatusDisplay(RefundListViewModel item)
+        {
+            if (item.HasPendingRefund)
+            {
+                return item.RefundStatus ?? "Pending";
+            }
+            return "Pending";
+        }
+
+        private string GetActionStatus(RefundListViewModel item, string userRole)
+        {
+            // Handle Failed status - UPDATED
+            if (string.Equals(item.RefundStatus, "Failed", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Retry Required";
+            }
+
+            if (userRole == "Checker" || userRole == "Approver")
+            {
+                if (item.HasPendingRefund && string.Equals(item.RefundStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "Awaiting Action";
+                }
+                return "-";
+            }
+            else if (userRole == "Maker")
+            {
+                return !item.HasPendingRefund ? "Ready to Initiate" : "Awaiting Action";
+            }
+            return "-";
+        }
+
+        private bool CanSelectRefund(RefundListViewModel item, string userRole)
+        {
+            // Debug logging
+            _logger.LogDebug($"CanSelectRefund - Role: {userRole}, HasPendingRefund: {item.HasPendingRefund}, Status: {item.RefundStatus}");
+
+            if (userRole == "Checker" || userRole == "Approver")
+            {
+                // Checker can select both pending and failed refunds - UPDATED
+                bool canSelect = item.HasPendingRefund &&
+                                 (string.Equals(item.RefundStatus, "Pending", StringComparison.OrdinalIgnoreCase) ||
+                                  string.Equals(item.RefundStatus, "Failed", StringComparison.OrdinalIgnoreCase));
+                _logger.LogDebug($"Checker/Approver can select: {canSelect}");
+                return canSelect;
+            }
+            else if (userRole == "Maker")
+            {
+                // Maker can select items not yet initiated
+                return !item.HasPendingRefund;
+            }
+            else if (userRole == "Admin")
+            {
+                // Admin can select any pending or failed item - UPDATED
+                return !item.HasPendingRefund ||
+                       string.Equals(item.RefundStatus, "Pending", StringComparison.OrdinalIgnoreCase) ||
+                       string.Equals(item.RefundStatus, "Failed", StringComparison.OrdinalIgnoreCase);
+            }
+            return false;
+        }
     }
-}
 
-// Add this class to your ViewModels
-public class RetryRefundRequest
-{
-    public int RefundPaymentId { get; set; }
-}
+    // Request/Response models
+    public class InitiateRefundsRequest
+    {
+        public List<RefundRequestItem> RefundItems { get; set; } = new List<RefundRequestItem>();
+        public string? Reason { get; set; }
+    }
 
-public class RetryRefundResult
-{
-    public bool Success { get; set; }
-    public string Message { get; set; }
-    public string? RazorpayRefundId { get; set; }
+    public class ProcessRefundsRequest
+    {
+        public List<int> RefundIds { get; set; } = new List<int>();
+        public string Action { get; set; } = ""; // Approve or Reject
+        public string? Reason { get; set; }
+    }
+
+    public class RetryRefundRequest
+    {
+        public int RefundPaymentId { get; set; }
+    }
+
+    // NEW: Bulk retry request model
+    public class BulkRetryRequest
+    {
+        public List<int> RefundPaymentIds { get; set; } = new List<int>();
+    }
 }

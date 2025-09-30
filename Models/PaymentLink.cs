@@ -64,6 +64,29 @@ namespace BiddingSystem.Models
         [Display(Name = "Transaction ID")]
         public string? TransactionId { get; set; }
 
+
+        // Refund Related Properties
+        [StringLength(100)]
+        public string? RefundId { get; set; }
+
+        [StringLength(50)]
+        public string? RefundStatus { get; set; }
+
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal? RefundAmount { get; set; }
+
+        public DateTime? RefundDate { get; set; }
+
+        public int? RefundInitiatedBy { get; set; }
+
+        public int? RefundApprovedBy { get; set; }
+
+        [StringLength(500)]
+        public string? RefundReason { get; set; }
+
+        [StringLength(500)]
+        public string? RefundErrorMessage { get; set; }
+
         [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]
         [Display(Name = "Notes")]
         public string? Notes { get; set; }
@@ -151,7 +174,10 @@ namespace BiddingSystem.Models
         Expired = 3,
 
         [Display(Name = "Cancelled")]
-        Cancelled = 4
+        Cancelled = 4, 
+            
+            [Display(Name = "NotGenerated")]
+        NotGenerated = 0
     }
 
     public static class PaymentLinkStatusExtensions

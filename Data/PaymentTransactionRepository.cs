@@ -50,11 +50,13 @@ namespace BiddingSystem.Data
             return await connection.QueryFirstOrDefaultAsync<PaymentTransaction>(sql, new { RazorpayPaymentId = razorpayPaymentId });
         }
 
-        public async Task<PaymentTransaction?> GetByPaymentLinkIdAsync(string paymentLinkId)
+        // Returns a list of all transactions for a payment link
+        public async Task<List<PaymentTransaction>> GetByPaymentLinkIdAsync(string paymentLinkId)
         {
             using var connection = new SqlConnection(_connectionString);
-            var sql = "SELECT TOP 1 * FROM PaymentTransactions WHERE PaymentLinkId = @PaymentLinkId ORDER BY CreatedAt DESC";
-            return await connection.QueryFirstOrDefaultAsync<PaymentTransaction>(sql, new { PaymentLinkId = paymentLinkId });
+            var sql = "SELECT * FROM PaymentTransactions WHERE PaymentLinkId = @PaymentLinkId ORDER BY CreatedAt DESC";
+            var result = await connection.QueryAsync<PaymentTransaction>(sql, new { PaymentLinkId = paymentLinkId });
+            return result.ToList();
         }
 
         public async Task<bool> ExistsAsync(string razorpayPaymentId)

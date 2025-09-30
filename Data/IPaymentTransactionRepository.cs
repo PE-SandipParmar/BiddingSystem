@@ -4,8 +4,9 @@ namespace BiddingSystem.Data
 {
     public interface IPaymentTransactionRepository
     {
+        // Core transaction operations
         Task<PaymentTransaction?> GetByPaymentIdAsync(string razorpayPaymentId);
-        Task<PaymentTransaction?> GetByPaymentLinkIdAsync(string paymentLinkId);
+        Task<List<PaymentTransaction>> GetByPaymentLinkIdAsync(string paymentLinkId);
         Task<PaymentTransaction> CreateAsync(PaymentTransaction transaction);
         Task<bool> ExistsAsync(string razorpayPaymentId);
         Task<List<PaymentTransaction>> GetByTenderIdAsync(int tenderId);

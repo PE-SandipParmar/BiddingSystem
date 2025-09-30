@@ -40,6 +40,63 @@ namespace BiddingSystem.Data
             return bids;
         }
 
+        public async Task<List<TenderBid>> GetBidsByEmailOrPhoneAsync(string email, string phone)
+        {
+            using var connection = CreateConnection();
+
+            var sql = @"
+        SELECT tb.*, t.*
+        FROM TenderBids tb
+        LEFT JOIN Tenders t ON tb.TenderId = t.Id
+        WHERE tb.IsActive = 1";
+
+            var parameters = new DynamicParameters();
+            var conditions = new List<string>();
+
+            if (!string.IsNullOrEmpty(email))
+            {
+                conditions.Add("tb.BidderEmail = @Email");
+                parameters.Add("Email", email);
+            }
+
+            if (!string.IsNullOrEmpty(phone))
+            {
+                conditions.Add("tb.BidderPhone = @Phone");
+                parameters.Add("Phone", phone);
+            }
+
+            if (conditions.Any())
+            {
+                sql += " AND (" + string.Join(" OR ", conditions) + ")";
+            }
+            else
+            {
+                // If no email or phone provided, return empty list
+                return new List<TenderBid>();
+            }
+
+            sql += " ORDER BY tb.SubmittedAt DESC";
+
+            var bids = await connection.QueryAsync<TenderBid, Tender, TenderBid>(sql, (bid, tender) =>
+            {
+                bid.Tender = tender;
+                return bid;
+            }, parameters, splitOn: "Id");
+
+            // For each bid, also load documents and refund info
+            var bidsList = bids.ToList();
+            foreach (var bid in bidsList)
+            {
+                // Load documents
+                bid.Documents = (await GetBidDocumentsAsync(bid.Id)).ToList();
+
+                // Load refund information if exists
+                bid.RefundInfo = await GetRefundInfoForBidAsync(bid.Id);
+            }
+
+            return bidsList;
+        }
+
         public async Task<TenderBid?> GetBidByIdAsync(int id)
         {
             using var connection = CreateConnection();
@@ -712,5 +769,7 @@ namespace BiddingSystem.Data
             var count = await connection.QuerySingleAsync<int>(sql, new { TenderId = tenderId, BidderEmail = bidderEmail });
             return count > 0;
         }
+
+
     }
 }
