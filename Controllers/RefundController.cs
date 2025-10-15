@@ -406,7 +406,7 @@ namespace BiddingSystem.Controllers
 
         private bool CanApproveRefund(string role)
         {
-            return role == "Checker" || role == "Approver" || role == "Admin";
+            return role == "Checker" || role == "Maker" || role == "Admin";
         }
 
         private string GetRefundStatusDisplay(RefundListViewModel item)
